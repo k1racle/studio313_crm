@@ -194,7 +194,7 @@ def build_application():
     request_kwargs = {}
     proxy_url = getattr(settings, 'TELEGRAM_PROXY_URL', None)
     if proxy_url:
-        request_kwargs['proxy_url'] = proxy_url
+        request_kwargs['proxy'] = proxy_url
         logger.info('Используется прокси: %s', proxy_url)
 
     request = HTTPXRequest(**request_kwargs)
