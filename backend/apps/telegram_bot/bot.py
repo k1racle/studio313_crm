@@ -18,6 +18,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+logging.getLogger('telegram').setLevel(logging.DEBUG)
+logging.getLogger('httpx').setLevel(logging.DEBUG)
 
 NEWS_KEYWORDS = [
     'новый', 'новая', 'новое', 'новые',
@@ -195,6 +197,7 @@ def build_application():
     proxy_url = getattr(settings, 'TELEGRAM_PROXY_URL', None)
     if proxy_url:
         request_kwargs['proxy'] = proxy_url
+        request_kwargs['http_version'] = '1.1'
         logger.info('Используется прокси: %s', proxy_url)
 
     request = HTTPXRequest(**request_kwargs)
