@@ -19,6 +19,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Debug logs for Telegram/httpx to diagnose polling issues
+logging.getLogger('telegram').setLevel(logging.DEBUG)
+logging.getLogger('httpx').setLevel(logging.DEBUG)
+
 NEWS_KEYWORDS = [
     'новый', 'новая', 'новое', 'новые',
     'появился', 'появилась', 'появилось',
