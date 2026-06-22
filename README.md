@@ -51,7 +51,7 @@ docker-compose up --build -d
 docker-compose exec backend python manage.py createsuperuser
 ```
 
-Приложение будет доступно по адресу `http://localhost`.
+Приложение будет доступно по адресу `http://localhost:7000` (порт задаётся переменной `NGINX_PORT`).
 
 ## Деплой через Portainer
 
@@ -67,6 +67,7 @@ Portainer позволяет развернуть проект прямо из G
    - `SECRET_KEY` — сгенерируйте случайный ключ минимум 50 символов.
    - `ALLOWED_HOSTS` — укажите ваш домен, например `studio.example.com`.
    - `CORS_ALLOWED_ORIGINS` — укажите URL вашего фронтенда, например `https://studio.example.com`.
+   - `NGINX_PORT` — внешний порт приложения. Если 80 занят, используйте `7000`, `2000` или любой другой свободный.
 4. Нажмите **Deploy the stack**.
 5. После запуска откройте консоль контейнера `backend` и создайте суперпользователя:
    ```bash
@@ -90,6 +91,7 @@ Portainer позволяет развернуть проект прямо из G
 | `TELEGRAM_BOT_TOKEN` | Токен Telegram-бота | — |
 | `ALLOWED_HOSTS` | Список разрешённых хостов через запятую | `localhost,127.0.0.1` |
 | `CORS_ALLOWED_ORIGINS` | Разрешённые источники CORS через запятую | `http://localhost,http://localhost:5173` |
+| `NGINX_PORT` | Внешний порт nginx | `7000` |
 | `EMAIL_BACKEND` | Бэкенд отправки email | `django.core.mail.backends.console.EmailBackend` |
 | `EMAIL_HOST` | SMTP-хост | — |
 | `EMAIL_PORT` | SMTP-порт | `587` |
@@ -131,7 +133,7 @@ docker-compose exec backend python manage.py createsuperuser
 
 ### 2. Вход в систему
 
-Откройте `http://localhost`, войдите под созданным суперпользователем.
+Откройте `http://localhost:7000` (или ваш домен с указанным портом), войдите под созданным суперпользователем.
 
 ### 3. Настройка профиля
 
