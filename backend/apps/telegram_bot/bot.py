@@ -189,6 +189,16 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
     )
 
 
+_application = None
+
+
+def get_application():
+    global _application
+    if _application is None:
+        _application = build_application()
+    return _application
+
+
 def build_application():
     if not settings.TELEGRAM_BOT_TOKEN:
         raise ValueError('TELEGRAM_BOT_TOKEN не настроен')
@@ -215,7 +225,6 @@ def build_application():
 
 
 def run_bot():
-    application = build_application()
+    application = get_application()
     logger.info('Запуск Telegram-бота...')
-    # Use short polling without long-polling because the proxy drops long-lived connections
-    application.run_polling(timeout=0, poll_interval=0)
+    application.run_polling()

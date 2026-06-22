@@ -40,6 +40,7 @@ services:
       DB_PORT: 5432
       REDIS_URL: redis://redis:6379/0
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
@@ -91,7 +92,7 @@ services:
     build: ./backend
     restart: unless-stopped
     command: >
-      sh -c "python manage.py run_telegram_bot"
+      sh -c "python manage.py set_webhook && sleep infinity"
     volumes:
       - media_files:/app/media
     environment:
@@ -105,6 +106,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_PROXY_URL: ${TELEGRAM_PROXY_URL}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL}
       EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
       EMAIL_HOST: ${EMAIL_HOST}
       EMAIL_PORT: ${EMAIL_PORT:-587}
