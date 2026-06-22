@@ -1,0 +1,17 @@
+{
+  "short_name": "Studio 313",
+  "name": "Studio 313 — CRM",
+  "description": "CRM и менеджер задач медиастудии",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
