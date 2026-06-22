@@ -156,6 +156,17 @@ CORS_ALLOWED_ORIGINS = os.getenv(
     'http://localhost,http://localhost:5173,http://127.0.0.1'
 ).split(',')
 
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+
+# Trust reverse proxy headers so Django detects HTTPS correctly
+# when running behind Nginx Proxy Manager / external SSL terminator
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 
 CHANNEL_LAYERS = {
