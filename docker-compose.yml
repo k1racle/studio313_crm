@@ -28,7 +28,6 @@ services:
              python manage.py collectstatic --noinput &&
              daphne -b 0.0.0.0 -p 8000 config.asgi:application"
     volumes:
-      - ./backend:/app
       - static_files:/app/static
       - media_files:/app/media
     environment:
@@ -62,7 +61,6 @@ services:
     restart: unless-stopped
     command: celery -A config worker -l info
     volumes:
-      - ./backend:/app
       - media_files:/app/media
       - whisper_cache:/root/.cache/huggingface
     environment:
@@ -95,7 +93,6 @@ services:
     command: >
       sh -c "python manage.py run_telegram_bot"
     volumes:
-      - ./backend:/app
       - media_files:/app/media
     environment:
       DEBUG: ${DEBUG:-False}
