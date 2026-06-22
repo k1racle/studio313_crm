@@ -25,6 +25,10 @@ services:
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
+    environment:
+      XRAY_ADDRESS: ${XRAY_ADDRESS}
+      XRAY_PORT: ${XRAY_PORT}
+      XRAY_ID: ${XRAY_ID}
 
   backend:
     build: ./backend
