@@ -217,5 +217,5 @@ def build_application():
 def run_bot():
     application = build_application()
     logger.info('Запуск Telegram-бота...')
-    # Use short polling timeout because the proxy drops long-lived connections
-    application.run_polling(timeout=2, poll_interval=1)
+    # Use short polling without long-polling because the proxy drops long-lived connections
+    application.run_polling(timeout=0, poll_interval=0)
