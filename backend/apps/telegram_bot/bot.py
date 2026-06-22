@@ -18,8 +18,6 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-logging.getLogger('telegram').setLevel(logging.DEBUG)
-logging.getLogger('httpx').setLevel(logging.DEBUG)
 
 NEWS_KEYWORDS = [
     'новый', 'новая', 'новое', 'новые',
@@ -217,4 +215,4 @@ def run_bot():
     application = build_application()
     logger.info('Запуск Telegram-бота...')
     # Use short polling timeout because the proxy drops long-lived connections
-    application.run_polling(timeout=4, poll_interval=1)
+    application.run_polling(timeout=2, poll_interval=1)
