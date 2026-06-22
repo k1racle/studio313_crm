@@ -19,10 +19,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Debug logs for Telegram/httpx to diagnose polling issues
-logging.getLogger('telegram').setLevel(logging.DEBUG)
-logging.getLogger('httpx').setLevel(logging.DEBUG)
-
 NEWS_KEYWORDS = [
     'новый', 'новая', 'новое', 'новые',
     'появился', 'появилась', 'появилось',
@@ -218,4 +214,5 @@ def build_application():
 def run_bot():
     application = build_application()
     logger.info('Запуск Telegram-бота...')
-    application.run_polling()
+    # Use short polling timeout because the proxy drops long-lived connections
+    application.run_polling(timeout=4, poll_interval=1)
