@@ -92,7 +92,7 @@ services:
     build: ./backend
     restart: unless-stopped
     command: >
-      sh -c "python manage.py set_webhook && sleep infinity"
+      sh -c "python manage.py run_telegram_bot"
     volumes:
       - media_files:/app/media
     environment:

@@ -208,6 +208,9 @@ def build_application():
     if proxy_url:
         request_kwargs['proxy'] = proxy_url
         request_kwargs['http_version'] = '1.1'
+        request_kwargs['read_timeout'] = 30
+        request_kwargs['write_timeout'] = 30
+        request_kwargs['connect_timeout'] = 30
         logger.info('Используется прокси: %s', proxy_url)
 
     request = HTTPXRequest(**request_kwargs)
@@ -227,4 +230,4 @@ def build_application():
 def run_bot():
     application = get_application()
     logger.info('Запуск Telegram-бота...')
-    application.run_polling()
+    application.run_polling(timeout=10, poll_interval=1)
