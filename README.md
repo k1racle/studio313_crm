@@ -256,8 +256,10 @@ studio313_crm/
 │   ├── src/
 │   ├── package.json
 │   └── Dockerfile
+├── nginx/                # Конфигурация и образ nginx
+│   ├── nginx.conf
+│   └── Dockerfile
 ├── docker-compose.yml
-├── nginx.conf
 ├── .env.example
 └── README.md
 ```
