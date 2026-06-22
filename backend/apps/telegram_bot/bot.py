@@ -6,6 +6,7 @@ from telegram.ext import (
     ApplicationBuilder, ContextTypes, MessageHandler,
     CommandHandler, filters
 )
+from telegram.request import HTTPXRequest
 from django.conf import settings
 from apps.tasks.models import Task
 from apps.helpdesk.models import HelpdeskTicket
@@ -190,7 +191,14 @@ def build_application():
     if not settings.TELEGRAM_BOT_TOKEN:
         raise ValueError('TELEGRAM_BOT_TOKEN не настроен')
 
-    application = ApplicationBuilder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    request_kwargs = {}
+    proxy_url = getattr(settings, 'TELEGRAM_PROXY_URL', None)
+    if proxy_url:
+        request_kwargs['proxy_url'] = proxy_url
+        logger.info('Используется прокси: %s', proxy_url)
+
+    request = HTTPXRequest(**request_kwargs)
+    application = ApplicationBuilder().token(settings.TELEGRAM_BOT_TOKEN).request(request).build()
 
     application.add_handler(CommandHandler('start', help_command))
     application.add_handler(CommandHandler('help', help_command))
