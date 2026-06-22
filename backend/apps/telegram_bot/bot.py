@@ -18,6 +18,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+logging.getLogger('telegram').setLevel(logging.DEBUG)
+logging.getLogger('httpx').setLevel(logging.DEBUG)
 
 NEWS_KEYWORDS = [
     'новый', 'новая', 'новое', 'новые',
