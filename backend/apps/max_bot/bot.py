@@ -32,6 +32,15 @@ NEWS_KEYWORDS = [
     'опубликовал', 'опубликовала', 'опубликовали', 'опубликован', 'опубликована',
     'запланирован', 'запланирована',
     'мероприятие', 'конференция', 'форум', 'выставка', 'семинар', 'вебинар',
+    'обратил внимание', 'обратила внимание', 'обратили внимание',
+    'озвучил', 'озвучила', 'озвучили',
+    'заявил', 'заявила', 'заявили',
+    'предложил', 'предложила', 'предложили',
+    'выступил', 'выступила', 'выступили',
+    'рассказал', 'рассказала', 'рассказали',
+    'законодательство', 'закон', 'термин',
+    'поддержка', 'развитие', 'направление',
+    'в ходе', 'по итогам', 'по словам',
 ]
 
 NON_NEWS_PHRASES = [
@@ -250,7 +259,7 @@ async def handle_update(client: MaxBotClient, update: dict):
     title = chat.get('title') or chat.get('name') if chat else None
     sender_name = sender.get('first_name') or sender.get('name') or 'Неизвестно'
     sender_username = sender.get('username') or ''
-    user_id = sender.get('id')
+    user_id = sender.get('user_id') or sender.get('id')
 
     logger.info(
         'MAX parsed: chat_id=%s chat_type=%s message_id=%r text=%r sender=%s user_id=%s',
@@ -271,7 +280,7 @@ async def handle_update(client: MaxBotClient, update: dict):
             logger.exception('Не удалось отправить сообщение в MAX chat_id=%s user_id=%s: %s', chat_id, user_id, e)
 
     # Команды
-    if text.startswith('/start'):
+    if text.startswith('/start') or text.startswith('/hello'):
         await _send(
             'Я бот медиа-студии.\n'
             'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости.\n'
