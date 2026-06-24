@@ -46,6 +46,7 @@ class UserNotificationPreference(models.Model):
     email_enabled = models.BooleanField(default=True, verbose_name='Email-уведомления')
     telegram_enabled = models.BooleanField(default=True, verbose_name='Telegram-уведомления')
     sms_enabled = models.BooleanField(default=False, verbose_name='SMS-уведомления')
+    push_enabled = models.BooleanField(default=True, verbose_name='Push-уведомления')
 
     class Meta:
         verbose_name = 'Настройка уведомлений'
@@ -53,3 +54,19 @@ class UserNotificationPreference(models.Model):
 
     def __str__(self):
         return f'Настройки уведомлений {self.user}'
+
+
+class PushSubscription(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='push_subscriptions', verbose_name='Пользователь')
+    endpoint = models.URLField(verbose_name='Endpoint')
+    p256dh = models.CharField(max_length=255, verbose_name='p256dh')
+    auth = models.CharField(max_length=255, verbose_name='auth')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
+
+    class Meta:
+        verbose_name = 'Push-подписка'
+        verbose_name_plural = 'Push-подписки'
+        unique_together = ['user', 'endpoint']
+
+    def __str__(self):
+        return f'Подписка {self.user}'

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import NotificationLog, InAppNotification, UserNotificationPreference
+from .models import NotificationLog, InAppNotification, UserNotificationPreference, PushSubscription
 
 
 @admin.register(NotificationLog)
@@ -16,5 +16,11 @@ class InAppNotificationAdmin(admin.ModelAdmin):
 
 @admin.register(UserNotificationPreference)
 class UserNotificationPreferenceAdmin(admin.ModelAdmin):
-    list_display = ['user', 'email_enabled', 'telegram_enabled', 'sms_enabled']
-    list_filter = ['email_enabled', 'telegram_enabled', 'sms_enabled']
+    list_display = ['user', 'email_enabled', 'telegram_enabled', 'sms_enabled', 'push_enabled']
+    list_filter = ['email_enabled', 'telegram_enabled', 'sms_enabled', 'push_enabled']
+
+
+@admin.register(PushSubscription)
+class PushSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ['user', 'endpoint', 'created_at']
+    list_filter = ['created_at']

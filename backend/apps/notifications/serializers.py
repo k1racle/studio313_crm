@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import InAppNotification, UserNotificationPreference
+from .models import InAppNotification, UserNotificationPreference, PushSubscription
 
 
 class InAppNotificationSerializer(serializers.ModelSerializer):
@@ -12,4 +12,10 @@ class InAppNotificationSerializer(serializers.ModelSerializer):
 class UserNotificationPreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserNotificationPreference
-        fields = ['email_enabled', 'telegram_enabled', 'sms_enabled']
+        fields = ['email_enabled', 'telegram_enabled', 'sms_enabled', 'push_enabled']
+
+
+class PushSubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PushSubscription
+        fields = ['endpoint', 'p256dh', 'auth']

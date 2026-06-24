@@ -241,22 +241,24 @@ export default function Tasks() {
           {view !== 'kanban' && <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />}
           <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityOptions} />
           <Select value={filters.assignee} onChange={e => setFilters({ ...filters, assignee: e.target.value })} options={userOptions} />
-          <Input
-            icon={<Search size={16} />}
-            placeholder="Поиск..."
-            value={filters.search}
-            onChange={e => setFilters({ ...filters, search: e.target.value })}
-            className="w-full sm:w-64"
-          />
-          <label className="flex items-center gap-2 text-sm text-text-muted cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={e => setShowArchived(e.target.checked)}
-              className="w-4 h-4 text-primary rounded"
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Input
+              icon={<Search size={16} />}
+              placeholder="Поиск..."
+              value={filters.search}
+              onChange={e => setFilters({ ...filters, search: e.target.value })}
+              className="w-full sm:w-64"
             />
-            Показать архив
-          </label>
+            <label className="flex items-center gap-2 text-sm text-text-muted cursor-pointer whitespace-nowrap">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={e => setShowArchived(e.target.checked)}
+                className="w-4 h-4 text-primary rounded"
+              />
+              Показать архив
+            </label>
+          </div>
         </div>
       </Card>
 

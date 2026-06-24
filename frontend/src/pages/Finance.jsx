@@ -41,8 +41,14 @@ export default function Finance() {
 
       <Card className="mb-6">
         <div className="flex flex-col sm:flex-row items-end gap-3">
-          <Input type="date" label="С" value={from} onChange={e => setFrom(e.target.value)} />
-          <Input type="date" label="По" value={to} onChange={e => setTo(e.target.value)} />
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-sm text-text-muted whitespace-nowrap">С</span>
+            <Input type="date" value={from} onChange={e => setFrom(e.target.value)} />
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-sm text-text-muted whitespace-nowrap">По</span>
+            <Input type="date" value={to} onChange={e => setTo(e.target.value)} />
+          </div>
           <Button onClick={load}>Обновить</Button>
         </div>
       </Card>

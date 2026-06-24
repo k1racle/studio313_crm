@@ -5,14 +5,17 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { User, Mail, Send, CheckCircle2, RefreshCw, Bell, Camera, Save } from 'lucide-react'
 import { formatFullName } from '../utils/format'
+import { requestNotificationPermission, unsubscribePush } from '../utils/push'
 
 export default function Profile() {
   const { user, refreshUser } = useAuth()
   const [code, setCode] = useState('')
   const [expiresAt, setExpiresAt] = useState('')
   const [loading, setLoading] = useState(false)
-  const [preferences, setPreferences] = useState({ email_enabled: true, telegram_enabled: true, sms_enabled: false })
+  const [preferences, setPreferences] = useState({ email_enabled: true, telegram_enabled: true, sms_enabled: false, push_enabled: true })
   const [savingPrefs, setSavingPrefs] = useState(false)
+  const [pushPermission, setPushPermission] = useState('default')
+  const [pushLoading, setPushLoading] = useState(false)
 
   const [form, setForm] = useState({ first_name: '', last_name: '', patronymic: '' })
   const [avatarFile, setAvatarFile] = useState(null)
@@ -21,6 +24,9 @@ export default function Profile() {
 
   useEffect(() => {
     api.get('/notifications/preferences/').then(res => setPreferences(res.data)).catch(console.error)
+    if ('Notification' in window) {
+      setPushPermission(Notification.permission)
+    }
   }, [])
 
   useEffect(() => {
@@ -82,6 +88,29 @@ export default function Profile() {
       console.error(err)
     } finally {
       setSavingPrefs(false)
+    }
+  }
+
+  const handlePushToggle = async () => {
+    setPushLoading(true)
+    try {
+      if (preferences.push_enabled) {
+        await unsubscribePush()
+        await api.patch('/notifications/preferences/', { push_enabled: false })
+        setPreferences(prev => ({ ...prev, push_enabled: false }))
+        setPushPermission('default')
+      } else {
+        const permission = await requestNotificationPermission()
+        setPushPermission(permission)
+        if (permission === 'granted') {
+          await api.patch('/notifications/preferences/', { push_enabled: true })
+          setPreferences(prev => ({ ...prev, push_enabled: true }))
+        }
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setPushLoading(false)
     }
   }
 
@@ -199,9 +228,11 @@ export default function Profile() {
               {[
                 { key: 'email_enabled', label: 'Email-уведомления', icon: Mail, note: user?.email ? user.email : 'Email не указан' },
                 { key: 'telegram_enabled', label: 'Telegram-уведомления', icon: Send, note: user?.telegram_id ? 'Привязан' : 'Telegram не привязан' },
+                { key: 'push_enabled', label: 'Push-уведомления', icon: Bell, note: pushPermission === 'granted' ? 'Разрешены' : pushPermission === 'denied' ? 'Заблокированы в браузере' : 'Не запрошены' },
               ].map(item => {
                 const Icon = item.icon
-                const disabled = savingPrefs || (item.key === 'email_enabled' && !user?.email) || (item.key === 'telegram_enabled' && !user?.telegram_id)
+                const disabled = savingPrefs || (item.key === 'email_enabled' && !user?.email) || (item.key === 'telegram_enabled' && !user?.telegram_id) || (item.key === 'push_enabled' && !('Notification' in window))
+                const isPush = item.key === 'push_enabled'
                 return (
                   <label
                     key={item.key}
@@ -217,7 +248,7 @@ export default function Profile() {
                     <input
                       type="checkbox"
                       checked={preferences[item.key]}
-                      onChange={() => !disabled && togglePreference(item.key)}
+                      onChange={() => !disabled && (isPush ? handlePushToggle() : togglePreference(item.key))}
                       disabled={disabled}
                       className="w-5 h-5 text-primary rounded"
                     />

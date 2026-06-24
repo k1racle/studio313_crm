@@ -219,6 +219,18 @@ def create_task_from_news(message_obj: TelegramMessage):
     return task, suggestion
 
 
+def get_sender_name(msg):
+    if msg.from_user:
+        name = (msg.from_user.full_name or '').strip()
+        if name and name.lower() != 'group':
+            return name
+        if msg.from_user.username:
+            return f'@{msg.from_user.username}'
+    if msg.sender_chat:
+        return getattr(msg.sender_chat, 'title', None) or str(msg.sender_chat.id)
+    return ''
+
+
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_message or not update.effective_message.text:
         return
@@ -228,7 +240,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     text = msg.text
 
     chat_obj = await get_or_create_chat(chat.id, chat.type, getattr(chat, 'title', None))
-    message_obj = await save_message(chat_obj, msg.message_id, text, msg.from_user.full_name if msg.from_user else '')
+    message_obj = await save_message(chat_obj, msg.message_id, text, get_sender_name(msg))
 
     if looks_like_news(text):
         task, suggestion = await create_task_from_news(message_obj)
@@ -253,7 +265,7 @@ async def task_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.effective_message
 
     chat_obj = await get_or_create_chat(chat.id, chat.type, getattr(chat, 'title', None))
-    message_obj = await save_message(chat_obj, msg.message_id, title_text, msg.from_user.full_name if msg.from_user else '')
+    message_obj = await save_message(chat_obj, msg.message_id, title_text, get_sender_name(msg))
     task, suggestion = await create_task_from_news(message_obj)
 
     await update.effective_message.reply_text(
@@ -309,14 +321,15 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
     chat = update.effective_chat
     msg = update.effective_message
 
-    chat_obj = await get_or_create_chat(chat.id, chat.type, msg.from_user.full_name if msg.from_user else str(chat.id))
-    await save_message(chat_obj, msg.message_id, text, msg.from_user.full_name if msg.from_user else '')
+    sender_name = get_sender_name(msg)
+    chat_obj = await get_or_create_chat(chat.id, chat.type, sender_name or str(chat.id))
+    await save_message(chat_obj, msg.message_id, text, sender_name)
 
     ticket = await sync_to_async(HelpdeskTicket.objects.create)(
         subject=text[:100],
         description=text,
         source=HelpdeskTicket.SOURCE_TELEGRAM,
-        requester_name=msg.from_user.full_name if msg.from_user else '',
+        requester_name=sender_name,
         requester_contact=f'@{msg.from_user.username}' if msg.from_user and msg.from_user.username else f'ID: {chat.id}',
     )
 

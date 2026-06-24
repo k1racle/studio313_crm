@@ -5,6 +5,7 @@ from .views import (
     InAppNotificationMarkReadView,
     InAppNotificationMarkAllReadView,
     UserNotificationPreferenceView,
+    PushSubscriptionView,
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('<int:pk>/read/', InAppNotificationMarkReadView.as_view(), name='notification_mark_read'),
     path('read-all/', InAppNotificationMarkAllReadView.as_view(), name='notification_mark_all_read'),
     path('preferences/', UserNotificationPreferenceView.as_view(), name='notification_preferences'),
+    path('push-subscription/', PushSubscriptionView.as_view(), name='push_subscription'),
 ]
