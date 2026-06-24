@@ -166,7 +166,7 @@ export default function MessageInput({ chatId, onSend, onFileUploaded, onVoiceUp
           </div>
           {showEmoji && (
             <div className="absolute bottom-full right-0 mb-2 z-20">
-              <Picker theme={isDark ? 'dark' : 'light'} onEmojiClick={(_, emojiData) => { setText(t => t + emojiData.emoji) }} />
+              <Picker theme={isDark ? 'dark' : 'light'} onEmojiClick={(emojiData) => { setText(t => t + emojiData.emoji) }} />
             </div>
           )}
           {showStickers && (
@@ -194,7 +194,7 @@ export default function MessageInput({ chatId, onSend, onFileUploaded, onVoiceUp
               type="button"
               onClick={startRecording}
               disabled={disabled || uploading}
-              className="bg-primary/10 text-primary hover:bg-primary hover:text-white"
+              className="bg-primary text-white hover:bg-primary/90 shadow-sm"
               title="Голосовое сообщение"
             >
               <Mic size={18} />
