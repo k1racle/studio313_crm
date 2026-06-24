@@ -6,7 +6,8 @@ from telegram.ext import (
     ApplicationBuilder, ContextTypes, MessageHandler,
     CommandHandler, filters
 )
-from telegram.request import HTTPXRequest
+from telegram.request import BaseRequest
+import httpx
 from django.conf import settings
 from apps.tasks.models import Task
 from apps.helpdesk.models import HelpdeskTicket
@@ -20,6 +21,58 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.getLogger('telegram').setLevel(logging.DEBUG)
 logging.getLogger('httpx').setLevel(logging.DEBUG)
+
+class CustomHTTPXRequest(BaseRequest):
+    """Кастомная обёртка над httpx.AsyncClient с поддержкой SOCKS5/HTTP прокси.
+
+    python-telegram-bot использует HTTPXRequest, который при работе через
+    некоторые SOCKS5-прокси падает с ConnectTimeout на long-polling запросах.
+    Эта реализация использует httpx.AsyncClient напрямую и работает стабильно.
+    """
+
+    def __init__(self, proxy_url=None):
+        self._proxy_url = proxy_url
+        self._client = None
+
+    async def initialize(self):
+        self._client = httpx.AsyncClient(
+            proxy=self._proxy_url,
+            http1=True,
+            http2=False,
+            timeout=httpx.Timeout(connect=30, read=30, write=30, pool=30),
+        )
+
+    async def shutdown(self):
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
+
+    async def do_request(
+        self,
+        url: str,
+        method: str,
+        request_data=None,
+        read_timeout: float | None = None,
+        write_timeout: float | None = None,
+        connect_timeout: float | None = None,
+        pool_timeout: float | None = None,
+    ) -> tuple[int, str]:
+        timeout = httpx.Timeout(
+            connect=connect_timeout or 30,
+            read=read_timeout or 30,
+            write=write_timeout or 30,
+            pool=pool_timeout or 30,
+        )
+        if method == 'POST':
+            r = await self._client.post(
+                url,
+                content=request_data.json_payload if request_data else None,
+                timeout=timeout,
+            )
+        else:
+            r = await self._client.get(url, timeout=timeout)
+        return r.status_code, r.text
+
 
 NEWS_KEYWORDS = [
     'новый', 'новая', 'новое', 'новые',
@@ -203,17 +256,11 @@ def build_application():
     if not settings.TELEGRAM_BOT_TOKEN:
         raise ValueError('TELEGRAM_BOT_TOKEN не настроен')
 
-    request_kwargs = {}
     proxy_url = getattr(settings, 'TELEGRAM_PROXY_URL', None)
+    request = CustomHTTPXRequest(proxy_url=proxy_url)
     if proxy_url:
-        request_kwargs['proxy'] = proxy_url
-        request_kwargs['http_version'] = '1.1'
-        request_kwargs['read_timeout'] = 30
-        request_kwargs['write_timeout'] = 30
-        request_kwargs['connect_timeout'] = 30
         logger.info('Используется прокси: %s', proxy_url)
 
-    request = HTTPXRequest(**request_kwargs)
     application = ApplicationBuilder().token(settings.TELEGRAM_BOT_TOKEN).request(request).build()
 
     application.add_handler(CommandHandler('start', help_command))
