@@ -10,6 +10,11 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = BaseUserAdmin.fieldsets + (
         ('Дополнительно', {'fields': ('role', 'patronymic', 'phone', 'telegram_id', 'avatar')}),
     )
-    add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        ('Дополнительно', {'fields': ('role', 'patronymic', 'phone', 'telegram_id')}),
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2'),
+        }),
+        ('Персональные данные', {'fields': ('last_name', 'first_name', 'patronymic')}),
+        ('Дополнительно', {'fields': ('role', 'phone', 'telegram_id')}),
     )
