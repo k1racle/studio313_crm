@@ -343,8 +343,8 @@ async def handle_update(client: MaxBotClient, update: dict):
         await _send(message)
         return
 
-    # Групповые чаты
-    if chat_type in ('group', 'supergroup'):
+    # Групповые чаты (в MAX личный тип называется 'dialog')
+    if chat_type not in ('private', 'dialog'):
         if looks_like_news(text):
             task, _ = await create_task_from_news(message_obj)
             await _send(
