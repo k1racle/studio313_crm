@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import { User, Mail, Send, CheckCircle2, RefreshCw, Bell, Camera, Save } from 'lucide-react'
+import { formatFullName } from '../utils/format'
 
 export default function Profile() {
   const { user, refreshUser } = useAuth()
@@ -13,7 +14,7 @@ export default function Profile() {
   const [preferences, setPreferences] = useState({ email_enabled: true, telegram_enabled: true, sms_enabled: false })
   const [savingPrefs, setSavingPrefs] = useState(false)
 
-  const [form, setForm] = useState({ first_name: '', last_name: '' })
+  const [form, setForm] = useState({ first_name: '', last_name: '', patronymic: '' })
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -24,7 +25,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (user) {
-      setForm({ first_name: user.first_name || '', last_name: user.last_name || '' })
+      setForm({ first_name: user.first_name || '', last_name: user.last_name || '', patronymic: user.patronymic || '' })
       setAvatarPreview(user.avatar || null)
     }
   }, [user])
@@ -45,6 +46,7 @@ export default function Profile() {
       const formData = new FormData()
       formData.append('first_name', form.first_name)
       formData.append('last_name', form.last_name)
+      formData.append('patronymic', form.patronymic)
       if (avatarFile) formData.append('avatar', avatarFile)
       await api.patch('/auth/me/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -83,7 +85,7 @@ export default function Profile() {
     }
   }
 
-  const displayName = user?.first_name || user?.username
+  const displayName = formatFullName(user)
 
   return (
     <div>
@@ -105,7 +107,7 @@ export default function Profile() {
                   />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-primary text-white text-3xl flex items-center justify-center font-bold">
-                    {(user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
+                    {(user?.first_name?.[0] || user?.last_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
                   </div>
                 )}
                 <label
@@ -143,6 +145,15 @@ export default function Profile() {
                   type="text"
                   value={form.last_name}
                   onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Отчество</label>
+                <input
+                  type="text"
+                  value={form.patronymic}
+                  onChange={e => setForm(f => ({ ...f, patronymic: e.target.value }))}
                   className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>

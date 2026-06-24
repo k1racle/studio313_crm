@@ -7,6 +7,7 @@ import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import Input from '../components/ui/Input'
 import { ArrowLeft, Trash2, Send, Upload, FileText, Clock } from 'lucide-react'
+import { formatFullName } from '../utils/format'
 
 const statusLabels = {
   new: 'Новая',
@@ -165,7 +166,7 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onDel
           </div>
           <div className="p-3 bg-subtle rounded-lg">
             <div className="text-xs text-text-muted uppercase">Исполнитель</div>
-            <div className="font-medium text-text">{task.assignee?.first_name || task.assignee?.username || 'Не назначен'}</div>
+            <div className="font-medium text-text">{formatFullName(task.assignee) === '—' ? 'Не назначен' : formatFullName(task.assignee)}</div>
           </div>
           <div className="p-3 bg-subtle rounded-lg">
             <div className="text-xs text-text-muted uppercase">Срок</div>
@@ -278,7 +279,7 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onDel
             {task.comments?.map(c => (
               <div key={c.id} className="p-3 bg-subtle rounded-lg">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm text-text">{c.author?.first_name || c.author?.username}</span>
+                  <span className="font-medium text-sm text-text">{formatFullName(c.author)}</span>
                   <span className="text-xs text-text-muted">{new Date(c.created_at).toLocaleString('ru')}</span>
                 </div>
                 <p className="text-sm text-text">{c.text}</p>

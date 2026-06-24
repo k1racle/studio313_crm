@@ -21,6 +21,7 @@ class User(AbstractUser):
         default=ROLE_JOURNALIST,
         verbose_name='Роль'
     )
+    patronymic = models.CharField(max_length=150, blank=True, verbose_name='Отчество')
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     telegram_id = models.CharField(max_length=100, blank=True, verbose_name='Telegram ID')
     avatar = models.ImageField(upload_to='avatars/', blank=True, verbose_name='Аватар')
@@ -31,6 +32,10 @@ class User(AbstractUser):
 
     def __str__(self):
         return f'{self.get_full_name() or self.username} ({self.get_role_display()})'
+
+    def get_full_name(self):
+        full_name = ' '.join(filter(None, [self.last_name, self.first_name, self.patronymic]))
+        return full_name.strip() or self.username
 
     @property
     def is_admin(self):

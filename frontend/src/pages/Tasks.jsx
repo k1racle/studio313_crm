@@ -12,6 +12,7 @@ import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
 import { Plus, Pencil, Trash2, Search, Archive, RotateCcw } from 'lucide-react'
+import { formatFullName } from '../utils/format'
 
 const statusLabels = {
   new: 'Новая',
@@ -128,15 +129,27 @@ export default function Tasks() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (editingTask) {
-      await api.put(`/tasks/${editingTask.id}/`, form)
-    } else {
-      await api.post('/tasks/', form)
+    const payload = {
+      ...form,
+      assignee_id: form.assignee_id || null,
+      project_id: form.project_id || null,
+      client_id: form.client_id || null,
+      due_date: form.due_date || null,
     }
-    setForm(emptyForm)
-    setEditingTask(null)
-    setIsModalOpen(false)
-    loadTasks()
+    try {
+      if (editingTask) {
+        await api.put(`/tasks/${editingTask.id}/`, payload)
+      } else {
+        await api.post('/tasks/', payload)
+      }
+      setForm(emptyForm)
+      setEditingTask(null)
+      setIsModalOpen(false)
+      await loadTasks()
+    } catch (err) {
+      console.error('Ошибка сохранения задачи:', err)
+      alert('Не удалось сохранить задачу. Проверьте данные и попробуйте снова.')
+    }
   }
 
   const handleDelete = async (task) => {
@@ -150,7 +163,7 @@ export default function Tasks() {
     loadTasks()
   }
 
-  const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(u => ({ value: u.id, label: u.first_name || u.username }))]
+  const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(u => ({ value: u.id, label: formatFullName(u) }))]
   const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(p => ({ value: p.id, label: p.name }))]
   const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
   const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
@@ -261,7 +274,7 @@ export default function Tasks() {
                     </td>
                     <td className="py-3"><Badge variant={statusBadgeVariant[task.status]}>{statusLabels[task.status]}</Badge></td>
                     <td className="py-3">{priorityLabels[task.priority]}</td>
-                    <td className="py-3">{task.assignee?.first_name || task.assignee?.username || '—'}</td>
+                    <td className="py-3">{formatFullName(task.assignee)}</td>
                     <td className="py-3 text-text-muted">{task.due_date ? new Date(task.due_date).toLocaleDateString('ru') : '—'}</td>
                     <td className="py-3">
                       <div className="flex items-center gap-1">
@@ -335,7 +348,7 @@ export default function Tasks() {
               label="Исполнитель"
               value={form.assignee_id}
               onChange={e => setForm({ ...form, assignee_id: e.target.value })}
-              options={[{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: u.first_name || u.username }))]}
+              options={[{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: formatFullName(u) }))]}
             />
           </div>
           <Input label="Срок выполнения" type="datetime-local" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />

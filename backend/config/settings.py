@@ -40,6 +40,7 @@ LOCAL_APPS = [
     'apps.payments',
     'apps.helpdesk',
     'apps.telegram_bot',
+    'apps.max_bot',
     'apps.notifications',
     'apps.chat',
     'apps.analytics',
@@ -181,6 +182,9 @@ CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_PROXY_URL = os.getenv('TELEGRAM_PROXY_URL', '')
+MAX_BOT_TOKEN = os.getenv('MAX_BOT_TOKEN', '')
+MAX_PROXY_URL = os.getenv('MAX_PROXY_URL', '')
+MAX_BOT_API_BASE = os.getenv('MAX_BOT_API_BASE', 'https://platform-api.max.ru')
 TELEGRAM_WEBHOOK_URL = os.getenv('TELEGRAM_WEBHOOK_URL', '')
 
 # Email

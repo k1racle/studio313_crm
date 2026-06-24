@@ -33,11 +33,13 @@ class Task(models.Model):
     SOURCE_MANUAL = 'manual'
     SOURCE_TELEGRAM = 'telegram'
     SOURCE_HELPDESK = 'helpdesk'
+    SOURCE_MAX = 'max'
 
     SOURCE_CHOICES = [
         (SOURCE_MANUAL, 'Вручную'),
         (SOURCE_TELEGRAM, 'Telegram'),
         (SOURCE_HELPDESK, 'Хелпдеск'),
+        (SOURCE_MAX, 'MAX'),
     ]
 
     title = models.CharField(max_length=255, verbose_name='Название')

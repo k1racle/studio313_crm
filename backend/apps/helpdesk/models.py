@@ -28,11 +28,13 @@ class HelpdeskTicket(models.Model):
     SOURCE_TELEGRAM = 'telegram'
     SOURCE_FORM = 'form'
     SOURCE_MANUAL = 'manual'
+    SOURCE_MAX = 'max'
 
     SOURCE_CHOICES = [
         (SOURCE_TELEGRAM, 'Telegram'),
         (SOURCE_FORM, 'Форма'),
         (SOURCE_MANUAL, 'Вручную'),
+        (SOURCE_MAX, 'MAX'),
     ]
 
     subject = models.CharField(max_length=255, verbose_name='Тема')

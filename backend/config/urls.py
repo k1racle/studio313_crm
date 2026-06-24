@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/payments/', include('apps.payments.urls')),
     path('api/helpdesk/', include('apps.helpdesk.urls')),
     path('api/telegram/', include('apps.telegram_bot.urls')),
+    path('api/max/', include('apps.max_bot.urls')),
     path('api/chat/', include('apps.chat.urls')),
     path('api/analytics/', include('apps.analytics.urls')),
     path('api/notifications/', include('apps.notifications.urls')),

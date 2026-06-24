@@ -120,6 +120,37 @@ services:
       redis:
         condition: service_started
 
+  max_bot:
+    build: ./backend
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py run_max_bot"
+    volumes:
+      - media_files:/app/media
+    environment:
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY}
+      DB_NAME: ${DB_NAME:-studio_db}
+      DB_USER: ${DB_USER:-studio_user}
+      DB_PASSWORD: ${DB_PASSWORD:-studio_pass}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      MAX_BOT_TOKEN: ${MAX_BOT_TOKEN}
+      MAX_PROXY_URL: ${MAX_PROXY_URL}
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@studio.local}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
   frontend:
     build: ./frontend
     restart: unless-stopped
