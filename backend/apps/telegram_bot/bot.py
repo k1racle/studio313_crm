@@ -87,7 +87,7 @@ class CustomHTTPXRequest(BaseRequest):
             )
         else:
             r = await self._client.get(url, timeout=timeout)
-        return r.status_code, r.text
+        return r.status_code, r.content
 
 
 NEWS_KEYWORDS = [
