@@ -198,7 +198,8 @@ def _extract_chat(update):
     message = _extract_message(update)
     if not message:
         return None
-    chat = message.get('chat') or message.get('recipient') or message.get('peer') or {}
+    # Структура MAX: message.recipient = {'chat_id': ..., 'chat_type': 'dialog'}
+    chat = message.get('recipient') or message.get('chat') or message.get('peer') or {}
     if not chat and 'chat_id' in message:
         return {'id': message['chat_id']}
     return chat
@@ -206,12 +207,18 @@ def _extract_chat(update):
 
 def _extract_sender(update):
     message = _extract_message(update)
-    sender = message.get('from') or message.get('sender') or message.get('user') or {}
+    sender = message.get('sender') or message.get('from') or message.get('user') or {}
     return sender
 
 
 def _extract_text(update):
     message = _extract_message(update)
+    # Структура MAX: message.body.text
+    body = message.get('body') or {}
+    if isinstance(body, dict):
+        text = body.get('text')
+        if text:
+            return text
     text = message.get('text')
     if text:
         return text
@@ -223,6 +230,9 @@ def _extract_text(update):
 
 def _extract_message_id(update):
     message = _extract_message(update)
+    body = message.get('body') or {}
+    if isinstance(body, dict):
+        return body.get('mid') or body.get('id') or body.get('message_id') or '0'
     return message.get('id') or message.get('message_id') or message.get('msg_id') or '0'
 
 
@@ -234,8 +244,9 @@ async def handle_update(client: MaxBotClient, update: dict):
     sender = _extract_sender(update)
     message_id = _extract_message_id(update)
 
-    chat_id = chat.get('id') if chat else None
-    chat_type = chat.get('type', 'private') if chat else 'private'
+    chat_id = chat.get('chat_id') or chat.get('id') if chat else None
+    chat_type_raw = chat.get('chat_type') or chat.get('type', 'private') if chat else 'private'
+    chat_type = 'private' if chat_type_raw == 'dialog' else chat_type_raw
     title = chat.get('title') or chat.get('name') if chat else None
     sender_name = sender.get('first_name') or sender.get('name') or 'Неизвестно'
     sender_username = sender.get('username') or ''
