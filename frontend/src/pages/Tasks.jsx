@@ -12,7 +12,8 @@ import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
 import { Plus, Pencil, Trash2, Search, Archive, RotateCcw } from 'lucide-react'
-import { formatFullName } from '../utils/format'
+import { formatFullName, formatShortName } from '../utils/format'
+import Avatar from '../components/ui/Avatar'
 
 const statusLabels = {
   new: 'Новая',
@@ -308,7 +309,16 @@ export default function Tasks() {
                     </td>
                     <td className="py-3"><Badge variant={statusBadgeVariant[task.status]}>{statusLabels[task.status]}</Badge></td>
                     <td className="py-3">{priorityLabels[task.priority]}</td>
-                    <td className="py-3">{formatFullName(task.assignee)}</td>
+                    <td className="py-3">
+                      {task.assignee ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar user={task.assignee} size={24} />
+                          <span>{formatShortName(task.assignee)}</span>
+                        </div>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                     <td className="py-3 text-text-muted">{task.due_date ? new Date(task.due_date).toLocaleDateString('ru') : '—'}</td>
                     <td className="py-3">
                       <div className="flex items-center gap-1">

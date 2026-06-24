@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import api from '../api/axios'
-import { formatFullName } from '../utils/format'
+import { formatShortName } from '../utils/format'
+import Avatar from './ui/Avatar'
 
 const columns = [
   { key: 'new', title: 'Новые', color: 'border-blue-400' },
@@ -76,8 +77,9 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
                       {priorityLabels[task.priority]}
                     </span>
                     {task.assignee && (
-                      <div className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center" title={formatFullName(task.assignee)}>
-                        {(task.assignee.first_name?.[0] || task.assignee.username?.[0]).toUpperCase()}
+                      <div className="flex items-center gap-1.5" title={formatShortName(task.assignee)}>
+                        <Avatar user={task.assignee} size={24} />
+                        <span className="text-xs text-text-muted">{formatShortName(task.assignee)}</span>
                       </div>
                     )}
                   </div>

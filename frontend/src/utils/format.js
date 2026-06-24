@@ -6,8 +6,17 @@ export function formatFullName(user) {
 
 export function formatShortName(user) {
   if (!user) return '—'
-  const first = user.first_name || user.username || ''
   const last = user.last_name || ''
-  if (last && first) return `${last} ${first}`
-  return first || last || user.username || '—'
+  const firstInitial = user.first_name ? `${user.first_name[0]}.` : ''
+  const patronymicInitial = user.patronymic ? `${user.patronymic[0]}.` : ''
+  const initials = `${firstInitial}${patronymicInitial}`.trim()
+  if (last && initials) return `${last} ${initials}`
+  return last || user.first_name || user.username || '—'
+}
+
+export function getInitials(user) {
+  if (!user) return '?'
+  const first = (user.first_name?.[0] || user.username?.[0] || '?').toUpperCase()
+  const last = user.last_name?.[0]?.toUpperCase()
+  return last ? `${last}${first}` : first
 }

@@ -1,5 +1,5 @@
 const CACHE_NAME = 'studio313-v1'
-const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/icon.svg']
+const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

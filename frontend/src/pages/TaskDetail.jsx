@@ -6,7 +6,8 @@ import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import Input from '../components/ui/Input'
 import { ArrowLeft, Send, Upload, FileText, Clock } from 'lucide-react'
-import { formatFullName } from '../utils/format'
+import { formatFullName, formatShortName } from '../utils/format'
+import Avatar from '../components/ui/Avatar'
 
 const statusLabels = {
   new: 'Новая',
@@ -146,7 +147,10 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
           </div>
           <div className="p-3 bg-subtle rounded-lg">
             <div className="text-xs text-text-muted uppercase">Исполнитель</div>
-            <div className="font-medium text-text">{formatFullName(task.assignee) === '—' ? 'Не назначен' : formatFullName(task.assignee)}</div>
+            <div className="flex items-center gap-2 font-medium text-text">
+              {task.assignee ? <Avatar user={task.assignee} size={24} /> : null}
+              {task.assignee ? formatShortName(task.assignee) : 'Не назначен'}
+            </div>
           </div>
           <div className="p-3 bg-subtle rounded-lg">
             <div className="text-xs text-text-muted uppercase">Срок</div>
