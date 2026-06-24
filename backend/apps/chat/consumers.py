@@ -1,58 +1,76 @@
 import json
+import logging
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
 from .models import Chat, Message
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
 class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
-        self.user = await self.get_user_from_token()
-        if not self.user:
-            await self.close()
-            return
-        self.chat_groups = set()
-        await self.accept()
-        chats = await self.get_user_chat_ids()
-        for chat_id in chats:
-            group = f'chat_{chat_id}'
-            await self.channel_layer.group_add(group, self.channel_name)
-            self.chat_groups.add(group)
+        try:
+            self.user = await self.get_user_from_token()
+            if not self.user:
+                logger.warning('[ChatConsumer] rejected: no user from token')
+                await self.close(code=4001)
+                return
+            self.chat_groups = set()
+            await self.accept()
+            logger.info('[ChatConsumer] user %s accepted', self.user['id'])
+            chats = await self.get_user_chat_ids()
+            for chat_id in chats:
+                group = f'chat_{chat_id}'
+                await self.channel_layer.group_add(group, self.channel_name)
+                self.chat_groups.add(group)
+            logger.info('[ChatConsumer] user %s joined %s groups', self.user['id'], len(self.chat_groups))
+        except Exception as e:
+            logger.exception('[ChatConsumer] connect error')
+            await self.close(code=4000)
 
     async def disconnect(self, close_code):
-        for group in getattr(self, 'chat_groups', []):
-            await self.channel_layer.group_discard(group, self.channel_name)
+        try:
+            for group in getattr(self, 'chat_groups', []):
+                await self.channel_layer.group_discard(group, self.channel_name)
+        except Exception:
+            logger.exception('[ChatConsumer] disconnect error')
 
     async def receive_json(self, content):
-        action = content.get('action')
-        chat_id = content.get('chat_id')
+        try:
+            action = content.get('action')
+            chat_id = content.get('chat_id')
+            logger.debug('[ChatConsumer] user %s action %s chat %s', self.user['id'], action, chat_id)
 
-        if action == 'message':
-            text = content.get('text', '').strip()
-            sticker_id = content.get('sticker_id')
-            file = content.get('file')
-            voice = content.get('voice')
-            reply_to_id = content.get('reply_to_id')
-            message = await self.create_message(chat_id, text, sticker_id, file, voice, reply_to_id)
-            if message:
+            if action == 'message':
+                text = content.get('text', '').strip()
+                sticker_id = content.get('sticker_id')
+                file = content.get('file')
+                voice = content.get('voice')
+                reply_to_id = content.get('reply_to_id')
+                message = await self.create_message(chat_id, text, sticker_id, file, voice, reply_to_id)
+                if message:
+                    await self.channel_layer.group_send(
+                        f'chat_{chat_id}',
+                        {'type': 'chat_message', 'message': message}
+                    )
+                else:
+                    logger.warning('[ChatConsumer] message not created for chat %s', chat_id)
+            elif action == 'read':
+                await self.mark_read(chat_id)
                 await self.channel_layer.group_send(
                     f'chat_{chat_id}',
-                    {'type': 'chat_message', 'message': message}
+                    {'type': 'chat_read', 'chat_id': chat_id, 'user_id': self.user['id']}
                 )
-        elif action == 'read':
-            await self.mark_read(chat_id)
-            await self.channel_layer.group_send(
-                f'chat_{chat_id}',
-                {'type': 'chat_read', 'chat_id': chat_id, 'user_id': self.user['id']}
-            )
-        elif action == 'typing':
-            await self.channel_layer.group_send(
-                f'chat_{chat_id}',
-                {'type': 'chat_typing', 'chat_id': chat_id, 'user_id': self.user['id'], 'user_name': self.user['name']}
-            )
+            elif action == 'typing':
+                await self.channel_layer.group_send(
+                    f'chat_{chat_id}',
+                    {'type': 'chat_typing', 'chat_id': chat_id, 'user_id': self.user['id'], 'user_name': self.user['name']}
+                )
+        except Exception:
+            logger.exception('[ChatConsumer] receive_json error')
 
     async def chat_message(self, event):
         await self.send_json({'type': 'message', 'message': event['message']})
@@ -80,7 +98,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             access = AccessToken(token)
             user = User.objects.get(id=access['user_id'])
             return {'id': user.id, 'name': user.first_name or user.username}
-        except Exception:
+        except Exception as e:
+            logger.warning('[ChatConsumer] token error: %s', e)
             return None
 
     @database_sync_to_async
@@ -92,6 +111,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         try:
             chat = Chat.objects.get(pk=chat_id, members__id=self.user['id'])
         except Chat.DoesNotExist:
+            logger.warning('[ChatConsumer] chat %s not found for user %s', chat_id, self.user['id'])
             return None
         if not text and not sticker_id and not file and not voice:
             return None
@@ -104,7 +124,11 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             data['voice'] = voice
         if reply_to_id:
             data['reply_to_id'] = reply_to_id
-        msg = Message.objects.create(**data)
+        try:
+            msg = Message.objects.create(**data)
+        except Exception as e:
+            logger.exception('[ChatConsumer] create_message error')
+            return None
         return {
             'id': msg.id,
             'chat': chat.id,
