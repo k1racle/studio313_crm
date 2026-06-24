@@ -197,9 +197,15 @@ def save_message(chat, message_id, text, sender_name):
 @sync_to_async
 def create_task_from_news(message_obj: TelegramMessage):
     title = make_task_title(message_obj.text)
+    chat_title = message_obj.chat.title or message_obj.chat.chat_id
+    description = (
+        f'Источник: {chat_title}\n'
+        f'Автор: {message_obj.sender_name}\n\n'
+        f'{message_obj.text}'
+    )
     task = Task.objects.create(
         title=title,
-        description=message_obj.text,
+        description=description,
         source=Task.SOURCE_TELEGRAM,
         status=Task.STATUS_NEW,
     )
