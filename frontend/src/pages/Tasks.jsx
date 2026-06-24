@@ -144,26 +144,6 @@ export default function Tasks() {
     openEdit(detailTask)
   }
 
-  const handleDeleteDetail = async () => {
-    if (!detailTask || !confirm(`Удалить задачу «${detailTask.title}»?`)) return
-    await api.delete(`/tasks/${detailTask.id}/`)
-    closeDetail()
-    loadTasks()
-  }
-
-  const handleArchiveDetail = async () => {
-    if (!detailTask) return
-    await api.patch(`/tasks/${detailTask.id}/`, { is_archived: !detailTask.is_archived })
-    closeDetail()
-    loadTasks()
-  }
-
-  const handleEditDetail = () => {
-    if (!detailTask) return
-    closeDetail()
-    openEdit(detailTask)
-  }
-
   const openEdit = (task) => {
     setEditingTask(task)
     setForm({
