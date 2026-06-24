@@ -116,39 +116,23 @@ class MaxBotClient:
         return r.json()
 
     async def send_message(self, chat_id, text, reply_to_message_id=None, user_id=None):
-        # MAX API использует camelCase (chatId/userId) или snake_case (chat_id/user_id).
-        # Пробуем несколько вариантов и логируем ответ сервера.
-        payloads = []
+        # MAX API требует передавать user_id/chat_id как query-параметр,
+        # а в теле запроса оставлять только text и вложения.
+        params = {}
         if user_id:
-            payloads.append({'text': text, 'userId': user_id})
-            payloads.append({'text': text, 'user_id': user_id})
-        if chat_id:
-            payloads.append({'text': text, 'chatId': chat_id})
-            payloads.append({'text': text, 'chat_id': chat_id})
-        if not payloads:
+            params['user_id'] = user_id
+        elif chat_id:
+            params['chat_id'] = chat_id
+        else:
             raise ValueError('Не указан chat_id или user_id')
 
-        last_error = None
-        for payload in payloads:
-            if reply_to_message_id:
-                payload['reply_to_message_id'] = reply_to_message_id
-            try:
-                r = await self.client.post(f'{MAX_API_BASE}/messages', json=payload)
-                if r.status_code == 200:
-                    return r.json()
-                logger.warning(
-                    'MAX send_message %s -> %s: %s',
-                    payload, r.status_code, r.text[:500]
-                )
-            except httpx.HTTPStatusError as e:
-                logger.warning(
-                    'MAX send_message %s -> HTTP error: %s, response: %s',
-                    payload, e, e.response.text[:500] if e.response else ''
-                )
-                last_error = e
-        raise last_error or httpx.HTTPStatusError(
-            'All MAX send_message attempts failed', request=None, response=None
-        )
+        payload = {'text': text}
+        if reply_to_message_id:
+            payload['link'] = {'type': 'reply', 'mid': reply_to_message_id}
+
+        r = await self.client.post(f'{MAX_API_BASE}/messages', params=params, json=payload)
+        r.raise_for_status()
+        return r.json()
 
     async def get_updates(self, offset=None, limit=100, timeout=30):
         params = {'limit': limit, 'timeout': timeout}
