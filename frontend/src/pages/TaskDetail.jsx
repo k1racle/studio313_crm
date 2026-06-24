@@ -6,7 +6,7 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import Input from '../components/ui/Input'
-import { ArrowLeft, Trash2, Send, Upload, FileText, Clock } from 'lucide-react'
+import { ArrowLeft, Trash2, Send, Upload, FileText, Clock, Pencil, Archive, RotateCcw } from 'lucide-react'
 import { formatFullName } from '../utils/format'
 
 const statusLabels = {
@@ -32,7 +32,7 @@ const priorityLabels = {
   critical: 'Критический',
 }
 
-export default function TaskDetail({ id: propId, isPanel = false, onClose, onDelete }) {
+export default function TaskDetail({ id: propId, isPanel = false, onClose, onDelete, onEdit }) {
   const { user } = useAuth()
   const { id: routeId } = useParams()
   const navigate = useNavigate()
@@ -74,6 +74,17 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onDel
     } else {
       navigate('/tasks')
     }
+  }
+
+  const toggleArchive = async () => {
+    await api.patch(`/tasks/${id}/`, { is_archived: !task.is_archived })
+    loadTask()
+    onDelete?.()
+  }
+
+  const handleEdit = () => {
+    onEdit?.(task)
+    onClose?.()
   }
 
   const addComment = async (e) => {
@@ -128,7 +139,15 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onDel
           </Button>
         )}
         {user?.is_manager && (
-          <div className={`${isPanel ? 'ml-auto' : ''}`}>
+          <div className="flex items-center gap-2 ml-auto">
+            <Button variant="secondary" size="sm" onClick={handleEdit}>
+              <Pencil size={16} className="mr-1.5" />
+              Редактировать
+            </Button>
+            <Button variant="secondary" size="sm" onClick={toggleArchive}>
+              {task.is_archived ? <RotateCcw size={16} className="mr-1.5" /> : <Archive size={16} className="mr-1.5" />}
+              {task.is_archived ? 'Восстановить' : 'В архив'}
+            </Button>
             <Button variant="danger" size="sm" onClick={deleteTask}>
               <Trash2 size={16} className="mr-1.5" />
               Удалить

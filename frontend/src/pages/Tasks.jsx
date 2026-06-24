@@ -377,7 +377,16 @@ export default function Tasks() {
       </Modal>
 
       <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title={`Задача #${detailTaskId}`} size="xl">
-        <TaskDetail id={detailTaskId} isPanel onClose={() => setDetailOpen(false)} onDelete={loadTasks} />
+        <TaskDetail
+          id={detailTaskId}
+          isPanel
+          onClose={() => setDetailOpen(false)}
+          onDelete={loadTasks}
+          onEdit={(task) => {
+            setDetailOpen(false)
+            openEdit(task)
+          }}
+        />
       </Modal>
     </div>
   )
