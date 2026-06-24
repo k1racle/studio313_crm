@@ -82,13 +82,15 @@ class MaxBotClient:
         self.token = token or getattr(settings, 'MAX_BOT_TOKEN', '')
         self.proxy_url = proxy_url or getattr(settings, 'MAX_PROXY_URL', None)
         self.headers = {'Authorization': self.token}
-        self.client = httpx.AsyncClient(
-            proxy=self.proxy_url,
-            http1=True,
-            http2=False,
-            timeout=httpx.Timeout(connect=30, read=60, write=30, pool=30),
-            headers=self.headers,
-        )
+        client_kwargs = {
+            'http1': True,
+            'http2': False,
+            'timeout': httpx.Timeout(connect=30, read=60, write=30, pool=30),
+            'headers': self.headers,
+        }
+        if self.proxy_url:
+            client_kwargs['proxy'] = self.proxy_url
+        self.client = httpx.AsyncClient(**client_kwargs)
 
     async def close(self):
         await self.client.aclose()
