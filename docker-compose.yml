@@ -20,16 +20,6 @@ services:
     volumes:
       - redis_data:/data
 
-  xray:
-    build: ./xray
-    restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-    environment:
-      XRAY_ADDRESS: ${XRAY_ADDRESS}
-      XRAY_PORT: ${XRAY_PORT}
-      XRAY_ID: ${XRAY_ID}
-
   backend:
     build: ./backend
     restart: unless-stopped

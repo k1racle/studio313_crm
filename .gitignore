@@ -35,9 +35,6 @@ npm-debug.log*
 # Docker
 .dockerignore
 
-# Xray client config (contains secrets)
-xray/client.json
-
 # OS
 .DS_Store
 Thumbs.db
