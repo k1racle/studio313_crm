@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
-import { useAuth } from '../contexts/AuthContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import Input from '../components/ui/Input'
-import { ArrowLeft, Trash2, Send, Upload, FileText, Clock, Pencil, Archive, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Send, Upload, FileText, Clock } from 'lucide-react'
 import { formatFullName } from '../utils/format'
 
 const statusLabels = {
@@ -32,8 +31,7 @@ const priorityLabels = {
   critical: 'Критический',
 }
 
-export default function TaskDetail({ id: propId, isPanel = false, onClose, onDelete, onEdit }) {
-  const { user } = useAuth()
+export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoad }) {
   const { id: routeId } = useParams()
   const navigate = useNavigate()
   const id = propId || routeId
@@ -47,6 +45,7 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onDel
     if (!id) return
     const res = await api.get(`/tasks/${id}/`)
     setTask(res.data)
+    onLoad?.(res.data)
   }
 
   const loadTimeEntries = async () => {
@@ -63,28 +62,6 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onDel
   const updateStatus = async (status) => {
     await api.patch(`/tasks/${id}/`, { status })
     loadTask()
-  }
-
-  const deleteTask = async () => {
-    if (!confirm('Удалить задачу?')) return
-    await api.delete(`/tasks/${id}/`)
-    if (isPanel) {
-      onDelete?.()
-      onClose?.()
-    } else {
-      navigate('/tasks')
-    }
-  }
-
-  const toggleArchive = async () => {
-    await api.patch(`/tasks/${id}/`, { is_archived: !task.is_archived })
-    loadTask()
-    onDelete?.()
-  }
-
-  const handleEdit = () => {
-    onEdit?.(task)
-    onClose?.()
   }
 
   const addComment = async (e) => {
@@ -131,30 +108,14 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onDel
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        {!isPanel && (
+      {!isPanel && (
+        <div className="flex items-start justify-between gap-4">
           <Button variant="secondary" onClick={() => navigate('/tasks')}>
             <ArrowLeft size={16} className="mr-1.5" />
             Назад к задачам
           </Button>
-        )}
-        {user?.is_manager && (
-          <div className="flex items-center gap-2 ml-auto">
-            <Button variant="secondary" size="sm" onClick={handleEdit}>
-              <Pencil size={16} className="mr-1.5" />
-              Редактировать
-            </Button>
-            <Button variant="secondary" size="sm" onClick={toggleArchive}>
-              {task.is_archived ? <RotateCcw size={16} className="mr-1.5" /> : <Archive size={16} className="mr-1.5" />}
-              {task.is_archived ? 'Восстановить' : 'В архив'}
-            </Button>
-            <Button variant="danger" size="sm" onClick={deleteTask}>
-              <Trash2 size={16} className="mr-1.5" />
-              Удалить
-            </Button>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <Card>
         <div className="flex flex-col gap-4 mb-4">

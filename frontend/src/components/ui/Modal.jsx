@@ -7,7 +7,7 @@ const sizeClasses = {
   xl: 'max-w-6xl',
 }
 
-export default function Modal({ isOpen, onClose, title, children, size = 'md' }) {
+export default function Modal({ isOpen, onClose, title, children, size = 'md', headerActions = null }) {
   useEffect(() => {
     const handleEsc = (e) => { if (e.key === 'Escape') onClose() }
     if (isOpen) {
@@ -34,11 +34,12 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
         }`}
       >
         {(title || onClose) && (
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0">
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between shrink-0 gap-3">
             {title && <h3 className="text-lg font-semibold text-text pr-4">{title}</h3>}
+            {headerActions && <div className="flex items-center gap-2 ml-auto">{headerActions}</div>}
             <button
               onClick={onClose}
-              className="ml-auto p-2 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+              className="p-2 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors shrink-0"
               title="Закрыть"
             >
               <X size={20} />

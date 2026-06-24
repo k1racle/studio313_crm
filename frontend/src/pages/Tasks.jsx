@@ -69,13 +69,13 @@ export default function Tasks() {
   const [form, setForm] = useState(emptyForm)
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailTaskId, setDetailTaskId] = useState(null)
+  const [detailTask, setDetailTask] = useState(null)
   const { user } = useAuth()
 
   useEffect(() => {
     const taskId = searchParams.get('task')
     if (taskId) {
-      setDetailTaskId(taskId)
-      setDetailOpen(true)
+      openDetail(taskId)
     }
   }, [searchParams])
 
@@ -110,6 +110,58 @@ export default function Tasks() {
     setEditingTask(null)
     setForm({ ...emptyForm, project_id: filters.project })
     setIsModalOpen(true)
+  }
+
+  const openDetail = (id) => {
+    setDetailTaskId(id)
+    setDetailTask(null)
+    setDetailOpen(true)
+  }
+
+  const closeDetail = () => {
+    setDetailOpen(false)
+    setDetailTaskId(null)
+    setDetailTask(null)
+  }
+
+  const handleDeleteDetail = async () => {
+    if (!detailTask || !confirm(`Удалить задачу «${detailTask.title}»?`)) return
+    await api.delete(`/tasks/${detailTask.id}/`)
+    closeDetail()
+    loadTasks()
+  }
+
+  const handleArchiveDetail = async () => {
+    if (!detailTask) return
+    await api.patch(`/tasks/${detailTask.id}/`, { is_archived: !detailTask.is_archived })
+    closeDetail()
+    loadTasks()
+  }
+
+  const handleEditDetail = () => {
+    if (!detailTask) return
+    closeDetail()
+    openEdit(detailTask)
+  }
+
+  const handleDeleteDetail = async () => {
+    if (!detailTask || !confirm(`Удалить задачу «${detailTask.title}»?`)) return
+    await api.delete(`/tasks/${detailTask.id}/`)
+    closeDetail()
+    loadTasks()
+  }
+
+  const handleArchiveDetail = async () => {
+    if (!detailTask) return
+    await api.patch(`/tasks/${detailTask.id}/`, { is_archived: !detailTask.is_archived })
+    closeDetail()
+    loadTasks()
+  }
+
+  const handleEditDetail = () => {
+    if (!detailTask) return
+    closeDetail()
+    openEdit(detailTask)
   }
 
   const openEdit = (task) => {
@@ -228,9 +280,9 @@ export default function Tasks() {
         </div>
       </Card>
 
-      {view === 'kanban' && <KanbanBoard tasks={tasks} onTaskMoved={loadTasks} onTaskClick={(id) => { setDetailTaskId(id); setDetailOpen(true) }} />}
+      {view === 'kanban' && <KanbanBoard tasks={tasks} onTaskMoved={loadTasks} onTaskClick={openDetail} />}
 
-      {view === 'gantt' && <GanttChart tasks={tasks} onTaskClick={(id) => { setDetailTaskId(id); setDetailOpen(true) }} />}
+      {view === 'gantt' && <GanttChart tasks={tasks} onTaskClick={openDetail} />}
 
       {view === 'list' && (
         <Card className="overflow-hidden">
@@ -257,7 +309,7 @@ export default function Tasks() {
                     <td className="py-3">{task.client?.name || '—'}</td>
                     <td className="py-3">
                       <button
-                        onClick={() => { setDetailTaskId(task.id); setDetailOpen(true) }}
+                        onClick={() => openDetail(task.id)}
                         className="font-medium text-text hover:text-primary text-left block"
                       >
                         {task.title}
@@ -376,16 +428,36 @@ export default function Tasks() {
         </form>
       </Modal>
 
-      <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title={`Задача #${detailTaskId}`} size="xl">
+      <Modal
+        isOpen={detailOpen}
+        onClose={closeDetail}
+        title={`Задача #${detailTaskId}`}
+        size="xl"
+        headerActions={
+          detailTask && user?.is_manager ? (
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={handleEditDetail}>
+                <Pencil size={16} className="mr-1.5" />
+                Редактировать
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleArchiveDetail}>
+                {detailTask.is_archived ? <RotateCcw size={16} className="mr-1.5" /> : <Archive size={16} className="mr-1.5" />}
+                {detailTask.is_archived ? 'Восстановить' : 'В архив'}
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleDeleteDetail}>
+                <Trash2 size={16} className="mr-1.5" />
+                Удалить
+              </Button>
+            </div>
+          ) : null
+        }
+      >
         <TaskDetail
           id={detailTaskId}
           isPanel
-          onClose={() => setDetailOpen(false)}
+          onClose={closeDetail}
           onDelete={loadTasks}
-          onEdit={(task) => {
-            setDetailOpen(false)
-            openEdit(task)
-          }}
+          onLoad={setDetailTask}
         />
       </Modal>
     </div>
