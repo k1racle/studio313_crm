@@ -5,6 +5,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
+from django.utils import timezone
 from telegram import Update
 from .bot import get_application
 from .models import NewsSuggestion, TelegramLinkCode
@@ -44,9 +45,10 @@ class TelegramLinkCodeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        now = timezone.now()
         link_code, _ = TelegramLinkCode.objects.update_or_create(
             user=request.user,
-            defaults={'code': ''}
+            defaults={'code': '', 'created_at': now}
         )
         link_code.save()
         return Response({

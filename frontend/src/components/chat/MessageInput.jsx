@@ -194,7 +194,7 @@ export default function MessageInput({ chatId, onSend, onFileUploaded, onVoiceUp
               type="button"
               onClick={startRecording}
               disabled={disabled || uploading}
-              className="bg-subtle text-text-muted hover:text-primary"
+              className="bg-primary/10 text-primary hover:bg-primary hover:text-white"
               title="Голосовое сообщение"
             >
               <Mic size={18} />

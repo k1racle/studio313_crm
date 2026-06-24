@@ -131,20 +131,20 @@ export default function Profile() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Имя</label>
-                <input
-                  type="text"
-                  value={form.first_name}
-                  onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
-                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-text mb-1">Фамилия</label>
                 <input
                   type="text"
                   value={form.last_name}
                   onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Имя</label>
+                <input
+                  type="text"
+                  value={form.first_name}
+                  onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
                   className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
