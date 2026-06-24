@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import MessageInput from './MessageInput'
 import { Users } from 'lucide-react'
+import { formatFullName } from '../../utils/format'
 
 function formatTime(iso) {
   if (!iso) return ''
@@ -44,7 +45,7 @@ export default function ChatWindow({ chat, messages, onSend, onFileUploaded, onV
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] md:max-w-[70%] px-4 py-2 rounded-2xl ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-subtle text-text rounded-bl-none'}`}>
                 {!isMe && (
-                  <div className="text-xs font-medium mb-1 opacity-80">{msg.sender?.first_name || msg.sender?.name || msg.sender?.username}</div>
+                  <div className="text-xs font-medium mb-1 opacity-80">{formatFullName(msg.sender)}</div>
                 )}
                 {msg.reply_to && (
                   <div className="text-xs opacity-70 border-l-2 border-current pl-2 mb-1">

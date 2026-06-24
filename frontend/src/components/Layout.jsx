@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import ThemeToggle from './ThemeToggle'
 import NotificationBell from './NotificationBell'
+import { formatFullName } from '../utils/format'
 import {
   LayoutDashboard, CheckSquare, FolderOpen, Users, Calendar, Briefcase,
   CreditCard, HeadphonesIcon, MessageSquare, LogOut, Menu, X,
@@ -69,12 +70,11 @@ export default function Layout() {
           <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
         ) : (
           <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
-            {(user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
+            {(user?.last_name?.[0] || user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{user?.first_name || user?.username}</div>
-          <div className="text-xs text-text-muted capitalize">{user?.role}</div>
+          <div className="text-sm font-medium truncate">{formatFullName(user)}</div>
         </div>
       </Link>
       <div className="flex items-center justify-between gap-2 bg-subtle rounded-lg p-2">

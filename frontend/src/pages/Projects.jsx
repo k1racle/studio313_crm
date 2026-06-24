@@ -8,6 +8,7 @@ import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import { Plus, Pencil, Trash2, Users, ArrowRight, CheckCircle2, XCircle, Archive, RotateCcw } from 'lucide-react'
+import { formatFullName } from '../utils/format'
 
 const emptyForm = { name: '', description: '', member_ids: [], is_archived: false }
 
@@ -137,7 +138,7 @@ export default function Projects() {
               </div>
               <div className="flex flex-wrap gap-1">
                 {p.members?.length ? p.members.map(m => (
-                  <span key={m.id} className="text-xs px-2 py-1 bg-subtle rounded-full text-text">{m.first_name || m.username}</span>
+                  <span key={m.id} className="text-xs px-2 py-1 bg-subtle rounded-full text-text">{formatFullName(m)}</span>
                 )) : <span className="text-sm text-text-muted">Нет участников</span>}
               </div>
             </div>
@@ -199,7 +200,7 @@ export default function Projects() {
                     onChange={() => toggleMember(u.id)}
                     className="w-4 h-4 text-primary rounded"
                   />
-                  <span className="text-sm text-text">{u.first_name || u.username} ({u.role})</span>
+                  <span className="text-sm text-text">{formatFullName(u)}</span>
                 </label>
               ))}
             </div>

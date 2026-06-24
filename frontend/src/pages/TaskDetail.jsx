@@ -211,11 +211,20 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card title="Вложения">
           <form onSubmit={uploadFile} className="flex flex-col gap-3 mb-4">
-            <input
-              type="file"
-              onChange={e => setFile(e.target.files[0])}
-              className="w-full text-sm text-text overflow-hidden"
-            />
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-subtle hover:bg-hover text-text rounded-lg border border-border transition-colors">
+                <Upload size={16} />
+                <span>Выбрать файл</span>
+                <input
+                  type="file"
+                  onChange={e => setFile(e.target.files[0])}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-sm text-text-muted truncate">
+                {file ? file.name : 'Файл не выбран'}
+              </span>
+            </div>
             <div className="self-start">
               <Button type="submit" disabled={!file} size="sm">
                 <Upload size={16} className="mr-1.5" />

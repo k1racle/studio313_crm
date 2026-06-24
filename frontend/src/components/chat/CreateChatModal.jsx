@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
+import { formatFullName } from '../../utils/format'
 
 export default function CreateChatModal({ isOpen, onClose, users, onCreate }) {
   const [type, setType] = useState('direct')
@@ -61,9 +62,9 @@ export default function CreateChatModal({ isOpen, onClose, users, onCreate }) {
                   className="w-4 h-4 text-primary"
                 />
                 <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-semibold">
-                  {(u.first_name?.[0] || u.username?.[0]).toUpperCase()}
+                  {(u.last_name?.[0] || u.first_name?.[0] || u.username?.[0]).toUpperCase()}
                 </div>
-                <span className="text-sm text-text">{u.first_name || u.username}</span>
+                <span className="text-sm text-text">{formatFullName(u)}</span>
               </label>
             ))}
           </div>
