@@ -111,12 +111,14 @@ class MaxBotClient:
         return r.json()
 
     async def send_message(self, chat_id, text, reply_to_message_id=None, user_id=None):
-        # MAX API может принимать либо chat_id, либо user_id, но не оба одновременно.
-        # Пробуем сначала user_id (для личных диалогов), затем chat_id.
+        # MAX API использует camelCase (chatId/userId) или snake_case (chat_id/user_id).
+        # Пробуем несколько вариантов и логируем ответ сервера.
         payloads = []
         if user_id:
+            payloads.append({'text': text, 'userId': user_id})
             payloads.append({'text': text, 'user_id': user_id})
         if chat_id:
+            payloads.append({'text': text, 'chatId': chat_id})
             payloads.append({'text': text, 'chat_id': chat_id})
         if not payloads:
             raise ValueError('Не указан chat_id или user_id')
@@ -127,12 +129,21 @@ class MaxBotClient:
                 payload['reply_to_message_id'] = reply_to_message_id
             try:
                 r = await self.client.post(f'{MAX_API_BASE}/messages', json=payload)
-                r.raise_for_status()
-                return r.json()
+                if r.status_code == 200:
+                    return r.json()
+                logger.warning(
+                    'MAX send_message %s -> %s: %s',
+                    payload, r.status_code, r.text[:500]
+                )
             except httpx.HTTPStatusError as e:
-                logger.warning('Не удалось отправить сообщение с payload %s: %s', payload, e)
+                logger.warning(
+                    'MAX send_message %s -> HTTP error: %s, response: %s',
+                    payload, e, e.response.text[:500] if e.response else ''
+                )
                 last_error = e
-        raise last_error
+        raise last_error or httpx.HTTPStatusError(
+            'All MAX send_message attempts failed', request=None, response=None
+        )
 
     async def get_updates(self, offset=None, limit=100, timeout=30):
         params = {'limit': limit, 'timeout': timeout}
