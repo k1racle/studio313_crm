@@ -21,6 +21,10 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             self.chat_groups = set()
             await self.accept()
             logger.info('[ChatConsumer] user %s accepted', self.user['id'])
+            if self.channel_layer is None:
+                logger.error('[ChatConsumer] channel_layer is not configured')
+                await self.close(code=4002)
+                return
             chats = await self.get_user_chat_ids()
             for chat_id in chats:
                 group = f'chat_{chat_id}'
