@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import httpx
@@ -100,8 +101,12 @@ class MaxBotClient:
         r.raise_for_status()
         return r.json()
 
-    async def send_message(self, chat_id, text, reply_to_message_id=None):
-        payload = {'chat_id': chat_id, 'text': text}
+    async def send_message(self, chat_id, text, reply_to_message_id=None, user_id=None):
+        payload = {'text': text}
+        if chat_id:
+            payload['chat_id'] = chat_id
+        if user_id:
+            payload['user_id'] = user_id
         if reply_to_message_id:
             payload['reply_to_message_id'] = reply_to_message_id
         r = await self.client.post(f'{MAX_API_BASE}/messages', json=payload)
@@ -184,57 +189,79 @@ def create_helpdesk_ticket(text, sender_name, sender_username, chat_id):
     )
 
 
+def _extract_message(update):
+    return update.get('message') or update.get('payload') or update.get('data') or {}
+
+
 def _extract_chat(update):
     """Извлекает chat из update в зависимости от структуры MAX."""
-    message = update.get('message') or update.get('payload') or {}
+    message = _extract_message(update)
     if not message:
         return None
-    chat = message.get('chat') or message.get('recipient') or {}
+    chat = message.get('chat') or message.get('recipient') or message.get('peer') or {}
+    if not chat and 'chat_id' in message:
+        return {'id': message['chat_id']}
     return chat
 
 
 def _extract_sender(update):
-    message = update.get('message') or update.get('payload') or {}
-    sender = message.get('from') or message.get('sender') or {}
+    message = _extract_message(update)
+    sender = message.get('from') or message.get('sender') or message.get('user') or {}
     return sender
 
 
 def _extract_text(update):
-    message = update.get('message') or update.get('payload') or {}
-    return message.get('text') or ''
+    message = _extract_message(update)
+    text = message.get('text')
+    if text:
+        return text
+    content = message.get('content') or {}
+    if isinstance(content, dict):
+        return content.get('text') or ''
+    return ''
 
 
 def _extract_message_id(update):
-    message = update.get('message') or update.get('payload') or {}
-    return message.get('id') or message.get('message_id') or '0'
+    message = _extract_message(update)
+    return message.get('id') or message.get('message_id') or message.get('msg_id') or '0'
 
 
 async def handle_update(client: MaxBotClient, update: dict):
-    logger.debug('MAX update: %s', update)
+    logger.info('MAX update raw: %s', json.dumps(update, ensure_ascii=False))
 
     text = _extract_text(update)
     chat = _extract_chat(update)
     sender = _extract_sender(update)
     message_id = _extract_message_id(update)
 
-    if not chat:
-        logger.warning('Не удалось извлечь chat из update: %s', update)
-        return
-
-    chat_id = chat.get('id')
-    chat_type = chat.get('type', 'private')
-    title = chat.get('title') or chat.get('name')
+    chat_id = chat.get('id') if chat else None
+    chat_type = chat.get('type', 'private') if chat else 'private'
+    title = chat.get('title') or chat.get('name') if chat else None
     sender_name = sender.get('first_name') or sender.get('name') or 'Неизвестно'
     sender_username = sender.get('username') or ''
     user_id = sender.get('id')
 
+    logger.info(
+        'MAX parsed: chat_id=%s chat_type=%s message_id=%r text=%r sender=%s user_id=%s',
+        chat_id, chat_type, message_id, text, sender_name, user_id
+    )
+
+    if not chat_id:
+        logger.warning('Не удалось извлечь chat_id из update: %s', update)
+        return
+
     chat_obj = await get_or_create_chat(chat_id, chat_type, title)
     message_obj = await save_message(chat_obj, message_id, text, sender_name)
 
+    async def _send(text_to_send):
+        try:
+            await client.send_message(chat_id, text_to_send, user_id=user_id)
+        except Exception as e:
+            logger.exception('Не удалось отправить сообщение в MAX chat_id=%s user_id=%s: %s', chat_id, user_id, e)
+
     # Команды
     if text.startswith('/start'):
-        await client.send_message(
-            chat_id,
+        await _send(
             'Я бот медиа-студии.\n'
             'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости.\n'
             'Команды:\n'
@@ -245,8 +272,7 @@ async def handle_update(client: MaxBotClient, update: dict):
         return
 
     if text.startswith('/help'):
-        await client.send_message(
-            chat_id,
+        await _send(
             'Я бот медиа-студии.\n'
             'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости.\n'
             'Команды:\n'
@@ -259,33 +285,28 @@ async def handle_update(client: MaxBotClient, update: dict):
     if text.startswith('/task'):
         title_text = re.sub(r'^/task\s*', '', text).strip()
         if not title_text:
-            await client.send_message(chat_id, 'Использование: /task Текст новости')
+            await _send('Использование: /task Текст новости')
             return
         task, _ = await create_task_from_news(message_obj)
-        await client.send_message(
-            chat_id,
-            f'✅ Создана задача #{task.id}: «{task.title}»'
-        )
+        await _send(f'✅ Создана задача #{task.id}: «{task.title}»')
         return
 
     if text.startswith('/link'):
         code = text.split(maxsplit=1)[1] if len(text.split()) > 1 else ''
         if not code:
-            await client.send_message(chat_id, 'Использование: /link <код>')
+            await _send('Использование: /link <код>')
             return
         user, message = await link_max_account(code, user_id)
-        await client.send_message(chat_id, message)
+        await _send(message)
         return
 
     # Групповые чаты
     if chat_type in ('group', 'supergroup'):
         if looks_like_news(text):
             task, _ = await create_task_from_news(message_obj)
-            await client.send_message(
-                chat_id,
+            await _send(
                 f'📰 Похоже на новость. Создана задача для журналиста: #{task.id}\n'
-                f'«{task.title}»',
-                reply_to_message_id=message_id
+                f'«{task.title}»'
             )
         return
 
@@ -294,8 +315,7 @@ async def handle_update(client: MaxBotClient, update: dict):
         if text.startswith('/'):
             return
         ticket = await create_helpdesk_ticket(text, sender_name, sender_username, chat_id)
-        await client.send_message(
-            chat_id,
+        await _send(
             f'📩 Ваше обращение зарегистрировано. Номер тикета: #{ticket.id}\n'
             f'Мы скоро свяжемся с вами.'
         )
