@@ -277,7 +277,13 @@ def build_application():
     if proxy_url:
         logger.info('Используется прокси: %s', proxy_url)
 
-    application = ApplicationBuilder().token(settings.TELEGRAM_BOT_TOKEN).request(request).build()
+    application = (
+        ApplicationBuilder()
+        .token(settings.TELEGRAM_BOT_TOKEN)
+        .request(request)
+        .get_updates_request(request)
+        .build()
+    )
 
     application.add_handler(CommandHandler('start', help_command))
     application.add_handler(CommandHandler('help', help_command))
