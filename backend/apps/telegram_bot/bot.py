@@ -34,6 +34,22 @@ class CustomHTTPXRequest(BaseRequest):
         self._proxy_url = proxy_url
         self._client = None
 
+    @property
+    def read_timeout(self) -> float:
+        return 30.0
+
+    @property
+    def write_timeout(self) -> float:
+        return 30.0
+
+    @property
+    def connect_timeout(self) -> float:
+        return 30.0
+
+    @property
+    def pool_timeout(self) -> float:
+        return 30.0
+
     async def initialize(self):
         self._client = httpx.AsyncClient(
             proxy=self._proxy_url,
