@@ -7,6 +7,11 @@ export default function useChatSocket(token, onMessage, onRead, onTyping, onMess
   const reconnectAttempts = useRef(0)
   const MAX_RECONNECT_DELAY = 30000
 
+  const callbacksRef = useRef({ onMessage, onRead, onTyping, onMessageUpdate })
+  useEffect(() => {
+    callbacksRef.current = { onMessage, onRead, onTyping, onMessageUpdate }
+  }, [onMessage, onRead, onTyping, onMessageUpdate])
+
   const connect = useCallback(() => {
     if (!token) return
     if (ws.current && (ws.current.readyState === WebSocket.CONNECTING || ws.current.readyState === WebSocket.OPEN)) {
@@ -42,15 +47,16 @@ export default function useChatSocket(token, onMessage, onRead, onTyping, onMess
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
-        if (data.type === 'message' && onMessage) onMessage(data.message)
-        if (data.type === 'message_update' && onMessageUpdate) onMessageUpdate(data.message)
-        if (data.type === 'read' && onRead) onRead(data)
-        if (data.type === 'typing' && onTyping) onTyping(data)
+        const cbs = callbacksRef.current
+        if (data.type === 'message' && cbs.onMessage) cbs.onMessage(data.message)
+        if (data.type === 'message_update' && cbs.onMessageUpdate) cbs.onMessageUpdate(data.message)
+        if (data.type === 'read' && cbs.onRead) cbs.onRead(data)
+        if (data.type === 'typing' && cbs.onTyping) cbs.onTyping(data)
       } catch (err) {
         console.error('[WS] failed to parse message', err, event.data)
       }
     }
-  }, [token, onMessage, onRead, onTyping, onMessageUpdate])
+  }, [token])
 
   useEffect(() => {
     connect()
