@@ -82,7 +82,7 @@ class CustomHTTPXRequest(BaseRequest):
         if method == 'POST':
             r = await self._client.post(
                 url,
-                content=request_data.json_payload if request_data else None,
+                json=request_data.parameters if request_data else None,
                 timeout=timeout,
             )
         else:
