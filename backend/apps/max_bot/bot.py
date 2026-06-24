@@ -111,16 +111,28 @@ class MaxBotClient:
         return r.json()
 
     async def send_message(self, chat_id, text, reply_to_message_id=None, user_id=None):
-        payload = {'text': text}
-        if chat_id:
-            payload['chat_id'] = chat_id
+        # MAX API может принимать либо chat_id, либо user_id, но не оба одновременно.
+        # Пробуем сначала user_id (для личных диалогов), затем chat_id.
+        payloads = []
         if user_id:
-            payload['user_id'] = user_id
-        if reply_to_message_id:
-            payload['reply_to_message_id'] = reply_to_message_id
-        r = await self.client.post(f'{MAX_API_BASE}/messages', json=payload)
-        r.raise_for_status()
-        return r.json()
+            payloads.append({'text': text, 'user_id': user_id})
+        if chat_id:
+            payloads.append({'text': text, 'chat_id': chat_id})
+        if not payloads:
+            raise ValueError('Не указан chat_id или user_id')
+
+        last_error = None
+        for payload in payloads:
+            if reply_to_message_id:
+                payload['reply_to_message_id'] = reply_to_message_id
+            try:
+                r = await self.client.post(f'{MAX_API_BASE}/messages', json=payload)
+                r.raise_for_status()
+                return r.json()
+            except httpx.HTTPStatusError as e:
+                logger.warning('Не удалось отправить сообщение с payload %s: %s', payload, e)
+                last_error = e
+        raise last_error
 
     async def get_updates(self, offset=None, limit=100, timeout=30):
         params = {'limit': limit, 'timeout': timeout}
@@ -204,17 +216,26 @@ def _extract_message(update):
 
 def _extract_chat(update):
     """Извлекает chat из update в зависимости от структуры MAX."""
+    # Событие bot_started: chat_id на верхнем уровне
+    if 'chat_id' in update:
+        return {
+            'chat_id': update['chat_id'],
+            'chat_type': update.get('chat_type', 'dialog'),
+        }
     message = _extract_message(update)
     if not message:
         return None
-    # Структура MAX: message.recipient = {'chat_id': ..., 'chat_type': 'dialog'}
+    # Структура message_created: message.recipient = {'chat_id': ..., 'chat_type': 'dialog'}
     chat = message.get('recipient') or message.get('chat') or message.get('peer') or {}
     if not chat and 'chat_id' in message:
-        return {'id': message['chat_id']}
+        return {'chat_id': message['chat_id']}
     return chat
 
 
 def _extract_sender(update):
+    # Событие bot_started: user на верхнем уровне
+    if 'user' in update:
+        return update['user']
     message = _extract_message(update)
     sender = message.get('sender') or message.get('from') or message.get('user') or {}
     return sender
@@ -279,8 +300,10 @@ async def handle_update(client: MaxBotClient, update: dict):
         except Exception as e:
             logger.exception('Не удалось отправить сообщение в MAX chat_id=%s user_id=%s: %s', chat_id, user_id, e)
 
+    update_type = update.get('update_type', '')
+
     # Команды
-    if text.startswith('/start') or text.startswith('/hello'):
+    if update_type == 'bot_started' or text.startswith('/start') or text.startswith('/hello'):
         await _send(
             'Я бот медиа-студии.\n'
             'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости.\n'
