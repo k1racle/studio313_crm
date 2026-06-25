@@ -2,6 +2,7 @@ import asyncio
 import logging
 from celery import shared_task
 from telegram import Bot
+from telegram.request import HTTPXRequest
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,10 @@ def send_telegram_message(chat_id, text):
         return
 
     async def _send():
-        bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+        request = None
+        if settings.TELEGRAM_PROXY_URL:
+            request = HTTPXRequest(proxy_url=settings.TELEGRAM_PROXY_URL)
+        bot = Bot(token=settings.TELEGRAM_BOT_TOKEN, request=request)
         await bot.send_message(chat_id=chat_id, text=text)
 
     try:
