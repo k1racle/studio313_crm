@@ -6,6 +6,7 @@ class Client(models.Model):
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     email = models.EmailField(blank=True, verbose_name='Email')
     telegram = models.CharField(max_length=100, blank=True, verbose_name='Telegram')
+    birthday = models.DateField(null=True, blank=True, verbose_name='Дата рождения')
     notes = models.TextField(blank=True, verbose_name='Заметки')
     is_archived = models.BooleanField(default=False, verbose_name='В архиве')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
