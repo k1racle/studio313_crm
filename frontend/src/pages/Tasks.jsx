@@ -8,6 +8,7 @@ import TaskDetail from '../pages/TaskDetail'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
+import SearchableSelect from '../components/ui/SearchableSelect'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
@@ -386,10 +387,10 @@ export default function Tasks() {
             onChange={e => setForm({ ...form, project_id: e.target.value })}
             options={[{ value: '', label: 'Без проекта' }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
           />
-          <Select
+          <SearchableSelect
             label="Клиент"
             value={form.client_id}
-            onChange={e => setForm({ ...form, client_id: e.target.value })}
+            onChange={val => setForm({ ...form, client_id: val })}
             options={clientOptions}
           />
           <Input label="Название" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
@@ -409,10 +410,10 @@ export default function Tasks() {
               onChange={e => setForm({ ...form, priority: e.target.value })}
               options={priorityOptions.filter(o => o.value !== '')}
             />
-            <Select
+            <SearchableSelect
               label="Исполнитель"
               value={form.assignee_id}
-              onChange={e => setForm({ ...form, assignee_id: e.target.value })}
+              onChange={val => setForm({ ...form, assignee_id: val })}
               options={[{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: formatFullName(u) }))]}
             />
           </div>
