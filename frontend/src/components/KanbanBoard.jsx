@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import api from '../api/axios'
 import { formatShortName } from '../utils/format'
 import Avatar from './ui/Avatar'
@@ -29,6 +29,28 @@ const priorityLabels = {
 
 export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
   const [dragging, setDragging] = useState(null)
+  const topScrollRef = useRef(null)
+  const boardRef = useRef(null)
+
+  useEffect(() => {
+    const top = topScrollRef.current
+    const board = boardRef.current
+    if (!top || !board) return
+
+    const sync = (source, target) => () => {
+      target.scrollLeft = source.scrollLeft
+    }
+
+    const onTopScroll = sync(top, board)
+    const onBoardScroll = sync(board, top)
+
+    top.addEventListener('scroll', onTopScroll)
+    board.addEventListener('scroll', onBoardScroll)
+    return () => {
+      top.removeEventListener('scroll', onTopScroll)
+      board.removeEventListener('scroll', onBoardScroll)
+    }
+  }, [])
 
   const handleDragStart = (task) => {
     setDragging(task)
@@ -42,56 +64,65 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
   }
 
   return (
-    <div className="grid grid-flow-col auto-cols-[280px] gap-4 overflow-x-auto pb-4">
-      {columns.map(col => {
-        const colTasks = tasks.filter(t => t.status === col.key)
-        return (
-          <div
-            key={col.key}
-            className="bg-subtle rounded-xl p-3 min-h-[400px]"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={() => handleDrop(col.key)}
-          >
-            <div className={`flex items-center justify-between mb-3 pb-2 border-b-2 ${col.color}`}>
-              <h3 className="font-semibold text-text">{col.title}</h3>
-              <span className="text-xs text-text-muted bg-surface px-2 py-0.5 rounded-full">{colTasks.length}</span>
-            </div>
-            <div className="space-y-3">
-              {colTasks.map(task => (
-                <div
-                  key={task.id}
-                  draggable
-                  onDragStart={() => handleDragStart(task)}
-                  className={`bg-surface p-4 rounded-lg shadow-sm border border-border cursor-move hover:shadow-md transition-shadow ${dragging?.id === task.id ? 'opacity-50' : ''}`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <button
-                      onClick={() => onTaskClick?.(task.id)}
-                      className="font-medium text-text hover:text-primary text-left line-clamp-2"
-                    >
-                      {task.title}
-                    </button>
-                  </div>
-                  {task.project && (
-                    <div className="text-xs text-primary mb-2">{task.project.name}</div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
-                      {priorityLabels[task.priority]}
-                    </span>
-                    {task.assignee && (
-                      <div className="flex items-center gap-1.5" title={formatShortName(task.assignee)}>
-                        <Avatar user={task.assignee} size={24} />
-                        <span className="text-xs text-text-muted">{formatShortName(task.assignee)}</span>
-                      </div>
+    <div>
+      <div ref={topScrollRef} className="overflow-x-auto h-4 mb-2">
+        <div className="grid grid-flow-col auto-cols-[280px] gap-4">
+          {columns.map(col => (
+            <div key={col.key} className="h-px" />
+          ))}
+        </div>
+      </div>
+      <div ref={boardRef} className="grid grid-flow-col auto-cols-[280px] gap-4 overflow-x-auto pb-4">
+        {columns.map(col => {
+          const colTasks = tasks.filter(t => t.status === col.key)
+          return (
+            <div
+              key={col.key}
+              className="bg-subtle rounded-xl p-3 min-h-[400px]"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop(col.key)}
+            >
+              <div className={`flex items-center justify-between mb-3 pb-2 border-b-2 ${col.color}`}>
+                <h3 className="font-semibold text-text">{col.title}</h3>
+                <span className="text-xs text-text-muted bg-surface px-2 py-0.5 rounded-full">{colTasks.length}</span>
+              </div>
+              <div className="space-y-3">
+                {colTasks.map(task => (
+                  <div
+                    key={task.id}
+                    draggable
+                    onDragStart={() => handleDragStart(task)}
+                    className={`bg-surface p-4 rounded-lg shadow-sm border border-border cursor-move hover:shadow-md transition-shadow ${dragging?.id === task.id ? 'opacity-50' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <button
+                        onClick={() => onTaskClick?.(task.id)}
+                        className="font-medium text-text hover:text-primary text-left line-clamp-2"
+                      >
+                        {task.title}
+                      </button>
+                    </div>
+                    {task.project && (
+                      <div className="text-xs text-primary mb-2">{task.project.name}</div>
                     )}
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
+                        {priorityLabels[task.priority]}
+                      </span>
+                      {task.assignee && (
+                        <div className="flex items-center gap-1.5" title={formatShortName(task.assignee)}>
+                          <Avatar user={task.assignee} size={24} />
+                          <span className="text-xs text-text-muted">{formatShortName(task.assignee)}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   )
 }
