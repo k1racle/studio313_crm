@@ -17,7 +17,7 @@ export default function Profile() {
   const [pushPermission, setPushPermission] = useState('default')
   const [pushLoading, setPushLoading] = useState(false)
 
-  const [form, setForm] = useState({ first_name: '', last_name: '', patronymic: '' })
+  const [form, setForm] = useState({ first_name: '', last_name: '', patronymic: '', position: '' })
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -31,7 +31,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (user) {
-      setForm({ first_name: user.first_name || '', last_name: user.last_name || '', patronymic: user.patronymic || '' })
+      setForm({ first_name: user.first_name || '', last_name: user.last_name || '', patronymic: user.patronymic || '', position: user.position || '' })
       setAvatarPreview(user.avatar || null)
     }
   }, [user])
@@ -53,6 +53,7 @@ export default function Profile() {
       formData.append('first_name', form.first_name)
       formData.append('last_name', form.last_name)
       formData.append('patronymic', form.patronymic)
+      formData.append('position', form.position)
       if (avatarFile) formData.append('avatar', avatarFile)
       await api.patch('/auth/me/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -183,6 +184,15 @@ export default function Profile() {
                   type="text"
                   value={form.patronymic}
                   onChange={e => setForm(f => ({ ...f, patronymic: e.target.value }))}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">Должность</label>
+                <input
+                  type="text"
+                  value={form.position}
+                  onChange={e => setForm(f => ({ ...f, position: e.target.value }))}
                   className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>

@@ -7,20 +7,23 @@ class User(AbstractUser):
     ROLE_DIRECTOR = 'director'
     ROLE_MANAGER = 'manager'
     ROLE_JOURNALIST = 'journalist'
+    ROLE_STAFF = 'staff'
 
     ROLE_CHOICES = [
         (ROLE_ADMIN, 'Администратор'),
         (ROLE_DIRECTOR, 'Руководитель'),
         (ROLE_MANAGER, 'Менеджер'),
         (ROLE_JOURNALIST, 'Журналист'),
+        (ROLE_STAFF, 'Сотрудник'),
     ]
 
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,
-        default=ROLE_JOURNALIST,
+        default=ROLE_STAFF,
         verbose_name='Роль'
     )
+    position = models.CharField(max_length=150, blank=True, verbose_name='Должность')
     patronymic = models.CharField(max_length=150, blank=True, verbose_name='Отчество')
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     telegram_id = models.CharField(max_length=100, blank=True, verbose_name='Telegram ID')
