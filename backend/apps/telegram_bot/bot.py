@@ -1,4 +1,5 @@
 import logging
+import random
 import re
 from asgiref.sync import sync_to_async
 from telegram import Update
@@ -195,7 +196,7 @@ def save_message(chat, message_id, text, sender_name):
 
 
 @sync_to_async
-def create_task_from_news(message_obj: TelegramMessage):
+def create_task_from_news(message_obj: TelegramMessage, assignee=None):
     title = make_task_title(message_obj.text)
     chat_title = message_obj.chat.title or message_obj.chat.chat_id
     description = (
@@ -208,6 +209,7 @@ def create_task_from_news(message_obj: TelegramMessage):
         description=description,
         source=Task.SOURCE_TELEGRAM,
         status=Task.STATUS_NEW,
+        assignee=assignee,
     )
     suggestion = NewsSuggestion.objects.create(
         message=message_obj,
@@ -217,6 +219,34 @@ def create_task_from_news(message_obj: TelegramMessage):
         created_task=task,
     )
     return task, suggestion
+
+
+@sync_to_async
+def get_journalists():
+    return list(User.objects.filter(role=User.ROLE_JOURNALIST).exclude(telegram_id=''))
+
+
+def pick_random_journalist(journalists):
+    if not journalists:
+        return None
+    return random.choice(journalists)
+
+
+async def notify_journalists(bot, task, journalists, source_chat_title):
+    if not journalists:
+        logger.info('Нет журналистов с привязанным Telegram для уведомления')
+        return
+    assignee_name = task.assignee.get_full_name() if task.assignee else 'не назначен'
+    text = (
+        f'📰 Новая задача из Telegram-источника «{source_chat_title}»\n\n'
+        f'#{task.id}: {task.title}\n'
+        f'Исполнитель: {assignee_name}'
+    )
+    for journalist in journalists:
+        try:
+            await bot.send_message(chat_id=journalist.telegram_id, text=text)
+        except Exception as e:
+            logger.warning('Не удалось отправить уведомление журналисту %s: %s', journalist.telegram_id, e)
 
 
 def get_sender_name(msg):
@@ -243,11 +273,10 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     message_obj = await save_message(chat_obj, msg.message_id, text, get_sender_name(msg))
 
     if looks_like_news(text):
-        task, suggestion = await create_task_from_news(message_obj)
-        await msg.reply_text(
-            f'📰 Похоже на новость. Создана задача для журналиста: #{task.id}\n'
-            f'«{task.title}»'
-        )
+        journalists = await get_journalists()
+        assignee = pick_random_journalist(journalists)
+        task, suggestion = await create_task_from_news(message_obj, assignee=assignee)
+        await notify_journalists(context.bot, task, journalists, chat_obj.title or chat_obj.chat_id)
 
 
 async def task_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -258,7 +287,6 @@ async def task_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Remove command itself
     title_text = re.sub(r'^/task\s*', '', text).strip()
     if not title_text:
-        await update.effective_message.reply_text('Использование: /task Текст новости')
         return
 
     chat = update.effective_chat
@@ -266,17 +294,17 @@ async def task_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     chat_obj = await get_or_create_chat(chat.id, chat.type, getattr(chat, 'title', None))
     message_obj = await save_message(chat_obj, msg.message_id, title_text, get_sender_name(msg))
-    task, suggestion = await create_task_from_news(message_obj)
-
-    await update.effective_message.reply_text(
-        f'✅ Создана задача #{task.id}: «{task.title}»'
-    )
+    journalists = await get_journalists()
+    assignee = pick_random_journalist(journalists)
+    task, suggestion = await create_task_from_news(message_obj, assignee=assignee)
+    await notify_journalists(context.bot, task, journalists, chat_obj.title or chat_obj.chat_id)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(
         'Я бот медиа-студии.\n'
-        'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости.\n'
+        'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости, '
+        'и уведомляю журналистов в личных сообщениях.\n'
         'Команды:\n'
         '/task <текст> — создать задачу вручную\n'
         '/link <код> — привязать Telegram-аккаунт к профилю в системе\n'
