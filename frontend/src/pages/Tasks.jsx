@@ -71,6 +71,7 @@ export default function Tasks() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailTaskId, setDetailTaskId] = useState(null)
   const [detailTask, setDetailTask] = useState(null)
+  const [pendingDetailId, setPendingDetailId] = useState(null)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -141,8 +142,18 @@ export default function Tasks() {
 
   const handleEditDetail = () => {
     if (!detailTask) return
+    setPendingDetailId(detailTask.id)
     closeDetail()
     openEdit(detailTask)
+  }
+
+  const handleCloseEdit = () => {
+    setIsModalOpen(false)
+    setEditingTask(null)
+    if (pendingDetailId) {
+      openDetail(pendingDetailId)
+      setPendingDetailId(null)
+    }
   }
 
   const openEdit = (task) => {
@@ -179,6 +190,10 @@ export default function Tasks() {
       setEditingTask(null)
       setIsModalOpen(false)
       await loadTasks()
+      if (pendingDetailId) {
+        openDetail(pendingDetailId)
+        setPendingDetailId(null)
+      }
     } catch (err) {
       console.error('Ошибка сохранения задачи:', err)
       alert('Не удалось сохранить задачу. Проверьте данные и попробуйте снова.')
@@ -357,7 +372,7 @@ export default function Tasks() {
         </Card>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingTask ? 'Изменить задачу' : 'Новая задача'}>
+      <Modal isOpen={isModalOpen} onClose={handleCloseEdit} title={editingTask ? 'Изменить задачу' : 'Новая задача'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Select
             label="Проект"
@@ -414,7 +429,7 @@ export default function Tasks() {
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Отмена</Button>
+            <Button type="button" variant="secondary" onClick={handleCloseEdit}>Отмена</Button>
             <Button type="submit">{editingTask ? 'Сохранить' : 'Создать'}</Button>
           </div>
         </form>
@@ -427,18 +442,18 @@ export default function Tasks() {
         size="xl"
         headerActions={
           detailTask && user?.is_manager ? (
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={handleEditDetail}>
-                <Pencil size={16} className="mr-1.5" />
-                Редактировать
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Button variant="secondary" size="sm" onClick={handleEditDetail} title="Редактировать">
+                <Pencil size={16} className="sm:mr-1.5" />
+                <span className="hidden sm:inline">Редактировать</span>
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleArchiveDetail}>
-                {detailTask.is_archived ? <RotateCcw size={16} className="mr-1.5" /> : <Archive size={16} className="mr-1.5" />}
-                {detailTask.is_archived ? 'Восстановить' : 'В архив'}
+              <Button variant="secondary" size="sm" onClick={handleArchiveDetail} title={detailTask.is_archived ? 'Восстановить' : 'В архив'}>
+                {detailTask.is_archived ? <RotateCcw size={16} className="sm:mr-1.5" /> : <Archive size={16} className="sm:mr-1.5" />}
+                <span className="hidden sm:inline">{detailTask.is_archived ? 'Восстановить' : 'В архив'}</span>
               </Button>
-              <Button variant="danger" size="sm" onClick={handleDeleteDetail}>
-                <Trash2 size={16} className="mr-1.5" />
-                Удалить
+              <Button variant="danger" size="sm" onClick={handleDeleteDetail} title="Удалить">
+                <Trash2 size={16} className="sm:mr-1.5" />
+                <span className="hidden sm:inline">Удалить</span>
               </Button>
             </div>
           ) : null
