@@ -285,30 +285,30 @@ export default function Tasks() {
       {view === 'list' && (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto -mx-6 px-6">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full min-w-[1150px] table-fixed">
               <thead>
                 <tr className="border-b border-border text-left text-sm text-text-muted">
-                  <th className="pb-3 font-medium">ID</th>
-                  <th className="pb-3 font-medium">Проект</th>
-                  <th className="pb-3 font-medium">Клиент</th>
-                  <th className="pb-3 font-medium">Название</th>
-                  <th className="pb-3 font-medium">Статус</th>
-                  <th className="pb-3 font-medium">Приоритет</th>
-                  <th className="pb-3 font-medium">Исполнитель</th>
-                  <th className="pb-3 font-medium">Срок</th>
-                  <th className="pb-3 font-medium"></th>
+                  <th className="pb-3 font-medium w-12">ID</th>
+                  <th className="pb-3 font-medium w-36">Проект</th>
+                  <th className="pb-3 font-medium w-36">Клиент</th>
+                  <th className="pb-3 font-medium w-56">Название</th>
+                  <th className="pb-3 font-medium w-24">Статус</th>
+                  <th className="pb-3 font-medium w-24">Приоритет</th>
+                  <th className="pb-3 font-medium w-44">Исполнитель</th>
+                  <th className="pb-3 font-medium w-28">Срок</th>
+                  <th className="pb-3 font-medium w-24"></th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {tasks.map(task => (
                   <tr key={task.id} className={`border-b border-border hover:bg-subtle ${task.is_archived ? 'opacity-60' : ''}`}>
                     <td className="py-3 text-text-muted">#{task.id}</td>
-                    <td className="py-3">{task.project?.name || '—'}</td>
-                    <td className="py-3">{task.client?.name || '—'}</td>
-                    <td className="py-3">
+                    <td className="py-3 truncate">{task.project?.name || '—'}</td>
+                    <td className="py-3 truncate">{task.client?.name || '—'}</td>
+                    <td className="py-3 align-top">
                       <button
                         onClick={() => openDetail(task.id)}
-                        className="font-medium text-text hover:text-primary text-left block"
+                        className="font-medium text-text hover:text-primary text-left block whitespace-normal break-words leading-snug"
                       >
                         {task.title}
                       </button>
