@@ -6,6 +6,9 @@ import Avatar from './ui/Avatar'
 const columns = [
   { key: 'new', title: 'Новые', color: 'border-blue-400' },
   { key: 'in_progress', title: 'В работе', color: 'border-yellow-400' },
+  { key: 'shooting', title: 'Съемка', color: 'border-orange-400' },
+  { key: 'editing', title: 'Монтаж', color: 'border-cyan-400' },
+  { key: 'approval', title: 'На согласовании', color: 'border-pink-400' },
   { key: 'review', title: 'На проверке', color: 'border-purple-400' },
   { key: 'done', title: 'Выполнены', color: 'border-green-400' },
 ]
@@ -39,7 +42,7 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4">
       {columns.map(col => {
         const colTasks = tasks.filter(t => t.status === col.key)
         return (

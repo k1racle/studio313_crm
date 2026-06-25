@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
 import Card from '../components/ui/Card'
@@ -27,6 +27,9 @@ const bookingStatusVariant = {
 const taskStatusLabels = {
   new: 'Новая',
   in_progress: 'В работе',
+  shooting: 'Съемка',
+  editing: 'Монтаж',
+  approval: 'На согласовании',
   review: 'На проверке',
   done: 'Выполнена',
   canceled: 'Отменена',
@@ -35,6 +38,9 @@ const taskStatusLabels = {
 const taskStatusVariant = {
   new: 'blue',
   in_progress: 'yellow',
+  shooting: 'orange',
+  editing: 'cyan',
+  approval: 'pink',
   review: 'purple',
   done: 'green',
   canceled: 'gray',
@@ -45,6 +51,10 @@ export default function Clients() {
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
   const [showArchived, setShowArchived] = useState(false)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const sentinelRef = useRef(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingClient, setEditingClient] = useState(null)
   const [form, setForm] = useState(emptyForm)
@@ -55,21 +65,41 @@ export default function Clients() {
   const [portalLink, setPortalLink] = useState('')
   const [portalCopied, setPortalCopied] = useState(false)
 
-  const loadClients = async () => {
-    const params = { search }
-    if (showArchived) params.archived = '1'
-    const res = await api.get('/clients/', { params })
-    setClients(res.data.results || res.data)
-  }
-
-  useEffect(() => {
-    loadClients()
-  }, [])
-
-  useEffect(() => {
-    const timeout = setTimeout(loadClients, 300)
-    return () => clearTimeout(timeout)
+  const loadClients = useCallback(async (pageNum = 1, append = false) => {
+    setLoading(true)
+    try {
+      const params = { search, page: pageNum }
+      if (showArchived) params.archived = '1'
+      const res = await api.get('/clients/', { params })
+      const results = res.data.results || []
+      setClients(prev => append ? [...prev, ...results] : results)
+      setHasMore(!!res.data.next)
+    } finally {
+      setLoading(false)
+    }
   }, [search, showArchived])
+
+  useEffect(() => {
+    setPage(1)
+    setClients([])
+    setHasMore(true)
+  }, [search, showArchived])
+
+  useEffect(() => {
+    loadClients(page, page > 1)
+  }, [page])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && hasMore && !loading) {
+        setPage(p => p + 1)
+      }
+    }, { rootMargin: '200px' })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, loading])
 
   const resetForm = () => {
     setForm(emptyForm)
@@ -134,20 +164,20 @@ export default function Clients() {
     }
     setIsModalOpen(false)
     resetForm()
-    loadClients()
+    loadClients(1, false)
   }
 
   const handleDelete = async (client, e) => {
     e?.stopPropagation()
     if (!confirm(`Удалить клиента «${client.name}»?`)) return
     await api.delete(`/clients/${client.id}/`)
-    loadClients()
+    loadClients(1, false)
   }
 
   const toggleArchive = async (client, e) => {
     e?.stopPropagation()
     await api.patch(`/clients/${client.id}/`, { is_archived: !client.is_archived })
-    loadClients()
+    loadClients(1, false)
     if (detailClient?.id === client.id) {
       const res = await api.get(`/clients/${client.id}/`)
       setDetailData(res.data)
@@ -244,6 +274,14 @@ export default function Clients() {
           </Card>
         ))}
       </div>
+
+      <div ref={sentinelRef} className="h-4 mt-4" />
+      {loading && (
+        <div className="text-center py-6 text-text-muted">
+          <span className="inline-block w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin mr-2" />
+          Загрузка...
+        </div>
+      )}
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingClient ? 'Изменить клиента' : 'Новый клиент'}>
         <form onSubmit={handleSubmit} className="space-y-4">

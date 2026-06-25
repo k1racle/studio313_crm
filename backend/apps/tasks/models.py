@@ -6,6 +6,9 @@ from apps.clients.models import Client
 class Task(models.Model):
     STATUS_NEW = 'new'
     STATUS_IN_PROGRESS = 'in_progress'
+    STATUS_SHOOTING = 'shooting'
+    STATUS_EDITING = 'editing'
+    STATUS_APPROVAL = 'approval'
     STATUS_REVIEW = 'review'
     STATUS_DONE = 'done'
     STATUS_CANCELED = 'canceled'
@@ -13,6 +16,9 @@ class Task(models.Model):
     STATUS_CHOICES = [
         (STATUS_NEW, 'Новая'),
         (STATUS_IN_PROGRESS, 'В работе'),
+        (STATUS_SHOOTING, 'Съемка'),
+        (STATUS_EDITING, 'Монтаж'),
+        (STATUS_APPROVAL, 'На согласовании'),
         (STATUS_REVIEW, 'На проверке'),
         (STATUS_DONE, 'Выполнена'),
         (STATUS_CANCELED, 'Отменена'),

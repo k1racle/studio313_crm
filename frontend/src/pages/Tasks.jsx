@@ -18,6 +18,9 @@ import Avatar from '../components/ui/Avatar'
 const statusLabels = {
   new: 'Новая',
   in_progress: 'В работе',
+  shooting: 'Съемка',
+  editing: 'Монтаж',
+  approval: 'На согласовании',
   review: 'На проверке',
   done: 'Выполнена',
   canceled: 'Отменена',
@@ -26,6 +29,9 @@ const statusLabels = {
 const statusBadgeVariant = {
   new: 'blue',
   in_progress: 'yellow',
+  shooting: 'orange',
+  editing: 'cyan',
+  approval: 'pink',
   review: 'purple',
   done: 'green',
   canceled: 'gray',
