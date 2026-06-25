@@ -2,7 +2,7 @@ import json
 import logging
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import NotificationLog, InAppNotification, PushSubscription
+from .models import NotificationLog, InAppNotification, PushSubscription, UserNotificationPreference
 
 logger = logging.getLogger(__name__)
 
