@@ -1,9 +1,9 @@
-const CACHE_NAME = 'studio313-v1'
-const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png']
+const CACHE_NAME = 'studio313-v2'
+const SHELL_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.png', '/icon.svg']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS))
   )
   self.skipWaiting()
 })
@@ -19,18 +19,42 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
-  const isApi = event.request.url.includes('/api/')
+
+  const url = new URL(event.request.url)
+  const isApi = url.pathname.startsWith('/api/')
   const isNavigate = event.request.mode === 'navigate'
+  const isAsset = url.pathname.startsWith('/assets/')
 
   if (isApi) return
 
+  // HTML-страницы: network-first, чтобы после деплоя сразу получать свежий index.html
+  if (isNavigate || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', clone))
+          return response
+        })
+        .catch(() => caches.match('/index.html'))
+    )
+    return
+  }
+
+  // JS/CSS/шрифты/иконки: cache-first, затем обновляем кэш в фоне
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      if (cached) return cached
-      return fetch(event.request).catch(() => {
-        if (isNavigate) return caches.match('/index.html')
-        return undefined
-      })
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
+          }
+          return networkResponse
+        })
+        .catch(() => cached)
+
+      return cached || fetchPromise
     })
   )
 })
