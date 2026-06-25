@@ -17,7 +17,7 @@ def send_telegram_message(chat_id, text):
     async def _send():
         request = None
         if settings.TELEGRAM_PROXY_URL:
-            request = HTTPXRequest(proxy_url=settings.TELEGRAM_PROXY_URL)
+            request = HTTPXRequest(proxy=settings.TELEGRAM_PROXY_URL)
         bot = Bot(token=settings.TELEGRAM_BOT_TOKEN, request=request)
         await bot.send_message(chat_id=chat_id, text=text)
 
