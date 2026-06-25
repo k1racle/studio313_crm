@@ -42,7 +42,7 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4">
+    <div className="grid grid-flow-col auto-cols-[280px] gap-4 overflow-x-auto pb-4">
       {columns.map(col => {
         const colTasks = tasks.filter(t => t.status === col.key)
         return (
