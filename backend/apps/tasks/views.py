@@ -10,6 +10,7 @@ from apps.notifications.services import create_in_app_notification
 
 class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
+    pagination_class = None
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'priority', 'assignee', 'source', 'project']
     search_fields = ['title', 'description']
