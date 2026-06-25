@@ -82,5 +82,43 @@ def _notify_message_updated(message):
         logger.exception(f'Failed to notify chat about transcription: {exc}')
 
 
+@shared_task
+def notify_chat_members(message_id, sender_id):
+    from .models import Message
+    from apps.notifications.services import create_in_app_notification
+
+    try:
+        message = Message.objects.select_related('chat', 'sender').get(pk=message_id)
+    except Message.DoesNotExist:
+        logger.warning(f'Message {message_id} not found for chat notification')
+        return
+
+    chat = message.chat
+    sender = message.sender
+    sender_name = sender.first_name or sender.username or 'Пользователь'
+
+    if message.text:
+        text_preview = message.text[:100]
+    elif message.voice:
+        text_preview = 'Голосовое сообщение'
+    elif message.file:
+        text_preview = 'Файл'
+    elif message.sticker:
+        text_preview = 'Стикер'
+    else:
+        text_preview = 'Сообщение'
+
+    for member in chat.members.exclude(id=sender_id):
+        try:
+            create_in_app_notification(
+                user=member,
+                title=chat.display_name or chat.name or 'Чат',
+                message=f'{sender_name}: {text_preview}',
+                link=f'/chat?chat={chat.id}',
+            )
+        except Exception:
+            logger.exception(f'Failed to notify chat member {member.id}')
+
+
 def _absolute_url(path):
     return path

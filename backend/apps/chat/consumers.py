@@ -5,6 +5,7 @@ from channels.db import database_sync_to_async
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
 from .models import Chat, Message
+from .tasks import notify_chat_members
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -60,6 +61,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                         f'chat_{chat_id}',
                         {'type': 'chat_message', 'message': message}
                     )
+                    notify_chat_members.delay(message['id'], self.user['id'])
                 else:
                     logger.warning('[ChatConsumer] message not created for chat %s', chat_id)
             elif action == 'read':

@@ -99,7 +99,7 @@ export default function Layout() {
   )
 
   return (
-    <div className="flex h-screen bg-bg">
+    <div className="flex h-screen h-dvh bg-bg">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 bg-surface border-r border-border flex-col">
         {sidebarHeader}
