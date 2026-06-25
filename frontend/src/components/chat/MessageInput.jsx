@@ -127,18 +127,18 @@ export default function MessageInput({ chatId, onSend, onFileUploaded, onVoiceUp
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t border-border bg-surface safe-bottom">
-      <div className="flex items-end gap-2">
+      <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e) } }}
             placeholder={isRecording ? 'Запись...' : 'Напишите сообщение...'}
-            className="w-full px-4 py-3 pr-24 border border-border rounded-xl resize-none bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full px-4 py-2 pr-24 border border-border rounded-xl resize-none bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             rows={1}
             disabled={disabled || uploading || isRecording}
           />
-          <div className="absolute right-2 bottom-2 flex items-center gap-1">
+          <div className="absolute right-2 bottom-1.5 flex items-center gap-1">
             <button
               type="button"
               onClick={() => { setShowEmoji(!showEmoji); setShowStickers(false) }}
