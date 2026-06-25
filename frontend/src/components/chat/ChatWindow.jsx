@@ -27,7 +27,7 @@ export default function ChatWindow({ chat, messages, onSend, onFileUploaded, onV
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-surface h-full">
+    <div className="flex-1 flex flex-col bg-surface h-full min-w-0 overflow-hidden">
       <div className="px-4 md:px-6 py-4 border-b border-border flex items-center justify-between">
         <div className="min-w-0">
           <h2 className="font-bold text-text truncate">{chat.display_name || chat.name}</h2>
@@ -38,7 +38,7 @@ export default function ChatWindow({ chat, messages, onSend, onFileUploaded, onV
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-4 min-w-0">
         {messages.map(msg => {
           const isMe = msg.sender?.id === user?.id
           return (

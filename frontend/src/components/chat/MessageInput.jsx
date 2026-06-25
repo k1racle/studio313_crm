@@ -126,42 +126,42 @@ export default function MessageInput({ chatId, onSend, onFileUploaded, onVoiceUp
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 border-t border-border bg-surface safe-bottom">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
+    <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t border-border bg-surface safe-bottom">
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="relative flex-1 min-w-0">
           <textarea
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e) } }}
             placeholder={isRecording ? 'Запись...' : 'Напишите сообщение...'}
-            className="w-full px-4 py-2 pr-24 border border-border rounded-xl resize-none bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full px-3 sm:px-4 py-2 pr-14 sm:pr-24 border border-border rounded-xl resize-none bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             rows={1}
             disabled={disabled || uploading || isRecording}
           />
-          <div className="absolute right-2 bottom-1.5 flex items-center gap-1">
+          <div className="absolute right-1.5 sm:right-2 bottom-1.5 flex items-center gap-0.5 sm:gap-1">
             <button
               type="button"
               onClick={() => { setShowEmoji(!showEmoji); setShowStickers(false) }}
               disabled={isRecording}
-              className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors disabled:opacity-50"
+              className="p-1 sm:p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors disabled:opacity-50"
             >
-              <Smile size={18} />
+              <Smile size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
             <button
               type="button"
               onClick={() => { setShowStickers(!showStickers); setShowEmoji(false) }}
               disabled={isRecording}
-              className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors disabled:opacity-50"
+              className="p-1 sm:p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors disabled:opacity-50"
             >
-              <Image size={18} />
+              <Image size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={isRecording}
-              className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors disabled:opacity-50"
+              className="p-1 sm:p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors disabled:opacity-50"
             >
-              <Paperclip size={18} />
+              <Paperclip size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
           </div>
           {showEmoji && (
@@ -183,9 +183,9 @@ export default function MessageInput({ chatId, onSend, onFileUploaded, onVoiceUp
             <Button
               type="button"
               onClick={stopRecording}
-              className="bg-danger hover:bg-danger/90"
+              className="bg-danger hover:bg-danger/90 !px-2.5 !py-2 sm:!px-4 sm:!py-2"
             >
-              <Square size={18} />
+              <Square size={16} className="sm:w-[18px] sm:h-[18px]" />
             </Button>
           </div>
         ) : (
@@ -194,13 +194,13 @@ export default function MessageInput({ chatId, onSend, onFileUploaded, onVoiceUp
               type="button"
               onClick={startRecording}
               disabled={disabled || uploading}
-              className="bg-primary text-white hover:bg-primary/90 shadow-sm"
+              className="bg-primary text-white hover:bg-primary/90 shadow-sm !px-2.5 !py-2 sm:!px-4 sm:!py-2"
               title="Голосовое сообщение"
             >
-              <Mic size={18} />
+              <Mic size={16} className="sm:w-[18px] sm:h-[18px]" />
             </Button>
-            <Button type="submit" disabled={!text.trim() || disabled || uploading}>
-              <Send size={18} />
+            <Button type="submit" disabled={!text.trim() || disabled || uploading} className="!px-2.5 !py-2 sm:!px-4 sm:!py-2">
+              <Send size={16} className="sm:w-[18px] sm:h-[18px]" />
             </Button>
           </>
         )}
