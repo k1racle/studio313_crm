@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/client-portal/', include('apps.client_portal.urls')),
     path('api/tags/', include('apps.tags.urls')),
     path('api/time-entries/', include('apps.timesheets.urls')),
+    path('api/knowledge/', include('apps.knowledge_base.urls')),
 ]
 
 if settings.DEBUG:

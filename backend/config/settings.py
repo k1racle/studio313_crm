@@ -47,6 +47,7 @@ LOCAL_APPS = [
     'apps.client_portal',
     'apps.tags',
     'apps.timesheets',
+    'apps.knowledge_base',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
