@@ -353,10 +353,7 @@ async def handle_update(client: MaxBotClient, update: dict):
     if chat_type not in ('private', 'dialog'):
         if looks_like_news(text):
             task, _ = await create_task_from_news(message_obj)
-            await _send(
-                f'📰 Похоже на новость. Создана задача для журналиста: #{task.id}\n'
-                f'«{task.title}»'
-            )
+            logger.info('MAX: создана задача #%s из новости в чате %s', task.id, chat_id)
         return
 
     # Личные сообщения
