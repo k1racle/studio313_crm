@@ -7,7 +7,7 @@ import FloatingChatButton from './FloatingChatButton'
 import { formatFullName } from '../utils/format'
 import {
   LayoutDashboard, CheckSquare, FolderOpen, Users, Calendar, Briefcase,
-  CreditCard, HeadphonesIcon, MessageSquare, LogOut, Menu, X,
+  CreditCard, HeadphonesIcon, LogOut, Menu, X,
   BarChart3, Clock, BookOpen
 } from 'lucide-react'
 
@@ -23,7 +23,6 @@ const menuItems = [
   { path: '/timesheets', label: 'Таймшиты', icon: Clock },
   { path: '/helpdesk', label: 'Хелпдеск', icon: HeadphonesIcon },
   { path: '/knowledge', label: 'База знаний', icon: BookOpen },
-  { path: '/chat', label: 'Чат', icon: MessageSquare },
 ]
 
 export default function Layout() {
