@@ -460,7 +460,25 @@ export default function Tasks() {
               return (
                 <div
                   key={idx}
-                  className={`min-h-[120px] p-2 border-b border-r border-border flex flex-col gap-1 ${
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('bg-primary/5') }}
+                  onDragLeave={e => { e.currentTarget.classList.remove('bg-primary/5') }}
+                  onDrop={async (e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.remove('bg-primary/5')
+                    const taskId = e.dataTransfer.getData('task/id')
+                    if (!taskId) return
+                    const task = tasks.find(t => String(t.id) === taskId)
+                    if (!task) return
+                    const newDue = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)
+                    try {
+                      await api.patch(`/tasks/${task.id}/`, { due_date: newDue.toISOString() })
+                      loadTasks()
+                    } catch (err) {
+                      console.error(err)
+                      alert('Не удалось перенести задачу')
+                    }
+                  }}
+                  className={`min-h-[140px] p-2 border-b border-r border-border flex flex-col gap-1 transition-colors ${
                     isCurrentMonth ? 'bg-surface' : 'bg-subtle/50'
                   } ${isToday ? 'ring-1 ring-inset ring-primary bg-primary/5' : ''}`}
                 >
@@ -472,11 +490,19 @@ export default function Tasks() {
                       <button
                         key={task.id}
                         type="button"
+                        draggable
                         onClick={() => openDetail(task.id)}
-                        className={`text-left text-xs px-2 py-1 rounded bg-subtle border-l-2 ${statusBorderColor[task.status] || 'border-gray-500'} hover:bg-hover truncate`}
+                        onDragStart={e => e.dataTransfer.setData('task/id', String(task.id))}
+                        className={`text-left text-xs px-2 py-1 rounded bg-subtle border-l-2 ${statusBorderColor[task.status] || 'border-gray-500'} hover:bg-hover cursor-grab active:cursor-grabbing`}
                         title={task.title}
                       >
-                        {task.title}
+                        <span className="line-clamp-2 leading-tight">{task.title}</span>
+                        {task.assignee && (
+                          <span className="mt-1 flex items-center gap-1 text-[10px] text-text-muted">
+                            <Avatar user={task.assignee} size={14} />
+                            <span className="truncate">{formatShortName(task.assignee)}</span>
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
