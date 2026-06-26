@@ -64,3 +64,15 @@ class MarkReadView(APIView):
 class StickerListView(generics.ListAPIView):
     queryset = Sticker.objects.all()
     serializer_class = StickerSerializer
+
+
+class UnreadCountView(APIView):
+    def get(self, request):
+        total = Message.objects.filter(
+            chat__members=request.user
+        ).exclude(
+            sender=request.user
+        ).exclude(
+            read_by=request.user
+        ).count()
+        return Response({'unread_count': total})
