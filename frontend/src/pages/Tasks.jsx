@@ -13,7 +13,7 @@ import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
 import { Plus, Pencil, Trash2, Search, Archive, RotateCcw } from 'lucide-react'
-import { formatFullName, formatShortName } from '../utils/format'
+import { formatShortName } from '../utils/format'
 import Avatar from '../components/ui/Avatar'
 
 const statusLabels = {
@@ -218,7 +218,7 @@ export default function Tasks() {
     loadTasks()
   }
 
-  const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(u => ({ value: u.id, label: formatFullName(u) }))]
+  const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]
   const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(p => ({ value: p.id, label: p.name }))]
   const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
   const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
@@ -263,7 +263,7 @@ export default function Tasks() {
           <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
           {view !== 'kanban' && <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />}
           <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityOptions} />
-          <Select value={filters.assignee} onChange={e => setFilters({ ...filters, assignee: e.target.value })} options={userOptions} />
+          <SearchableSelect value={filters.assignee} onChange={val => setFilters({ ...filters, assignee: val })} options={userOptions} />
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <Input
               icon={<Search size={16} />}
@@ -414,7 +414,7 @@ export default function Tasks() {
               label="Исполнитель"
               value={form.assignee_id}
               onChange={val => setForm({ ...form, assignee_id: val })}
-              options={[{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: formatFullName(u) }))]}
+              options={[{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]}
             />
           </div>
           <Input label="Срок выполнения" type="datetime-local" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />

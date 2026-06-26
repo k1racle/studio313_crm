@@ -5,13 +5,16 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import Input from '../components/ui/Input'
-import { ArrowLeft, Send, Upload, FileText, Clock } from 'lucide-react'
+import { ArrowLeft, Send, Upload, FileText, Clock, Trash2 } from 'lucide-react'
 import { formatFullName, formatShortName } from '../utils/format'
 import Avatar from '../components/ui/Avatar'
 
 const statusLabels = {
   new: 'Новая',
   in_progress: 'В работе',
+  shooting: 'Съемка',
+  editing: 'Монтаж',
+  approval: 'На согласовании',
   review: 'На проверке',
   done: 'Выполнена',
   canceled: 'Отменена',
@@ -20,6 +23,9 @@ const statusLabels = {
 const statusBadgeVariant = {
   new: 'blue',
   in_progress: 'yellow',
+  shooting: 'orange',
+  editing: 'cyan',
+  approval: 'pink',
   review: 'purple',
   done: 'green',
   canceled: 'gray',
@@ -44,9 +50,14 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
 
   const loadTask = async () => {
     if (!id) return
-    const res = await api.get(`/tasks/${id}/`)
-    setTask(res.data)
-    onLoad?.(res.data)
+    try {
+      const res = await api.get(`/tasks/${id}/`)
+      setTask(res.data)
+      onLoad?.(res.data)
+    } catch (err) {
+      console.error('Ошибка загрузки задачи:', err)
+      alert('Не удалось загрузить задачу')
+    }
   }
 
   const loadTimeEntries = async () => {
@@ -77,11 +88,16 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
     if (!file) return
     const formData = new FormData()
     formData.append('file', file)
-    await api.post(`/tasks/${id}/attachments/`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    setFile(null)
-    loadTask()
+    try {
+      await api.post(`/tasks/${id}/attachments/`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setFile(null)
+      loadTask()
+    } catch (err) {
+      console.error('Ошибка загрузки файла:', err)
+      alert('Не удалось загрузить файл')
+    }
   }
 
   const deleteAttachment = async (attachmentId) => {
@@ -237,18 +253,22 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
             </div>
           </form>
           <div className="space-y-2">
-            {task.attachments?.map(a => (
-              <div key={a.id} className="flex items-center justify-between p-3 bg-subtle rounded-lg gap-3">
-                <a href={a.file} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline truncate">
-                  <FileText size={16} />
-                  <span className="truncate">{a.file.split('/').pop()}</span>
-                </a>
-                <Button variant="danger" size="sm" onClick={() => deleteAttachment(a.id)}>
-                  <Trash2 size={14} className="mr-1" />
-                  Удалить
-                </Button>
-              </div>
-            ))}
+            {Array.isArray(task.attachments) && task.attachments.map(a => {
+              const fileUrl = a.file || ''
+              const fileName = typeof fileUrl === 'string' ? fileUrl.split('/').pop() : (a.name || 'Файл')
+              return (
+                <div key={a.id} className="flex items-center justify-between p-3 bg-subtle rounded-lg gap-3">
+                  <a href={fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline truncate">
+                    <FileText size={16} />
+                    <span className="truncate">{fileName || 'Файл'}</span>
+                  </a>
+                  <Button variant="danger" size="sm" onClick={() => deleteAttachment(a.id)}>
+                    <Trash2 size={14} className="mr-1" />
+                    Удалить
+                  </Button>
+                </div>
+              )
+            })}
             {!task.attachments?.length && <div className="text-sm text-text-muted">Нет вложений</div>}
           </div>
         </Card>

@@ -1,11 +1,31 @@
 import logging
 import json
+from datetime import timedelta
+from rest_framework import permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.conf import settings
+from django.utils import timezone
 from apps.max_bot.bot import MaxBotClient, handle_update
+from .models import MaxLinkCode
 
 logger = logging.getLogger(__name__)
+
+
+class MaxLinkCodeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        now = timezone.now()
+        link_code, _ = MaxLinkCode.objects.update_or_create(
+            user=request.user,
+            defaults={'code': '', 'created_at': now}
+        )
+        link_code.save()
+        return Response({
+            'code': link_code.code,
+            'expires_at': link_code.created_at + timedelta(hours=1)
+        })
 
 
 class MaxWebhookView(APIView):

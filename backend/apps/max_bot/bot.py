@@ -199,7 +199,7 @@ def link_max_account(code, max_user_id):
     if link_code.is_expired():
         return None, 'Код истёк. Создайте новый.'
     user = link_code.user
-    user.telegram_id = str(max_user_id)
+    user.max_id = str(max_user_id)
     user.save()
     link_code.delete()
     return user, f'Аккаунт {user.get_full_name() or user.username} успешно привязан. Вы будете получать уведомления.'

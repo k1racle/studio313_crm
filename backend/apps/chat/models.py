@@ -26,14 +26,14 @@ class Chat(models.Model):
     def __str__(self):
         if self.name:
             return self.name
-        names = [u.first_name or u.username for u in self.members.all()]
+        names = [u.get_short_name() for u in self.members.all()]
         return ', '.join(names) or 'Чат'
 
     @property
     def display_name(self):
         if self.name:
             return self.name
-        names = [u.first_name or u.username for u in self.members.all()]
+        names = [u.get_short_name() for u in self.members.all()]
         return ', '.join(names) or 'Чат'
 
 

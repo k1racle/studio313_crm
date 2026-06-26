@@ -27,6 +27,7 @@ class User(AbstractUser):
     patronymic = models.CharField(max_length=150, blank=True, verbose_name='Отчество')
     phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон')
     telegram_id = models.CharField(max_length=100, blank=True, verbose_name='Telegram ID')
+    max_id = models.CharField(max_length=100, blank=True, verbose_name='MAX ID')
     avatar = models.ImageField(upload_to='avatars/', blank=True, verbose_name='Аватар')
 
     class Meta:
@@ -39,6 +40,15 @@ class User(AbstractUser):
     def get_full_name(self):
         full_name = ' '.join(filter(None, [self.last_name, self.first_name, self.patronymic]))
         return full_name.strip() or self.username
+
+    def get_short_name(self):
+        last = self.last_name or ''
+        first = f"{self.first_name[0]}." if self.first_name else ''
+        patronymic = f"{self.patronymic[0]}." if self.patronymic else ''
+        initials = (first + patronymic).strip()
+        if last and initials:
+            return f"{last} {initials}"
+        return last or self.first_name or self.username
 
     @property
     def is_admin(self):

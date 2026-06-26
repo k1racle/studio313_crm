@@ -7,6 +7,34 @@ from .models import NotificationLog, InAppNotification, PushSubscription, UserNo
 logger = logging.getLogger(__name__)
 
 
+def send_max_notification(user, text):
+    if not user.max_id:
+        logger.warning(f'У пользователя {user} не привязан MAX')
+        return False
+    try:
+        from apps.max_bot.tasks import send_max_message
+        send_max_message.delay(user.id, text)
+        NotificationLog.objects.create(
+            user=user,
+            channel=NotificationLog.CHANNEL_MAX,
+            subject='MAX',
+            body=text,
+            is_success=True,
+        )
+        return True
+    except Exception as e:
+        logger.error(f'Ошибка отправки MAX-уведомления: {e}')
+        NotificationLog.objects.create(
+            user=user,
+            channel=NotificationLog.CHANNEL_MAX,
+            subject='MAX',
+            body=text,
+            is_success=False,
+            error_message=str(e),
+        )
+        return False
+
+
 def send_email_notification(user, subject, body, html_body=None):
     if not user.email:
         logger.warning(f'У пользователя {user} не указан email')

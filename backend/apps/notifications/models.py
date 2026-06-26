@@ -6,11 +6,13 @@ class NotificationLog(models.Model):
     CHANNEL_EMAIL = 'email'
     CHANNEL_SMS = 'sms'
     CHANNEL_TELEGRAM = 'telegram'
+    CHANNEL_MAX = 'max'
 
     CHANNEL_CHOICES = [
         (CHANNEL_EMAIL, 'Email'),
         (CHANNEL_SMS, 'SMS'),
         (CHANNEL_TELEGRAM, 'Telegram'),
+        (CHANNEL_MAX, 'MAX'),
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notification_logs', verbose_name='Пользователь')
@@ -45,6 +47,7 @@ class UserNotificationPreference(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notification_preference', verbose_name='Пользователь')
     email_enabled = models.BooleanField(default=True, verbose_name='Email-уведомления')
     telegram_enabled = models.BooleanField(default=True, verbose_name='Telegram-уведомления')
+    max_enabled = models.BooleanField(default=True, verbose_name='MAX-уведомления')
     sms_enabled = models.BooleanField(default=False, verbose_name='SMS-уведомления')
     push_enabled = models.BooleanField(default=True, verbose_name='Push-уведомления')
 

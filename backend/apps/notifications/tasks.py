@@ -1,6 +1,6 @@
 from celery import shared_task
 from apps.users.models import User
-from .services import send_email_notification, send_sms_notification, send_telegram_notification, get_user_notification_preference
+from .services import send_email_notification, send_sms_notification, send_telegram_notification, send_max_notification, get_user_notification_preference
 
 
 @shared_task
@@ -18,6 +18,8 @@ def notify_user_task(user_id, subject, body, channels=None):
             channels.append('email')
         if pref.telegram_enabled:
             channels.append('telegram')
+        if pref.max_enabled:
+            channels.append('max')
         if pref.sms_enabled:
             channels.append('sms')
 
@@ -28,3 +30,5 @@ def notify_user_task(user_id, subject, body, channels=None):
             send_sms_notification(user, body)
         elif channel == 'telegram' and pref.telegram_enabled:
             send_telegram_notification(user, body)
+        elif channel == 'max' and pref.max_enabled:
+            send_max_notification(user, body)

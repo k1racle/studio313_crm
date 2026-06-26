@@ -9,6 +9,7 @@ class ClientListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsManagerOrHigher]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'phone', 'email', 'telegram']
+    pagination_class = None
 
     def get_queryset(self):
         qs = Client.objects.all()

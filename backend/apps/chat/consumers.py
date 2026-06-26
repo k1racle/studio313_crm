@@ -103,7 +103,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         try:
             access = AccessToken(token)
             user = User.objects.get(id=access['user_id'])
-            return {'id': user.id, 'name': user.first_name or user.username}
+            return {'id': user.id, 'name': user.get_short_name()}
         except Exception as e:
             logger.warning('[ChatConsumer] token error: %s', e)
             return None

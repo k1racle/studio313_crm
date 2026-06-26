@@ -11,8 +11,10 @@ export default function Profile() {
   const { user, refreshUser } = useAuth()
   const [code, setCode] = useState('')
   const [expiresAt, setExpiresAt] = useState('')
+  const [maxCode, setMaxCode] = useState('')
+  const [maxExpiresAt, setMaxExpiresAt] = useState('')
   const [loading, setLoading] = useState(false)
-  const [preferences, setPreferences] = useState({ email_enabled: true, telegram_enabled: true, sms_enabled: false, push_enabled: true })
+  const [preferences, setPreferences] = useState({ email_enabled: true, telegram_enabled: true, max_enabled: true, sms_enabled: false, push_enabled: true })
   const [savingPrefs, setSavingPrefs] = useState(false)
   const [pushPermission, setPushPermission] = useState('default')
   const [pushLoading, setPushLoading] = useState(false)
@@ -73,6 +75,17 @@ export default function Profile() {
       const res = await api.post('/telegram/link-code/')
       setCode(res.data.code)
       setExpiresAt(new Date(res.data.expires_at).toLocaleString('ru'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const generateMaxCode = async () => {
+    setLoading(true)
+    try {
+      const res = await api.post('/max/link-code/')
+      setMaxCode(res.data.code)
+      setMaxExpiresAt(new Date(res.data.expires_at).toLocaleString('ru'))
     } finally {
       setLoading(false)
     }
@@ -228,6 +241,13 @@ export default function Profile() {
                 </span>
                 <span className="font-medium text-text">{user?.telegram_id || 'Не привязан'}</span>
               </div>
+              <div className="flex items-center justify-between py-2 border-b border-border">
+                <span className="flex items-center gap-2 text-text-muted">
+                  <Send size={14} className="text-primary" />
+                  MAX ID
+                </span>
+                <span className="font-medium text-text">{user?.max_id || 'Не привязан'}</span>
+              </div>
             </div>
           </form>
         </Card>
@@ -238,10 +258,11 @@ export default function Profile() {
               {[
                 { key: 'email_enabled', label: 'Email-уведомления', icon: Mail, note: user?.email ? user.email : 'Email не указан' },
                 { key: 'telegram_enabled', label: 'Telegram-уведомления', icon: Send, note: user?.telegram_id ? 'Привязан' : 'Telegram не привязан' },
+                { key: 'max_enabled', label: 'MAX-уведомления', icon: Send, note: user?.max_id ? 'Привязан' : 'MAX не привязан' },
                 { key: 'push_enabled', label: 'Push-уведомления', icon: Bell, note: pushPermission === 'granted' ? 'Разрешены' : pushPermission === 'denied' ? 'Заблокированы в браузере' : 'Не запрошены' },
               ].map(item => {
                 const Icon = item.icon
-                const disabled = savingPrefs || (item.key === 'email_enabled' && !user?.email) || (item.key === 'telegram_enabled' && !user?.telegram_id) || (item.key === 'push_enabled' && !('Notification' in window))
+                const disabled = savingPrefs || (item.key === 'email_enabled' && !user?.email) || (item.key === 'telegram_enabled' && !user?.telegram_id) || (item.key === 'max_enabled' && !user?.max_id) || (item.key === 'push_enabled' && !('Notification' in window))
                 const isPush = item.key === 'push_enabled'
                 return (
                   <label
@@ -289,6 +310,33 @@ export default function Profile() {
                   <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="text-2xl font-bold text-primary break-all mb-2">{code}</div>
                     <div className="text-sm text-text-muted">Действителен до: {expiresAt}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
+          <Card title="Привязка MAX">
+            {user?.max_id ? (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 mb-4">
+                  <CheckCircle2 size={32} />
+                </div>
+                <h3 className="text-lg font-semibold text-text">MAX уже привязан</h3>
+                <p className="text-text-muted">Вы будете получать уведомления в MAX.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-text">Отправьте MAX-боту команду:</p>
+                <code className="block p-3 bg-subtle rounded-lg font-mono text-sm text-text-muted">/link КОД</code>
+                <Button onClick={generateMaxCode} disabled={loading}>
+                  <RefreshCw size={16} className={`mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                  {loading ? 'Генерация...' : 'Сгенерировать код'}
+                </Button>
+                {maxCode && (
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="text-2xl font-bold text-primary break-all mb-2">{maxCode}</div>
+                    <div className="text-sm text-text-muted">Действителен до: {maxExpiresAt}</div>
                   </div>
                 )}
               </div>

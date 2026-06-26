@@ -7,6 +7,7 @@ from .permissions import IsAdminOrDirector, IsManagerOrHigher
 
 class UserListCreateView(generics.ListCreateAPIView):
     queryset = User.objects.all()
+    pagination_class = None
 
     def get_permissions(self):
         if self.request.method == 'POST':

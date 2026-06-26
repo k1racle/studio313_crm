@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
@@ -8,7 +8,7 @@ import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import { Plus, Pencil, Trash2, Users, ArrowRight, CheckCircle2, XCircle, Archive, RotateCcw } from 'lucide-react'
-import { formatFullName } from '../utils/format'
+import { formatShortName } from '../utils/format'
 
 const emptyForm = { name: '', description: '', member_ids: [], is_archived: false }
 
@@ -20,6 +20,7 @@ export default function Projects() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [memberSearch, setMemberSearch] = useState('')
 
   const load = async () => {
     const params = {}
@@ -84,6 +85,12 @@ export default function Projects() {
     setForm({ ...form, member_ids: ids })
   }
 
+  const filteredUsers = useMemo(() => {
+    const q = memberSearch.trim().toLowerCase()
+    if (!q) return users
+    return users.filter(u => formatShortName(u).toLowerCase().includes(q))
+  }, [users, memberSearch])
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -138,7 +145,7 @@ export default function Projects() {
               </div>
               <div className="flex flex-wrap gap-1">
                 {p.members?.length ? p.members.map(m => (
-                  <span key={m.id} className="text-xs px-2 py-1 bg-subtle rounded-full text-text">{formatFullName(m)}</span>
+                  <span key={m.id} className="text-xs px-2 py-1 bg-subtle rounded-full text-text">{formatShortName(m)}</span>
                 )) : <span className="text-sm text-text-muted">Нет участников</span>}
               </div>
             </div>
@@ -191,8 +198,14 @@ export default function Projects() {
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-2">Участники</label>
+            <Input
+              placeholder="Поиск по ФИО"
+              value={memberSearch}
+              onChange={e => setMemberSearch(e.target.value)}
+              className="mb-2"
+            />
             <div className="space-y-2 max-h-48 overflow-auto border border-border rounded-lg p-3 bg-surface">
-              {users.map(u => (
+              {filteredUsers.map(u => (
                 <label key={u.id} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -200,7 +213,7 @@ export default function Projects() {
                     onChange={() => toggleMember(u.id)}
                     className="w-4 h-4 text-primary rounded"
                   />
-                  <span className="text-sm text-text">{formatFullName(u)}</span>
+                  <span className="text-sm text-text">{formatShortName(u)}</span>
                 </label>
               ))}
             </div>

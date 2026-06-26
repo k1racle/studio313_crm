@@ -7,6 +7,7 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
+import SearchableSelect from '../components/ui/SearchableSelect'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import { Plus, Pencil, Trash2, CreditCard, X, Save, CalendarDays, List } from 'lucide-react'
@@ -250,7 +251,7 @@ export default function Bookings() {
 
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title={editingBooking ? 'Изменить запись' : 'Новая запись'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Select label="Клиент" value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })} options={clientOptions} required />
+          <SearchableSelect label="Клиент" value={form.client_id} onChange={val => setForm({ ...form, client_id: val })} options={clientOptions} />
           <Select label="Услуга" value={form.service_id} onChange={e => setForm({ ...form, service_id: e.target.value })} options={serviceOptions} required />
           <Input label="Дата и время" type="datetime-local" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} required />
           <Select label="Статус" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} options={statusOptions} />

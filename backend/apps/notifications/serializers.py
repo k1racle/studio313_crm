@@ -12,7 +12,7 @@ class InAppNotificationSerializer(serializers.ModelSerializer):
 class UserNotificationPreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserNotificationPreference
-        fields = ['email_enabled', 'telegram_enabled', 'sms_enabled', 'push_enabled']
+        fields = ['email_enabled', 'telegram_enabled', 'max_enabled', 'sms_enabled', 'push_enabled']
 
 
 class PushSubscriptionSerializer(serializers.ModelSerializer):
