@@ -181,6 +181,13 @@ CHANNEL_LAYERS = {
 }
 CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 
+CELERY_BEAT_SCHEDULE = {
+    'archive-done-tasks-after-24h': {
+        'task': 'apps.tasks.tasks.archive_done_tasks_after_24h',
+        'schedule': 3600.0,  # каждый час
+    },
+}
+
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_PROXY_URL = os.getenv('TELEGRAM_PROXY_URL', '')
 MAX_BOT_TOKEN = os.getenv('MAX_BOT_TOKEN', '')
