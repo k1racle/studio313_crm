@@ -36,17 +36,31 @@ const sourceLabels = {
   manual: 'Вручную',
 }
 
+const categoryLabels = {
+  technical: 'Техническая проблема',
+  payment: 'Вопрос по оплате',
+  manager_help: 'Помощь менеджера',
+  other: 'Другое',
+}
+
+const categoryBadgeVariant = {
+  technical: 'red',
+  payment: 'green',
+  manager_help: 'blue',
+  other: 'gray',
+}
+
 const priorityOptions = [
   { value: 'low', label: 'Низкий' },
   { value: 'medium', label: 'Средний' },
   { value: 'high', label: 'Высокий' },
 ]
 
-const emptyForm = { subject: '', description: '', priority: 'medium', status: 'open' }
+const emptyForm = { subject: '', description: '', priority: 'medium', status: 'open', category: 'other' }
 
 export default function Helpdesk() {
   const [tickets, setTickets] = useState([])
-  const [filters, setFilters] = useState({ status: '', priority: '', source: '', search: '' })
+  const [filters, setFilters] = useState({ status: '', priority: '', source: '', category: '', search: '' })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTicket, setEditingTicket] = useState(null)
   const [form, setForm] = useState(emptyForm)
@@ -58,6 +72,7 @@ export default function Helpdesk() {
     if (filters.status) params.status = filters.status
     if (filters.priority) params.priority = filters.priority
     if (filters.source) params.source = filters.source
+    if (filters.category) params.category = filters.category
     if (filters.search) params.search = filters.search
     const res = await api.get('/helpdesk/', { params })
     setTickets(res.data.results || res.data)
@@ -85,6 +100,7 @@ export default function Helpdesk() {
       description: ticket.description || '',
       priority: ticket.priority,
       status: ticket.status,
+      category: ticket.category || 'other',
     })
     setIsModalOpen(true)
   }
@@ -107,6 +123,8 @@ export default function Helpdesk() {
   const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
   const filterPriorityOptions = [{ value: '', label: 'Все приоритеты' }, ...Object.entries(priorityLabels).map(([k, v]) => ({ value: k, label: v }))]
   const sourceOptions = [{ value: '', label: 'Все источники' }, ...Object.entries(sourceLabels).map(([k, v]) => ({ value: k, label: v }))]
+  const categoryOptions = [{ value: '', label: 'Все категории' }, ...Object.entries(categoryLabels).map(([k, v]) => ({ value: k, label: v }))]
+  const categoryFormOptions = Object.entries(categoryLabels).map(([k, v]) => ({ value: k, label: v }))
 
   return (
     <div>
@@ -120,6 +138,7 @@ export default function Helpdesk() {
           <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />
           <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={filterPriorityOptions} />
           <Select value={filters.source} onChange={e => setFilters({ ...filters, source: e.target.value })} options={sourceOptions} />
+          <Select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })} options={categoryOptions} />
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск по теме, описанию, заявителю..."
@@ -139,6 +158,7 @@ export default function Helpdesk() {
                 <th className="pb-3 font-medium">Тема</th>
                 <th className="pb-3 font-medium">Статус</th>
                 <th className="pb-3 font-medium">Приоритет</th>
+                <th className="pb-3 font-medium">Категория</th>
                 <th className="pb-3 font-medium">Источник</th>
                 <th className="pb-3 font-medium">Заявитель</th>
                 <th className="pb-3 font-medium">Создан</th>
@@ -152,6 +172,7 @@ export default function Helpdesk() {
                   <td className="py-3 font-medium text-text">{t.subject}</td>
                   <td className="py-3"><Badge variant={statusBadgeVariant[t.status]}>{statusLabels[t.status]}</Badge></td>
                   <td className="py-3 text-text">{priorityLabels[t.priority]}</td>
+                  <td className="py-3"><Badge variant={categoryBadgeVariant[t.category]}>{categoryLabels[t.category] || '—'}</Badge></td>
                   <td className="py-3 text-text">{sourceLabels[t.source]}</td>
                   <td className="py-3 text-text">{t.requester_name || '—'}</td>
                   <td className="py-3 text-text-muted">{new Date(t.created_at).toLocaleString('ru')}</td>
@@ -215,6 +236,14 @@ export default function Helpdesk() {
               value={form.status}
               onChange={e => setForm({ ...form, status: e.target.value })}
               options={Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Категория"
+              value={form.category}
+              onChange={e => setForm({ ...form, category: e.target.value })}
+              options={categoryFormOptions}
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">

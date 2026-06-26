@@ -25,7 +25,7 @@ def notify_new_ticket(ticket):
 class HelpdeskTicketListCreateView(generics.ListCreateAPIView):
     serializer_class = HelpdeskTicketSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['status', 'priority', 'source', 'assignee']
+    filterset_fields = ['status', 'priority', 'source', 'category', 'assignee']
     search_fields = ['subject', 'description', 'requester_name', 'requester_contact']
 
     def get_queryset(self):

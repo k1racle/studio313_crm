@@ -26,7 +26,7 @@ class HelpdeskTicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = HelpdeskTicket
         fields = [
-            'id', 'subject', 'description', 'status', 'priority', 'source',
+            'id', 'subject', 'description', 'status', 'priority', 'source', 'category',
             'requester_name', 'requester_contact', 'assignee', 'assignee_id',
             'comments', 'created_at', 'updated_at'
         ]

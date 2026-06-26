@@ -37,11 +37,24 @@ class HelpdeskTicket(models.Model):
         (SOURCE_MAX, 'MAX'),
     ]
 
+    CATEGORY_TECHNICAL = 'technical'
+    CATEGORY_PAYMENT = 'payment'
+    CATEGORY_MANAGER_HELP = 'manager_help'
+    CATEGORY_OTHER = 'other'
+
+    CATEGORY_CHOICES = [
+        (CATEGORY_TECHNICAL, 'Техническая проблема'),
+        (CATEGORY_PAYMENT, 'Вопрос по оплате'),
+        (CATEGORY_MANAGER_HELP, 'Помощь менеджера'),
+        (CATEGORY_OTHER, 'Другое'),
+    ]
+
     subject = models.CharField(max_length=255, verbose_name='Тема')
     description = models.TextField(verbose_name='Описание')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_OPEN, verbose_name='Статус')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM, verbose_name='Приоритет')
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default=SOURCE_MANUAL, verbose_name='Источник')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default=CATEGORY_OTHER, verbose_name='Категория')
     requester_name = models.CharField(max_length=255, blank=True, verbose_name='Имя заявителя')
     requester_contact = models.CharField(max_length=255, blank=True, verbose_name='Контакт заявителя')
     assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='helpdesk_tickets', verbose_name='Исполнитель')
