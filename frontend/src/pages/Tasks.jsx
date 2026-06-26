@@ -451,7 +451,7 @@ export default function Tasks() {
               <div key={d} className="px-2 py-2 text-xs font-medium text-text-muted text-center">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 auto-rows-fr">
+          <div className="grid grid-cols-7">
             {getCalendarDays(currentMonth).map((date, idx) => {
               const ymd = formatYMD(date)
               const isCurrentMonth = date.getMonth() === currentMonth.getMonth()
