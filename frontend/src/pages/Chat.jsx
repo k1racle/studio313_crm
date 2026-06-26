@@ -139,7 +139,7 @@ export default function Chat() {
   )
 
   return (
-    <div className="fixed inset-0 top-14 z-30 h-[calc(100dvh-3.5rem)] md:static md:z-auto md:h-full md:w-full bg-surface md:rounded-xl md:border md:border-border overflow-hidden">
+    <div className="fixed inset-0 top-14 z-30 h-[calc(100dvh-3.5rem)] md:absolute md:inset-8 md:z-auto md:h-auto md:w-auto bg-surface md:rounded-xl md:border md:border-border overflow-hidden">
       <div className="flex h-full min-w-0">
         <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 bg-surface border-r border-border flex-col h-full`}>
           <ChatSidebar
