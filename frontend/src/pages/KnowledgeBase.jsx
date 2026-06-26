@@ -140,12 +140,18 @@ export default function KnowledgeBase() {
     try {
       if (editingItem) {
         await api.put(`/knowledge/items/${editingItem.id}/`, payload)
+        setFormOpen(false)
+        setEditingItem(null)
+        setForm(emptyForm)
       } else {
-        await api.post('/knowledge/items/', payload)
+        const res = await api.post('/knowledge/items/', payload)
+        if (form.kind === 'slides') {
+          setEditingItem(res.data)
+        } else {
+          setFormOpen(false)
+          setForm(emptyForm)
+        }
       }
-      setFormOpen(false)
-      setEditingItem(null)
-      setForm(emptyForm)
       loadItems()
     } catch (err) {
       console.error(err)
@@ -378,7 +384,7 @@ export default function KnowledgeBase() {
             <span className="text-sm text-text">Опубликовано</span>
           </label>
 
-          {editingItem?.kind === 'slides' && (
+          {form.kind === 'slides' && editingItem && (
             <div className="border-t border-border pt-4 space-y-3">
               <h4 className="font-medium text-text">Слайды</h4>
               {editingItem.slides?.length > 0 && (
