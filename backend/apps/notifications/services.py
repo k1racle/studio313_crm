@@ -8,11 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 def send_max_notification(user, text):
+    if not settings.MAX_BOT_TOKEN:
+        logger.warning('MAX_BOT_TOKEN не настроен')
+        return False
     if not user.max_id:
         logger.warning(f'У пользователя {user} не привязан MAX')
         return False
     try:
         from apps.max_bot.tasks import send_max_message
+        logger.info(f'Отправка MAX-уведомления пользователю {user} (max_id={user.max_id})')
         send_max_message.delay(user.id, text)
         NotificationLog.objects.create(
             user=user,
