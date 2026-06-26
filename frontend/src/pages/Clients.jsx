@@ -220,60 +220,59 @@ export default function Clients() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {clients.map(c => (
-          <Card
-            key={c.id}
-            onClick={() => openDetail(c)}
-            className={`hover:shadow-md transition-shadow cursor-pointer ${c.is_archived ? 'opacity-60' : ''}`}
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center text-lg font-semibold shrink-0">
-                {c.name[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-text truncate">{c.name}</h3>
-                <div className="text-xs text-text-muted">{c.phone || 'Нет телефона'}</div>
-              </div>
-              {c.is_archived && <Badge variant="gray">Архив</Badge>}
-            </div>
-            <div className="space-y-1.5 text-sm mb-4">
-              {c.email && (
-                <div className="flex items-center gap-2 text-text-muted">
-                  <Mail size={14} className="text-primary shrink-0" />
-                  <span className="truncate">{c.email}</span>
-                </div>
-              )}
-              {c.telegram && (
-                <div className="flex items-center gap-2 text-text-muted">
-                  <Send size={14} className="text-primary shrink-0" />
-                  @{c.telegram}
-                </div>
-              )}
-              {c.notes && (
-                <div className="flex items-start gap-2 text-text-muted mt-2 line-clamp-2">
-                  <FileText size={14} className="text-primary mt-0.5 shrink-0" />
-                  {c.notes}
-                </div>
-              )}
-            </div>
-            {user?.is_manager && (
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="secondary" onClick={(e) => openEdit(c, e)}>
-                  <Pencil size={14} className="mr-1.5" />
-                  Изменить
-                </Button>
-                <Button size="sm" variant={c.is_archived ? 'secondary' : 'ghost'} onClick={(e) => toggleArchive(c, e)} title={c.is_archived ? 'Восстановить' : 'В архив'}>
-                  {c.is_archived ? <RotateCcw size={14} /> : <Archive size={14} />}
-                </Button>
-                <Button size="sm" variant="danger" onClick={(e) => handleDelete(c, e)}>
-                  <Trash2 size={14} />
-                </Button>
-              </div>
-            )}
-          </Card>
-        ))}
-      </div>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto -mx-6 px-6">
+          <table className="w-full min-w-[800px] text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-text-muted">
+                <th className="pb-3 font-medium w-1/4">Имя</th>
+                <th className="pb-3 font-medium">Телефон</th>
+                <th className="pb-3 font-medium">Email</th>
+                <th className="pb-3 font-medium">Telegram</th>
+                <th className="pb-3 font-medium w-24">Статус</th>
+                <th className="pb-3 font-medium w-32"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map(c => (
+                <tr
+                  key={c.id}
+                  className={`border-b border-border hover:bg-subtle cursor-pointer ${c.is_archived ? 'opacity-60' : ''}`}
+                  onClick={() => openDetail(c)}
+                >
+                  <td className="py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center font-semibold shrink-0">
+                        {c.name[0].toUpperCase()}
+                      </div>
+                      <span className="font-medium text-text truncate">{c.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 text-text-muted">{c.phone || '—'}</td>
+                  <td className="py-3 text-text-muted truncate">{c.email || '—'}</td>
+                  <td className="py-3 text-text-muted truncate">{c.telegram ? `@${c.telegram}` : '—'}</td>
+                  <td className="py-3">{c.is_archived && <Badge variant="gray">Архив</Badge>}</td>
+                  <td className="py-3">
+                    {user?.is_manager && (
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <button onClick={(e) => openEdit(c, e)} className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors" title="Изменить">
+                          <Pencil size={16} />
+                        </button>
+                        <button onClick={(e) => toggleArchive(c, e)} className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors" title={c.is_archived ? 'Восстановить' : 'В архив'}>
+                          {c.is_archived ? <RotateCcw size={16} /> : <Archive size={16} />}
+                        </button>
+                        <button onClick={(e) => handleDelete(c, e)} className="p-1.5 text-text-muted hover:text-danger hover:bg-subtle rounded-lg transition-colors" title="Удалить">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       <div ref={sentinelRef} className="h-4 mt-4" />
       {loading && (
