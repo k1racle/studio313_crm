@@ -282,14 +282,14 @@ export default function Tasks() {
         )}
       </div>
 
-      <Card className="mb-6">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex gap-2 bg-subtle p-1 rounded-lg">
+      <Card className="mb-6 overflow-hidden">
+        <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
+          <div className="flex shrink-0 gap-2 bg-subtle p-1 rounded-lg">
             {['kanban', 'gantt', 'calendar', 'list'].map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                   view === v ? 'bg-surface text-primary shadow-sm' : 'text-text-muted hover:text-text'
                 }`}
               >
@@ -297,17 +297,27 @@ export default function Tasks() {
               </button>
             ))}
           </div>
-          <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
-          {view !== 'kanban' && <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />}
-          <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityOptions} />
-          <SearchableSelect value={filters.assignee} onChange={val => setFilters({ ...filters, assignee: val })} options={userOptions} />
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="shrink-0 w-40">
+            <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
+          </div>
+          {view !== 'kanban' && (
+            <div className="shrink-0 w-36">
+              <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />
+            </div>
+          )}
+          <div className="shrink-0 w-40">
+            <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityOptions} />
+          </div>
+          <div className="shrink-0 w-44">
+            <SearchableSelect value={filters.assignee} onChange={val => setFilters({ ...filters, assignee: val })} options={userOptions} />
+          </div>
+          <div className="flex shrink-0 items-center gap-3 w-auto">
             <Input
               icon={<Search size={16} />}
               placeholder="Поиск..."
               value={filters.search}
               onChange={e => setFilters({ ...filters, search: e.target.value })}
-              className="w-full sm:w-64"
+              className="w-48 sm:w-64"
             />
             <label className="flex items-center gap-2 text-sm text-text-muted cursor-pointer whitespace-nowrap">
               <input
@@ -417,8 +427,9 @@ export default function Tasks() {
       )}
 
       {view === 'calendar' && (
-        <Card className="overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-border">
+        <Card className="overflow-x-auto">
+          <div className="min-w-[800px]">
+            <div className="flex items-center justify-between p-4 border-b border-border">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -509,6 +520,7 @@ export default function Tasks() {
                 </div>
               )
             })}
+          </div>
           </div>
         </Card>
       )}
