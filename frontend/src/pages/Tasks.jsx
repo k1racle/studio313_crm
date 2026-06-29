@@ -209,7 +209,7 @@ export default function Tasks() {
       assignee_id: task.assignee?.id || '',
       project_id: task.project?.id || '',
       client_id: task.client?.id || '',
-      due_date: task.due_date ? task.due_date.slice(0, 16) : '',
+      due_date: task.due_date ? task.due_date.slice(0, 10) : '',
       tag_ids: task.tags?.map(t => t.id) || [],
     })
     setIsModalOpen(true)
@@ -222,7 +222,7 @@ export default function Tasks() {
       assignee_id: form.assignee_id || null,
       project_id: form.project_id || null,
       client_id: form.client_id || null,
-      due_date: form.due_date || null,
+      due_date: form.due_date ? form.due_date + 'T00:00:00' : null,
     }
     try {
       if (editingTask) {
@@ -563,7 +563,7 @@ export default function Tasks() {
               options={[{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]}
             />
           </div>
-          <Input label="Срок выполнения" type="datetime-local" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
+          <Input label="Срок выполнения" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
           <div>
             <label className="block text-sm font-medium text-text mb-1.5">Теги</label>
             <select

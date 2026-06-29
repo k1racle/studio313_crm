@@ -170,7 +170,7 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
           </div>
           <div className="p-3 bg-subtle rounded-lg">
             <div className="text-xs text-text-muted uppercase">Срок</div>
-            <div className="font-medium text-text">{task.due_date ? new Date(task.due_date).toLocaleString('ru') : 'Не указан'}</div>
+            <div className="font-medium text-text">{task.due_date ? new Date(task.due_date).toLocaleDateString('ru') : 'Не указан'}</div>
           </div>
         </div>
 
