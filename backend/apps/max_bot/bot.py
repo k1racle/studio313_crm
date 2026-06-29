@@ -97,6 +97,10 @@ class MaxBotClient:
         self.token = token or getattr(settings, 'MAX_BOT_TOKEN', '')
         self.proxy_url = proxy_url or getattr(settings, 'MAX_PROXY_URL', None)
         self.headers = {'Authorization': self.token}
+        logger.info(
+            'MaxBotClient init: api_base=%s token_set=%s proxy=%s',
+            MAX_API_BASE, bool(self.token), bool(self.proxy_url)
+        )
         client_kwargs = {
             'http1': True,
             'http2': False,
@@ -111,9 +115,18 @@ class MaxBotClient:
         await self.client.aclose()
 
     async def get_me(self):
-        r = await self.client.get(f'{MAX_API_BASE}/me')
-        r.raise_for_status()
-        return r.json()
+        try:
+            r = await self.client.get(f'{MAX_API_BASE}/me')
+            r.raise_for_status()
+            return r.json()
+        except Exception as e:
+            logger.error('MAX get_me error: %s', e)
+            if hasattr(e, 'response'):
+                try:
+                    logger.error('MAX get_me response: %s %s', e.response.status_code, e.response.text)
+                except Exception:
+                    pass
+            raise
 
     async def send_message(self, chat_id, text, reply_to_message_id=None, user_id=None):
         # MAX API требует передавать user_id/chat_id как query-параметр,
@@ -379,8 +392,8 @@ async def run_max_bot():
     try:
         me = await client.get_me()
         logger.info('MAX бот запущен: %s', me)
-    except Exception as e:
-        logger.error('Не удалось получить информацию о MAX боте: %s', e)
+    except Exception:
+        logger.exception('Не удалось получить информацию о MAX боте')
         await client.close()
         return
 
