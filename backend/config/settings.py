@@ -192,7 +192,7 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_PROXY_URL = os.getenv('TELEGRAM_PROXY_URL', '')
 MAX_BOT_TOKEN = os.getenv('MAX_BOT_TOKEN', '')
 MAX_PROXY_URL = os.getenv('MAX_PROXY_URL', '')
-MAX_BOT_API_BASE = os.getenv('MAX_BOT_API_BASE', 'https://platform-api2.max.ru')
+MAX_BOT_API_BASE = os.getenv('MAX_BOT_API_BASE', 'https://platform-api.max.ru')
 TELEGRAM_WEBHOOK_URL = os.getenv('TELEGRAM_WEBHOOK_URL', '')
 
 # Web Push (VAPID)

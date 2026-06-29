@@ -11,7 +11,7 @@ from .models import MaxChat, MaxMessage, MaxLinkCode, MaxNewsSuggestion
 
 logger = logging.getLogger(__name__)
 
-MAX_API_BASE = getattr(settings, 'MAX_BOT_API_BASE', 'https://platform-api2.max.ru')
+MAX_API_BASE = getattr(settings, 'MAX_BOT_API_BASE', 'https://platform-api.max.ru')
 
 NEWS_KEYWORDS = [
     'новый', 'новая', 'новое', 'новые',

@@ -3,6 +3,17 @@ import api from '../api/axios'
 
 const AuthContext = createContext(null)
 
+function decodeToken(token) {
+  try {
+    const payload = token.split('.')[1]
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const json = atob(base64)
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -10,11 +21,21 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('accessToken')
     if (token) {
+      const payload = decodeToken(token)
+      if (payload) {
+        setUser({
+          id: payload.user_id,
+          username: payload.username || '',
+        })
+      }
       api.get('/auth/me/')
         .then(res => setUser(res.data))
-        .catch(() => {
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
+        .catch((err) => {
+          if (err.response?.status === 401) {
+            localStorage.removeItem('accessToken')
+            localStorage.removeItem('refreshToken')
+            setUser(null)
+          }
         })
         .finally(() => setLoading(false))
     } else {
