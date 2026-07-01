@@ -41,7 +41,7 @@ export default function Layout() {
   const [birthdays, setBirthdays] = useState([])
 
   useEffect(() => {
-    api.get('/users/birthdays/?days=7')
+    api.get('/auth/users/birthdays/?days=7')
       .then(res => setBirthdays(res.data || []))
       .catch(() => setBirthdays([]))
   }, [location.pathname])
