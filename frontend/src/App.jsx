@@ -22,6 +22,7 @@ import PaymentSuccess from './pages/PaymentSuccess'
 import PaymentFail from './pages/PaymentFail'
 import ClientPortal from './pages/ClientPortal'
 import KnowledgeBase from './pages/KnowledgeBase'
+import MediaPlan from './pages/MediaPlan'
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
@@ -52,6 +53,7 @@ function App() {
         <Route path="projects" element={<Projects />} />
         <Route path="helpdesk" element={<Helpdesk />} />
         <Route path="knowledge" element={<KnowledgeBase />} />
+        <Route path="media-plan" element={<MediaPlan />} />
         <Route path="chat" element={<Chat />} />
         <Route path="profile" element={<Profile />} />
       </Route>

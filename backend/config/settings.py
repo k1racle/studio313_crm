@@ -48,6 +48,7 @@ LOCAL_APPS = [
     'apps.tags',
     'apps.timesheets',
     'apps.knowledge_base',
+    'apps.media_plan',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -184,6 +185,10 @@ CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 CELERY_BEAT_SCHEDULE = {
     'archive-done-tasks-after-24h': {
         'task': 'apps.tasks.tasks.archive_done_tasks_after_24h',
+        'schedule': 3600.0,  # каждый час
+    },
+    'send-media-plan-reminders': {
+        'task': 'apps.media_plan.tasks.send_media_plan_reminders',
         'schedule': 3600.0,  # каждый час
     },
 }
