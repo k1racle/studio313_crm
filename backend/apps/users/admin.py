@@ -5,10 +5,10 @@ from .models import User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ['username', 'email', 'first_name', 'last_name', 'patronymic', 'position', 'role', 'phone', 'telegram_id']
+    list_display = ['username', 'email', 'first_name', 'last_name', 'patronymic', 'position', 'role', 'phone', 'telegram_id', 'birth_date']
     list_filter = ['role', 'is_staff', 'is_active']
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('Дополнительно', {'fields': ('role', 'position', 'patronymic', 'phone', 'telegram_id', 'avatar')}),
+        ('Дополнительно', {'fields': ('role', 'position', 'patronymic', 'phone', 'telegram_id', 'max_id', 'avatar', 'birth_date')}),
     )
     add_fieldsets = (
         (None, {
@@ -16,5 +16,5 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('username', 'email', 'password1', 'password2'),
         }),
         ('Персональные данные', {'fields': ('last_name', 'first_name', 'patronymic')}),
-        ('Дополнительно', {'fields': ('role', 'position', 'phone', 'telegram_id')}),
+        ('Дополнительно', {'fields': ('role', 'position', 'phone', 'telegram_id', 'max_id', 'birth_date')}),
     )

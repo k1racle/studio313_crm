@@ -23,6 +23,7 @@ const statusLabels = {
   editing: 'Монтаж',
   approval: 'На согласовании',
   review: 'На проверке',
+  content_placement: 'Выкладка контента',
   done: 'Выполнена',
   canceled: 'Отменена',
 }
@@ -34,6 +35,7 @@ const statusBadgeVariant = {
   editing: 'cyan',
   approval: 'pink',
   review: 'purple',
+  content_placement: 'indigo',
   done: 'green',
   canceled: 'gray',
 }
@@ -45,6 +47,7 @@ const statusBorderColor = {
   editing: 'border-cyan-500',
   approval: 'border-pink-500',
   review: 'border-purple-500',
+  content_placement: 'border-indigo-500',
   done: 'border-green-500',
   canceled: 'border-gray-500',
 }

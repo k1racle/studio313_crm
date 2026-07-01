@@ -23,6 +23,7 @@ const taskStatusLabels = {
   new: 'Новая',
   in_progress: 'В работе',
   review: 'На проверке',
+  content_placement: 'Выкладка контента',
   done: 'Выполнена',
   canceled: 'Отменена',
 }
@@ -31,6 +32,7 @@ const taskStatusVariant = {
   new: 'blue',
   in_progress: 'yellow',
   review: 'purple',
+  content_placement: 'indigo',
   done: 'green',
   canceled: 'gray',
 }

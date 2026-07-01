@@ -8,6 +8,9 @@ class Publication(models.Model):
     PLATFORM_VK = 'vk'
     PLATFORM_MAX = 'max'
     PLATFORM_DZEN = 'dzen'
+    PLATFORM_YOUTUBE = 'youtube'
+    PLATFORM_RUTUBE = 'rutube'
+    PLATFORM_INSTAGRAM = 'instagram'
     PLATFORM_SITE = 'site'
     PLATFORM_OTHER = 'other'
 
@@ -16,6 +19,9 @@ class Publication(models.Model):
         (PLATFORM_VK, 'VK'),
         (PLATFORM_MAX, 'MAX'),
         (PLATFORM_DZEN, 'Дзен'),
+        (PLATFORM_YOUTUBE, 'YouTube'),
+        (PLATFORM_RUTUBE, 'RuTube'),
+        (PLATFORM_INSTAGRAM, 'Instagram'),
         (PLATFORM_SITE, 'Сайт'),
         (PLATFORM_OTHER, 'Другое'),
     ]

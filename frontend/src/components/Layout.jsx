@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import api from '../api/axios'
 import ThemeToggle from './ThemeToggle'
 import NotificationBell from './NotificationBell'
 import FloatingChatButton from './FloatingChatButton'
@@ -8,7 +9,7 @@ import { formatFullName } from '../utils/format'
 import {
   LayoutDashboard, CheckSquare, FolderOpen, Users, Calendar, Briefcase,
   CreditCard, HeadphonesIcon, LogOut, Menu, X,
-  BarChart3, Clock, BookOpen
+  BarChart3, Clock, BookOpen, Cake
 } from 'lucide-react'
 
 const menuItems = [
@@ -37,6 +38,14 @@ export default function Layout() {
     navigate('/login')
   }
 
+  const [birthdays, setBirthdays] = useState([])
+
+  useEffect(() => {
+    api.get('/users/birthdays/?days=7')
+      .then(res => setBirthdays(res.data || []))
+      .catch(() => setBirthdays([]))
+  }, [location.pathname])
+
   const navLinks = (
     <nav className="flex-1 p-3 md:p-4 space-y-1 overflow-y-auto">
       {menuItems.map(item => {
@@ -61,8 +70,25 @@ export default function Layout() {
     </nav>
   )
 
+  const birthdayBlock = birthdays.length > 0 && (
+    <div className="px-4 py-3 mx-3 md:mx-4 mb-2 bg-primary/5 border border-primary/10 rounded-lg">
+      <div className="flex items-start gap-2">
+        <Cake size={16} className="text-primary mt-0.5 shrink-0" />
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-text">
+            {birthdays.some(b => b.is_today) ? 'Сегодня день рождения' : 'Ближайшие дни рождения'}
+          </div>
+          <div className="text-xs text-text-muted truncate">
+            {birthdays.map(b => b.full_name).join(', ')}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   const userBlock = (
     <div className="p-4 border-t border-border">
+      {birthdayBlock}
       <Link
         to="/profile"
         onClick={() => setMobileOpen(false)}

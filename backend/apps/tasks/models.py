@@ -10,6 +10,7 @@ class Task(models.Model):
     STATUS_EDITING = 'editing'
     STATUS_APPROVAL = 'approval'
     STATUS_REVIEW = 'review'
+    STATUS_CONTENT_PLACEMENT = 'content_placement'
     STATUS_DONE = 'done'
     STATUS_CANCELED = 'canceled'
 
@@ -20,6 +21,7 @@ class Task(models.Model):
         (STATUS_EDITING, 'Монтаж'),
         (STATUS_APPROVAL, 'На согласовании'),
         (STATUS_REVIEW, 'На проверке'),
+        (STATUS_CONTENT_PLACEMENT, 'Выкладка контента'),
         (STATUS_DONE, 'Выполнена'),
         (STATUS_CANCELED, 'Отменена'),
     ]

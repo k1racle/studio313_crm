@@ -39,7 +39,11 @@ export default function GanttChart({ tasks, onTaskClick }) {
   const statusColors = {
     new: 'bg-blue-500',
     in_progress: 'bg-yellow-500',
+    shooting: 'bg-orange-500',
+    editing: 'bg-cyan-500',
+    approval: 'bg-pink-500',
     review: 'bg-purple-500',
+    content_placement: 'bg-indigo-500',
     done: 'bg-green-500',
     canceled: 'bg-gray-400',
   }

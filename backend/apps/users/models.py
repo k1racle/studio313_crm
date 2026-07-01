@@ -29,6 +29,7 @@ class User(AbstractUser):
     telegram_id = models.CharField(max_length=100, blank=True, verbose_name='Telegram ID')
     max_id = models.CharField(max_length=100, blank=True, verbose_name='MAX ID')
     avatar = models.ImageField(upload_to='avatars/', blank=True, verbose_name='Аватар')
+    birth_date = models.DateField(null=True, blank=True, verbose_name='День рождения')
 
     class Meta:
         verbose_name = 'Пользователь'

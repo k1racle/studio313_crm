@@ -19,7 +19,7 @@ export default function Profile() {
   const [pushPermission, setPushPermission] = useState('default')
   const [pushLoading, setPushLoading] = useState(false)
 
-  const [form, setForm] = useState({ first_name: '', last_name: '', patronymic: '', position: '' })
+  const [form, setForm] = useState({ first_name: '', last_name: '', patronymic: '', position: '', birth_date: '' })
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -33,7 +33,13 @@ export default function Profile() {
 
   useEffect(() => {
     if (user) {
-      setForm({ first_name: user.first_name || '', last_name: user.last_name || '', patronymic: user.patronymic || '', position: user.position || '' })
+      setForm({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        patronymic: user.patronymic || '',
+        position: user.position || '',
+        birth_date: user.birth_date || '',
+      })
       setAvatarPreview(user.avatar || null)
     }
   }, [user])
@@ -56,6 +62,7 @@ export default function Profile() {
       formData.append('last_name', form.last_name)
       formData.append('patronymic', form.patronymic)
       formData.append('position', form.position)
+      if (form.birth_date) formData.append('birth_date', form.birth_date)
       if (avatarFile) formData.append('avatar', avatarFile)
       await api.patch('/auth/me/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -206,6 +213,15 @@ export default function Profile() {
                   type="text"
                   value={form.position}
                   onChange={e => setForm(f => ({ ...f, position: e.target.value }))}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-1">День рождения</label>
+                <input
+                  type="date"
+                  value={form.birth_date}
+                  onChange={e => setForm(f => ({ ...f, birth_date: e.target.value }))}
                   className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>

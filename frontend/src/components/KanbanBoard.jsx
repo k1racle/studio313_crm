@@ -10,6 +10,7 @@ const columns = [
   { key: 'editing', title: 'Монтаж', color: 'border-cyan-400' },
   { key: 'approval', title: 'На согласовании', color: 'border-pink-400' },
   { key: 'review', title: 'На проверке', color: 'border-purple-400' },
+  { key: 'content_placement', title: 'Выкладка контента', color: 'border-indigo-400' },
   { key: 'done', title: 'Выполнены', color: 'border-green-400' },
 ]
 

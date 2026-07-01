@@ -17,6 +17,9 @@ const platformOptions = [
   { value: 'vk', label: 'VK' },
   { value: 'max', label: 'MAX' },
   { value: 'dzen', label: 'Дзен' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'rutube', label: 'RuTube' },
+  { value: 'instagram', label: 'Instagram' },
   { value: 'site', label: 'Сайт' },
   { value: 'other', label: 'Другое' },
 ]
@@ -34,6 +37,9 @@ const platformBadgeVariant = {
   vk: 'cyan',
   max: 'purple',
   dzen: 'orange',
+  youtube: 'red',
+  rutube: 'blue',
+  instagram: 'pink',
   site: 'green',
   other: 'gray',
 }

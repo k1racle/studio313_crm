@@ -182,6 +182,8 @@ CHANNEL_LAYERS = {
 }
 CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 
+from celery.schedules import crontab
+
 CELERY_BEAT_SCHEDULE = {
     'archive-done-tasks-after-24h': {
         'task': 'apps.tasks.tasks.archive_done_tasks_after_24h',
@@ -190,6 +192,10 @@ CELERY_BEAT_SCHEDULE = {
     'send-media-plan-reminders': {
         'task': 'apps.media_plan.tasks.send_media_plan_reminders',
         'schedule': 3600.0,  # каждый час
+    },
+    'notify-birthdays': {
+        'task': 'apps.users.tasks.notify_upcoming_birthdays',
+        'schedule': crontab(hour=8, minute=0),  # ежедневно в 8:00
     },
 }
 
