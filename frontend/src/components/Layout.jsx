@@ -15,6 +15,7 @@ import {
 const menuItems = [
   { path: '/', label: 'Главная', icon: LayoutDashboard },
   { path: '/tasks', label: 'Задачи', icon: CheckSquare },
+  { path: '/media-plan', label: 'Медиа-план', icon: Calendar },
   { path: '/projects', label: 'Проекты', icon: FolderOpen },
   { path: '/clients', label: 'Клиенты', icon: Users },
   { path: '/bookings', label: 'Запись', icon: Calendar },
@@ -24,7 +25,6 @@ const menuItems = [
   { path: '/timesheets', label: 'Таймшиты', icon: Clock },
   { path: '/helpdesk', label: 'Хелпдеск', icon: HeadphonesIcon },
   { path: '/knowledge', label: 'База знаний', icon: BookOpen },
-  { path: '/media-plan', label: 'Медиа-план', icon: Calendar },
 ]
 
 export default function Layout() {
