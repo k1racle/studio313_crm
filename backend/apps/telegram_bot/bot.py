@@ -3,6 +3,7 @@ import random
 import re
 from asgiref.sync import sync_to_async
 from telegram import Update
+from telegram.error import NetworkError
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, MessageHandler,
     CommandHandler, filters
@@ -20,8 +21,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-logging.getLogger('telegram').setLevel(logging.DEBUG)
-logging.getLogger('httpx').setLevel(logging.DEBUG)
+logging.getLogger('telegram').setLevel(logging.INFO)
+logging.getLogger('httpx').setLevel(logging.WARNING)
 
 class CustomHTTPXRequest(BaseRequest):
     """Кастомная обёртка над httpx.AsyncClient с поддержкой SOCKS5/HTTP прокси.
@@ -426,6 +427,20 @@ def build_application():
 
 
 def run_bot():
-    application = get_application()
+    global _application
     logger.info('Запуск Telegram-бота...')
-    application.run_polling(timeout=10, poll_interval=1)
+    while True:
+        try:
+            _application = None
+            application = get_application()
+            application.run_polling(timeout=10, poll_interval=1)
+        except (NetworkError, httpx.ConnectError, httpx.ConnectTimeout) as e:
+            logger.error('Ошибка сети Telegram-бота: %s. Повтор через 30 секунд...', e)
+        except Exception as e:
+            logger.exception('Неожиданная ошибка Telegram-бота: %s', e)
+        try:
+            import asyncio
+            asyncio.get_event_loop().run_until_complete(asyncio.sleep(30))
+        except KeyboardInterrupt:
+            logger.info('Остановка Telegram-бота')
+            break

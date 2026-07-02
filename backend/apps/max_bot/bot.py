@@ -381,21 +381,28 @@ async def handle_update(client: MaxBotClient, update: dict):
 
 
 async def run_max_bot():
+    import asyncio
     token = getattr(settings, 'MAX_BOT_TOKEN', None)
     if not token:
         logger.error('MAX_BOT_TOKEN не настроен')
         return
 
     proxy_url = getattr(settings, 'MAX_PROXY_URL', None)
-    client = MaxBotClient(token=token, proxy_url=proxy_url)
 
-    try:
-        me = await client.get_me()
-        logger.info('MAX бот запущен: %s', me)
-    except Exception:
-        logger.exception('Не удалось получить информацию о MAX боте')
-        await client.close()
-        return
+    while True:
+        client = MaxBotClient(token=token, proxy_url=proxy_url)
+        try:
+            me = await client.get_me()
+            logger.info('MAX бот запущен: %s', me)
+            break
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as e:
+            logger.error('Не удалось подключиться к MAX API: %s. Повтор через 30 секунд...', e)
+            await client.close()
+            await asyncio.sleep(30)
+        except Exception:
+            logger.exception('Не удалось получить информацию о MAX боте')
+            await client.close()
+            await asyncio.sleep(30)
 
     offset = None
     logger.info('Запуск long polling для MAX бота...')
@@ -412,5 +419,9 @@ async def run_max_bot():
                 update_id = update.get('update_id') or update.get('id')
                 if update_id:
                     offset = update_id + 1
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as e:
+            logger.error('Ошибка сети MAX polling: %s. Повтор через 30 секунд...', e)
+            await asyncio.sleep(30)
         except Exception as e:
             logger.exception('Ошибка polling MAX: %s', e)
+            await asyncio.sleep(30)
