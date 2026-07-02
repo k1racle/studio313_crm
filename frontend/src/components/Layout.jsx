@@ -9,14 +9,14 @@ import { formatFullName } from '../utils/format'
 import {
   LayoutDashboard, CheckSquare, FolderOpen, Users, Calendar, Briefcase,
   CreditCard, HeadphonesIcon, LogOut, Menu, X,
-  BarChart3, Clock, BookOpen, Cake, Clapperboard
+  BarChart3, Clock, BookOpen, Cake, Clapperboard, Newspaper
 } from 'lucide-react'
 
 const menuItems = [
   { path: '/', label: 'Главная', icon: LayoutDashboard },
   { path: '/tasks', label: 'Задачи', icon: CheckSquare },
   { path: '/production', label: 'Производство', icon: Clapperboard },
-  { path: '/media-plan', label: 'Медиа-план', icon: Calendar },
+  { path: '/media-plan', label: 'Медиа-план', icon: Newspaper },
   { path: '/projects', label: 'Проекты', icon: FolderOpen },
   { path: '/clients', label: 'Клиенты', icon: Users },
   { path: '/bookings', label: 'Запись', icon: Calendar },

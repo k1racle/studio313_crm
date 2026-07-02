@@ -44,6 +44,8 @@ export default function GanttChart({ tasks, onTaskClick }) {
     approval: 'bg-pink-500',
     review: 'bg-purple-500',
     content_placement: 'bg-indigo-500',
+    corrections: 'bg-pink-500',
+    sent_to_client: 'bg-green-500',
     done: 'bg-green-500',
     canceled: 'bg-gray-400',
   }

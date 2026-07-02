@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
 import ProductionKanbanBoard from '../components/ProductionKanbanBoard'
+import ProductionCalendar from '../components/ProductionCalendar'
+import GanttChart from '../components/GanttChart'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
@@ -10,7 +12,7 @@ import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import Avatar from '../components/ui/Avatar'
-import { Plus, Pencil, Trash2, Search, List, LayoutGrid } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, List, LayoutGrid, Calendar as CalendarIcon, BarChart3 } from 'lucide-react'
 import { formatShortName } from '../utils/format'
 
 const statusLabels = {
@@ -158,6 +160,8 @@ export default function Production() {
           <div className="flex shrink-0 gap-2 bg-subtle p-1 rounded-lg">
             {[
               { key: 'kanban', label: 'Kanban', icon: LayoutGrid },
+              { key: 'gantt', label: 'Gantt', icon: BarChart3 },
+              { key: 'calendar', label: 'Календарь', icon: CalendarIcon },
               { key: 'list', label: 'Список', icon: List },
             ].map(v => {
               const Icon = v.icon
@@ -200,6 +204,20 @@ export default function Production() {
 
       {view === 'kanban' && (
         <ProductionKanbanBoard items={items} onItemMoved={loadItems} onItemClick={openEdit} />
+      )}
+
+      {view === 'gantt' && (
+        <GanttChart
+          tasks={items}
+          onTaskClick={(id) => {
+            const item = items.find(i => i.id === id)
+            if (item) openEdit(item)
+          }}
+        />
+      )}
+
+      {view === 'calendar' && (
+        <ProductionCalendar items={items} onItemMoved={loadItems} onItemClick={openEdit} />
       )}
 
       {view === 'list' && (
