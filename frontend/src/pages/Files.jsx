@@ -69,7 +69,7 @@ function FileItem({ file, onMove, onDelete, onPreview }) {
   )
 }
 
-function FolderTree({ folder, projectId, onMove, onDeleteFile, onPreview, onDeleteFolder, level = 0 }) {
+function FolderTree({ folder, projectId, onMove, onDeleteFile, onPreview, onDeleteFolder, onUpload, level = 0 }) {
   const [open, setOpen] = useState(true)
   return (
     <div className="mb-2">
@@ -93,8 +93,16 @@ function FolderTree({ folder, projectId, onMove, onDeleteFile, onPreview, onDele
         <span className="text-sm font-medium text-text flex-1 truncate">{folder.name}</span>
         <button
           type="button"
+          onClick={e => { e.stopPropagation(); onUpload(projectId, folder.id) }}
+          className="p-1 text-text-muted hover:text-primary transition-opacity"
+          title="Загрузить файл в папку"
+        >
+          <Upload size={14} />
+        </button>
+        <button
+          type="button"
           onClick={e => { e.stopPropagation(); onDeleteFolder(folder) }}
-          className="p-1 text-text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+          className="p-1 text-text-muted hover:text-danger transition-opacity"
           title="Удалить папку"
         >
           <Trash2 size={14} />
@@ -116,9 +124,13 @@ function FolderTree({ folder, projectId, onMove, onDeleteFile, onPreview, onDele
               onDeleteFile={onDeleteFile}
               onPreview={onPreview}
               onDeleteFolder={onDeleteFolder}
+              onUpload={onUpload}
               level={level + 1}
             />
           ))}
+          {!folder.files?.length && !folder.children?.length && (
+            <div className="text-xs text-text-muted py-2" style={{ marginLeft: level * 12 + 12 }}>Файлов нет</div>
+          )}
         </div>
       )}
     </div>
@@ -362,6 +374,7 @@ export default function Files() {
                   onDeleteFile={handleDeleteFile}
                   onPreview={setPreviewFile}
                   onDeleteFolder={handleDeleteFolder}
+                  onUpload={handleUploadClick}
                 />
               ))}
               {project.files?.map(file => (

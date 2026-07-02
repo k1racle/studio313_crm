@@ -2,7 +2,7 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from apps.projects.models import Project
 from .models import FileFolder, ProjectFile
@@ -60,11 +60,7 @@ class ProjectFileDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProjectFile.objects.all()
     serializer_class = ProjectFileSerializer
     permission_classes = [IsAuthenticated]
-
-    def get_parser_classes(self):
-        if self.request and self.request.method in ('PUT', 'PATCH'):
-            return [MultiPartParser, FormParser]
-        return []
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def perform_update(self, serializer):
         instance = serializer.instance
