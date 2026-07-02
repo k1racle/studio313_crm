@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/media-plan/', include('apps.media_plan.urls')),
     path('api/production/', include('apps.production.urls')),
     path('api/files/', include('apps.files.urls')),
+    path('api/contacts/', include('apps.contacts.urls')),
 ]
 
 if settings.DEBUG:

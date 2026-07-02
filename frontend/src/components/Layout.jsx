@@ -9,7 +9,7 @@ import { formatFullName } from '../utils/format'
 import {
   LayoutDashboard, CheckSquare, FolderOpen, Users, Calendar, Briefcase,
   CreditCard, HeadphonesIcon, LogOut, Menu, X,
-  BarChart3, Clock, BookOpen, Cake, Clapperboard, Newspaper, Folder
+  BarChart3, Clock, BookOpen, Cake, Clapperboard, Newspaper, Folder, Contact
 } from 'lucide-react'
 
 const menuItems = [
@@ -18,6 +18,7 @@ const menuItems = [
   { path: '/production', label: 'Производство', icon: Clapperboard },
   { path: '/media-plan', label: 'Медиа-план', icon: Newspaper },
   { path: '/files', label: 'Файлы', icon: Folder },
+  { path: '/contacts', label: 'Контакты', icon: Contact },
   { path: '/projects', label: 'Проекты', icon: FolderOpen },
   { path: '/clients', label: 'Клиенты', icon: Users },
   { path: '/bookings', label: 'Запись', icon: Calendar },
