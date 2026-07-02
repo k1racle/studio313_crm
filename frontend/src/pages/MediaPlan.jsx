@@ -33,6 +33,14 @@ const statusOptions = [
   { value: 'cancelled', label: 'Отменено' },
 ]
 
+const statusLabels = {
+  draft: 'Черновик',
+  approval: 'На согласовании',
+  scheduled: 'Запланировано',
+  published: 'Опубликовано',
+  cancelled: 'Отменено',
+}
+
 const platformBadgeVariant = {
   telegram: 'blue',
   vk: 'cyan',
