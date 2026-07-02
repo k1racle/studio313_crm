@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/knowledge/', include('apps.knowledge_base.urls')),
     path('api/media-plan/', include('apps.media_plan.urls')),
     path('api/production/', include('apps.production.urls')),
+    path('api/files/', include('apps.files.urls')),
 ]
 
 if settings.DEBUG:

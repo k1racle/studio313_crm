@@ -52,6 +52,20 @@ const statusBadgeVariant = {
   cancelled: 'red',
 }
 
+const priorityLabels = {
+  low: 'Низкий',
+  medium: 'Средний',
+  high: 'Высокий',
+  critical: 'Критический',
+}
+
+const priorityBadgeVariant = {
+  low: 'gray',
+  medium: 'blue',
+  high: 'orange',
+  critical: 'red',
+}
+
 function startOfWeek(date) {
   const d = new Date(date)
   d.setHours(0, 0, 0, 0)
@@ -86,24 +100,40 @@ const emptyForm = {
   description: '',
   platform: 'telegram',
   status: 'draft',
+  priority: 'medium',
   publish_at: '',
   responsible_id: '',
+  project_id: '',
 }
 
 export default function MediaPlan() {
   const { user } = useAuth()
   const [publications, setPublications] = useState([])
   const [users, setUsers] = useState([])
+  const [projects, setProjects] = useState([])
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingPublication, setEditingPublication] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [pendingFiles, setPendingFiles] = useState([])
   const [saving, setSaving] = useState(false)
+  const [filters, setFilters] = useState({
+    status: '',
+    priority: '',
+    responsible: '',
+    project: '',
+    search: '',
+  })
 
   const loadPublications = async () => {
     try {
-      const res = await api.get('/media-plan/publications/')
+      const params = {}
+      if (filters.status) params.status = filters.status
+      if (filters.priority) params.priority = filters.priority
+      if (filters.responsible) params.responsible = filters.responsible
+      if (filters.project) params.project = filters.project
+      if (filters.search) params.search = filters.search
+      const res = await api.get('/media-plan/publications/', { params })
       setPublications(res.data.results || res.data)
     } catch (err) {
       console.error(err)
@@ -119,10 +149,20 @@ export default function MediaPlan() {
     }
   }
 
+  const loadProjects = async () => {
+    try {
+      const res = await api.get('/projects/')
+      setProjects(res.data.results || res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   useEffect(() => {
     loadPublications()
     loadUsers()
-  }, [])
+    loadProjects()
+  }, [filters])
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -153,8 +193,10 @@ export default function MediaPlan() {
       description: pub.description || '',
       platform: pub.platform,
       status: pub.status,
+      priority: pub.priority || 'medium',
       publish_at: formatDateTimeLocalInput(pub.publish_at),
       responsible_id: pub.responsible?.id || '',
+      project_id: pub.project?.id || '',
     })
     setPendingFiles([])
     setIsModalOpen(true)
@@ -174,6 +216,7 @@ export default function MediaPlan() {
       const payload = {
         ...form,
         responsible_id: form.responsible_id || null,
+        project_id: form.project_id || null,
       }
       let pub
       if (editingPublication) {
@@ -264,6 +307,10 @@ export default function MediaPlan() {
   }
 
   const userOptions = [{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]
+  const responsibleFilterOptions = [{ value: '', label: 'Все ответственные' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]
+  const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(p => ({ value: p.id, label: p.name }))]
+  const priorityFilterOptions = [{ value: '', label: 'Все приоритеты' }, ...Object.entries(priorityLabels).map(([k, v]) => ({ value: k, label: v }))]
+  const statusFilterOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
 
   return (
     <div>
@@ -277,6 +324,32 @@ export default function MediaPlan() {
           Новая публикация
         </Button>
       </div>
+
+      <Card className="mb-6 overflow-hidden">
+        <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
+          <div className="shrink-0 w-40">
+            <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
+          </div>
+          <div className="shrink-0 w-44">
+            <SearchableSelect value={filters.responsible} onChange={val => setFilters({ ...filters, responsible: val })} options={responsibleFilterOptions} />
+          </div>
+          <div className="shrink-0 w-36">
+            <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityFilterOptions} />
+          </div>
+          <div className="shrink-0 w-36">
+            <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusFilterOptions} />
+          </div>
+          <div className="flex shrink-0 items-center gap-3 w-auto">
+            <Input
+              icon={<Search size={16} />}
+              placeholder="Поиск..."
+              value={filters.search}
+              onChange={e => setFilters({ ...filters, search: e.target.value })}
+              className="w-48 sm:w-64"
+            />
+          </div>
+        </div>
+      </Card>
 
       <Card className="mb-6">
         <div className="flex items-center justify-between gap-3">
@@ -351,8 +424,12 @@ export default function MediaPlan() {
                           )}
                         </div>
                         <div className="text-sm font-medium text-text line-clamp-2 mb-1">{pub.title}</div>
-                        <div className="flex items-center gap-1.5">
+                        {pub.project && (
+                          <div className="text-[10px] text-primary mb-1 truncate">{pub.project.name}</div>
+                        )}
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge variant={statusBadgeVariant[pub.status]}>{pub.status_label}</Badge>
+                          <Badge variant={priorityBadgeVariant[pub.priority]}>{priorityLabels[pub.priority]}</Badge>
                         </div>
                         <div className="mt-2 flex items-center justify-between">
                           <span className="text-[10px] text-text-muted">
@@ -387,6 +464,20 @@ export default function MediaPlan() {
               className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <SearchableSelect
+              label="Проект"
+              value={form.project_id}
+              onChange={val => setForm({ ...form, project_id: val })}
+              options={projectOptions}
+            />
+            <SearchableSelect
+              label="Ответственный"
+              value={form.responsible_id}
+              onChange={val => setForm({ ...form, responsible_id: val })}
+              options={userOptions}
+            />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <SearchableSelect
               label="Платформа"
@@ -400,19 +491,19 @@ export default function MediaPlan() {
               onChange={val => setForm({ ...form, status: val })}
               options={statusOptions}
             />
-            <Input
-              label="Дата и время"
-              type="datetime-local"
-              value={form.publish_at}
-              onChange={e => setForm({ ...form, publish_at: e.target.value })}
-              required
+            <Select
+              label="Приоритет"
+              value={form.priority}
+              onChange={e => setForm({ ...form, priority: e.target.value })}
+              options={Object.entries(priorityLabels).map(([k, v]) => ({ value: k, label: v }))}
             />
           </div>
-          <SearchableSelect
-            label="Ответственный"
-            value={form.responsible_id}
-            onChange={val => setForm({ ...form, responsible_id: val })}
-            options={userOptions}
+          <Input
+            label="Дата и время"
+            type="datetime-local"
+            value={form.publish_at}
+            onChange={e => setForm({ ...form, publish_at: e.target.value })}
+            required
           />
 
           {editingPublication && (

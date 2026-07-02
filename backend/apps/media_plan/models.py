@@ -40,10 +40,31 @@ class Publication(models.Model):
         (STATUS_CANCELLED, 'Отменено'),
     ]
 
+    PRIORITY_LOW = 'low'
+    PRIORITY_MEDIUM = 'medium'
+    PRIORITY_HIGH = 'high'
+    PRIORITY_CRITICAL = 'critical'
+
+    PRIORITY_CHOICES = [
+        (PRIORITY_LOW, 'Низкий'),
+        (PRIORITY_MEDIUM, 'Средний'),
+        (PRIORITY_HIGH, 'Высокий'),
+        (PRIORITY_CRITICAL, 'Критический'),
+    ]
+
     title = models.CharField(max_length=255, verbose_name='Тема публикации')
     description = models.TextField(blank=True, verbose_name='Текст / описание')
     platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default=PLATFORM_OTHER, verbose_name='Платформа')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT, verbose_name='Статус')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM, verbose_name='Приоритет')
+    project = models.ForeignKey(
+        'projects.Project',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='publications',
+        verbose_name='Проект'
+    )
     publish_at = models.DateTimeField(verbose_name='Дата и время публикации')
     responsible = models.ForeignKey(
         settings.AUTH_USER_MODEL,

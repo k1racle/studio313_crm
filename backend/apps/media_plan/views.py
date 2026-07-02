@@ -13,12 +13,14 @@ from apps.tasks.models import Task
 
 
 class PublicationViewSet(viewsets.ModelViewSet):
-    queryset = Publication.objects.all().select_related('responsible', 'created_by', 'linked_task').prefetch_related('attachments')
+    queryset = Publication.objects.all().select_related('responsible', 'created_by', 'linked_task', 'project').prefetch_related('attachments')
     serializer_class = PublicationSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['platform', 'status', 'responsible']
-    ordering_fields = ['publish_at']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['platform', 'status', 'priority', 'responsible', 'project']
+    search_fields = ['title', 'description']
+    ordering_fields = ['publish_at', 'priority', 'created_at']
+
 
     def get_queryset(self):
         qs = super().get_queryset()

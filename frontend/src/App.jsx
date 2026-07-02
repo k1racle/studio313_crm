@@ -24,6 +24,7 @@ import ClientPortal from './pages/ClientPortal'
 import KnowledgeBase from './pages/KnowledgeBase'
 import MediaPlan from './pages/MediaPlan'
 import Production from './pages/Production'
+import Files from './pages/Files'
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
@@ -56,6 +57,7 @@ function App() {
         <Route path="helpdesk" element={<Helpdesk />} />
         <Route path="knowledge" element={<KnowledgeBase />} />
         <Route path="media-plan" element={<MediaPlan />} />
+        <Route path="files" element={<Files />} />
         <Route path="chat" element={<Chat />} />
         <Route path="profile" element={<Profile />} />
       </Route>
