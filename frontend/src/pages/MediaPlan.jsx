@@ -334,7 +334,7 @@ export default function MediaPlan() {
         </Button>
       </div>
 
-      <Card className="mb-6 overflow-hidden">
+      <Card className="mb-6">
         <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
           <div className="shrink-0 w-40">
             <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />

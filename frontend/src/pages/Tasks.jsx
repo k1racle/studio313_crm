@@ -285,7 +285,7 @@ export default function Tasks() {
         )}
       </div>
 
-      <Card className="mb-6 overflow-hidden">
+      <Card className="mb-6">
         <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
           <div className="flex shrink-0 gap-2 bg-subtle p-1 rounded-lg">
             {['kanban', 'gantt', 'calendar', 'list'].map(v => (
