@@ -1,6 +1,19 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from .models import Task
+from .models import Task, ReviewAssigneeConfig
+
+
+@receiver(pre_save, sender=Task)
+def set_review_assignee(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            old = Task.objects.get(pk=instance.pk)
+        except Task.DoesNotExist:
+            return
+        if old.status != instance.status and instance.status == Task.STATUS_REVIEW:
+            config = ReviewAssigneeConfig.objects.first()
+            if config and config.assignee:
+                instance.assignee = config.assignee
 
 
 @receiver(post_save, sender=Task)

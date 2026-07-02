@@ -59,6 +59,12 @@ class Task(models.Model):
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', verbose_name='Клиент')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_tasks', verbose_name='Создатель')
     assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks', verbose_name='Исполнитель')
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='task_memberships',
+        verbose_name='Участники'
+    )
     due_date = models.DateTimeField(null=True, blank=True, verbose_name='Срок выполнения')
     is_archived = models.BooleanField(default=False, verbose_name='В архиве')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создана')
@@ -71,6 +77,21 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class ReviewAssigneeConfig(models.Model):
+    assignee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name='Ответственный на проверке'
+    )
+
+    class Meta:
+        verbose_name = 'Ответственный на проверке'
+        verbose_name_plural = 'Ответственный на проверке'
+
+    def __str__(self):
+        return str(self.assignee)
 
 
 class TaskComment(models.Model):

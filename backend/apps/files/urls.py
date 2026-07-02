@@ -5,6 +5,8 @@ from .views import (
     FolderDetailView,
     ProjectFileListCreateView,
     ProjectFileDetailView,
+    ProjectLinkListCreateView,
+    ProjectLinkDetailView,
 )
 
 urlpatterns = [
@@ -13,4 +15,6 @@ urlpatterns = [
     path('folders/<int:pk>/', FolderDetailView.as_view(), name='folder_detail'),
     path('files/', ProjectFileListCreateView.as_view(), name='projectfile_list_create'),
     path('files/<int:pk>/', ProjectFileDetailView.as_view(), name='projectfile_detail'),
+    path('links/', ProjectLinkListCreateView.as_view(), name='projectlink_list_create'),
+    path('links/<int:pk>/', ProjectLinkDetailView.as_view(), name='projectlink_detail'),
 ]

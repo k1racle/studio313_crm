@@ -7,7 +7,8 @@ import Modal from '../components/ui/Modal'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import {
   Folder, FileText, Image as ImageIcon, Film, Headphones, File as FileIcon,
-  Upload, Plus, Trash2, ChevronDown, ChevronRight, X, Search, FolderOpen
+  Upload, Plus, Pencil, Trash2, ChevronDown, ChevronRight, X, Search, FolderOpen,
+  Link as LinkIcon
 } from 'lucide-react'
 
 function formatBytes(bytes) {
@@ -35,8 +36,37 @@ function isPreviewable(type, name) {
   return false
 }
 
-function FileItem({ file, onMove, onDelete, onPreview }) {
+function FileItem({ file, onMove, onDelete, onPreview, onRename }) {
   const Icon = getFileIcon(file.file?.type, file.name)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState(file.name)
+
+  const handleSave = async () => {
+    if (!editName.trim() || editName.trim() === file.name) {
+      setEditName(file.name)
+      setIsEditing(false)
+      return
+    }
+    await onRename(file, editName.trim())
+    setIsEditing(false)
+  }
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-border">
+        <Icon size={18} className="text-primary shrink-0" />
+        <input
+          autoFocus
+          value={editName}
+          onChange={e => setEditName(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
+          className="flex-1 min-w-0 px-2 py-1 text-sm bg-subtle border border-border rounded text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+    )
+  }
+
   return (
     <div
       draggable
@@ -44,7 +74,7 @@ function FileItem({ file, onMove, onDelete, onPreview }) {
         e.dataTransfer.setData('files/file-id', String(file.id))
         e.dataTransfer.effectAllowed = 'move'
       }}
-      className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-border hover:bg-subtle cursor-move group"
+      className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-border hover:bg-subtle cursor-move"
     >
       <button
         type="button"
@@ -59,8 +89,16 @@ function FileItem({ file, onMove, onDelete, onPreview }) {
       </button>
       <button
         type="button"
+        onClick={() => setIsEditing(true)}
+        className="p-1 text-text-muted hover:text-primary transition-opacity"
+        title="Переименовать"
+      >
+        <Pencil size={14} />
+      </button>
+      <button
+        type="button"
         onClick={() => onDelete(file)}
-        className="p-1 text-text-muted hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+        className="p-1 text-text-muted hover:text-danger transition-opacity"
         title="Удалить"
       >
         <Trash2 size={14} />
@@ -69,50 +107,148 @@ function FileItem({ file, onMove, onDelete, onPreview }) {
   )
 }
 
-function FolderTree({ folder, projectId, onMove, onDeleteFile, onPreview, onDeleteFolder, onUpload, level = 0 }) {
+function LinkItem({ link, onMove, onDelete, onEdit }) {
+  return (
+    <div
+      draggable
+      onDragStart={e => {
+        e.dataTransfer.setData('files/link-id', String(link.id))
+        e.dataTransfer.effectAllowed = 'move'
+      }}
+      className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-border hover:bg-subtle cursor-move"
+    >
+      <a
+        href={link.url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-2 flex-1 min-w-0"
+        title={link.url}
+      >
+        <LinkIcon size={18} className="text-primary shrink-0" />
+        <div className="min-w-0">
+          <div className="text-sm text-text truncate">{link.name}</div>
+          <div className="text-[10px] text-text-muted truncate">{link.url}</div>
+        </div>
+      </a>
+      <button
+        type="button"
+        onClick={() => onEdit(link)}
+        className="p-1 text-text-muted hover:text-primary transition-opacity"
+        title="Изменить"
+      >
+        <Pencil size={14} />
+      </button>
+      <button
+        type="button"
+        onClick={() => onDelete(link)}
+        className="p-1 text-text-muted hover:text-danger transition-opacity"
+        title="Удалить"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  )
+}
+
+function FolderTree({ folder, projectId, onMove, onDeleteFile, onPreview, onDeleteFolder, onUpload, onRenameFolder, onRenameFile, onMoveLink, onDeleteLink, onRenameLink, onAddLink, onEditLink, level = 0 }) {
   const [open, setOpen] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState(folder.name)
+
+  const handleSave = async () => {
+    if (!editName.trim() || editName.trim() === folder.name) {
+      setEditName(folder.name)
+      setIsEditing(false)
+      return
+    }
+    await onRenameFolder(folder, editName.trim())
+    setIsEditing(false)
+  }
+
   return (
     <div className="mb-2">
-      <div
-        onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('bg-primary/10') }}
-        onDragLeave={e => { e.currentTarget.classList.remove('bg-primary/10') }}
-        onDrop={async (e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          e.currentTarget.classList.remove('bg-primary/10')
-          const fileId = e.dataTransfer.getData('files/file-id')
-          if (!fileId) return
-          await onMove(Number(fileId), { folder: folder.id, project: projectId })
-        }}
-        className="flex items-center gap-2 p-2 rounded-lg bg-subtle border border-border cursor-pointer hover:bg-hover transition-colors"
-        style={{ marginLeft: level * 12 }}
-        onClick={() => setOpen(!open)}
-      >
-        {open ? <ChevronDown size={16} className="text-text-muted" /> : <ChevronRight size={16} className="text-text-muted" />}
-        <FolderOpen size={16} className="text-primary" />
-        <span className="text-sm font-medium text-text flex-1 truncate">{folder.name}</span>
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onUpload(projectId, folder.id) }}
-          className="p-1 text-text-muted hover:text-primary transition-opacity"
-          title="Загрузить файл в папку"
+      {isEditing ? (
+        <div
+          className="flex items-center gap-2 p-2 rounded-lg bg-subtle border border-border"
+          style={{ marginLeft: level * 12 }}
         >
-          <Upload size={14} />
-        </button>
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onDeleteFolder(folder) }}
-          className="p-1 text-text-muted hover:text-danger transition-opacity"
-          title="Удалить папку"
+          <FolderOpen size={16} className="text-primary" />
+          <input
+            autoFocus
+            value={editName}
+            onChange={e => setEditName(e.target.value)}
+            onBlur={handleSave}
+            onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
+            className="flex-1 min-w-0 px-2 py-1 text-sm bg-surface border border-border rounded text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+      ) : (
+        <div
+          onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('bg-primary/10') }}
+          onDragLeave={e => { e.currentTarget.classList.remove('bg-primary/10') }}
+          onDrop={async (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            e.currentTarget.classList.remove('bg-primary/10')
+            const fileId = e.dataTransfer.getData('files/file-id')
+            const linkId = e.dataTransfer.getData('files/link-id')
+            if (fileId) {
+              await onMove(Number(fileId), { folder: folder.id, project: projectId })
+            } else if (linkId) {
+              await onMoveLink(Number(linkId), { folder: folder.id, project: projectId })
+            }
+          }}
+          className="flex items-center gap-2 p-2 rounded-lg bg-subtle border border-border cursor-pointer hover:bg-hover transition-colors"
+          style={{ marginLeft: level * 12 }}
+          onClick={() => setOpen(!open)}
         >
-          <Trash2 size={14} />
-        </button>
-      </div>
+          {open ? <ChevronDown size={16} className="text-text-muted" /> : <ChevronRight size={16} className="text-text-muted" />}
+          <FolderOpen size={16} className="text-primary" />
+          <span className="text-sm font-medium text-text flex-1 truncate">{folder.name}</span>
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onUpload(projectId, folder.id) }}
+            className="p-1 text-text-muted hover:text-primary transition-opacity"
+            title="Загрузить файл в папку"
+          >
+            <Upload size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onAddLink(projectId, folder.id) }}
+            className="p-1 text-text-muted hover:text-primary transition-opacity"
+            title="Добавить ссылку в папку"
+          >
+            <LinkIcon size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); setIsEditing(true) }}
+            className="p-1 text-text-muted hover:text-primary transition-opacity"
+            title="Переименовать папку"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onDeleteFolder(folder) }}
+            className="p-1 text-text-muted hover:text-danger transition-opacity"
+            title="Удалить папку"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
       {open && (
         <div className="mt-1 space-y-1">
           {folder.files?.map(file => (
             <div key={file.id} style={{ marginLeft: level * 12 + 12 }}>
-              <FileItem file={file} onMove={onMove} onDelete={onDeleteFile} onPreview={onPreview} />
+              <FileItem file={file} onMove={onMove} onDelete={onDeleteFile} onPreview={onPreview} onRename={onRenameFile} />
+            </div>
+          ))}
+          {folder.links?.map(link => (
+            <div key={link.id} style={{ marginLeft: level * 12 + 12 }}>
+              <LinkItem link={link} onMove={onMoveLink} onDelete={onDeleteLink} onEdit={onEditLink} />
             </div>
           ))}
           {folder.children?.map(child => (
@@ -125,10 +261,17 @@ function FolderTree({ folder, projectId, onMove, onDeleteFile, onPreview, onDele
               onPreview={onPreview}
               onDeleteFolder={onDeleteFolder}
               onUpload={onUpload}
+              onRenameFolder={onRenameFolder}
+              onRenameFile={onRenameFile}
+              onMoveLink={onMoveLink}
+              onDeleteLink={onDeleteLink}
+              onRenameLink={onRenameLink}
+              onAddLink={onAddLink}
+              onEditLink={onEditLink}
               level={level + 1}
             />
           ))}
-          {!folder.files?.length && !folder.children?.length && (
+          {!folder.files?.length && !folder.links?.length && !folder.children?.length && (
             <div className="text-xs text-text-muted py-2" style={{ marginLeft: level * 12 + 12 }}>Файлов нет</div>
           )}
         </div>
@@ -148,6 +291,8 @@ export default function Files() {
   const [previewFile, setPreviewFile] = useState(null)
   const [folderModal, setFolderModal] = useState({ open: false, projectId: '', parentId: null })
   const [folderName, setFolderName] = useState('')
+  const [linkModal, setLinkModal] = useState({ open: false, projectId: '', folderId: null, editing: null })
+  const [linkForm, setLinkForm] = useState({ name: '', url: '' })
 
   const uploadInputRef = useRef(null)
   const [uploadTarget, setUploadTarget] = useState({ projectId: '', folderId: null })
@@ -214,6 +359,94 @@ export default function Files() {
     }
   }
 
+  const handleRenameFile = async (file, newName) => {
+    try {
+      await api.patch(`/files/files/${file.id}/`, { name: newName })
+      loadTree()
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось переименовать файл')
+    }
+  }
+
+  const handleRenameFolder = async (folder, newName) => {
+    try {
+      await api.patch(`/files/folders/${folder.id}/`, { name: newName })
+      loadTree()
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось переименовать папку')
+    }
+  }
+
+  const handleMoveLink = async (linkId, target) => {
+    try {
+      await api.patch(`/files/links/${linkId}/`, {
+        project: target.project,
+        folder: target.folder || null,
+      })
+      loadTree()
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось переместить ссылку')
+    }
+  }
+
+  const handleDeleteLink = async (link) => {
+    if (!confirm(`Удалить ссылку «${link.name}»?`)) return
+    try {
+      await api.delete(`/files/links/${link.id}/`)
+      loadTree()
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось удалить ссылку')
+    }
+  }
+
+  const handleRenameLink = async (link, newName) => {
+    try {
+      await api.patch(`/files/links/${link.id}/`, { name: newName })
+      loadTree()
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось переименовать ссылку')
+    }
+  }
+
+  const handleAddLink = (projectId, folderId = null) => {
+    setLinkForm({ name: '', url: '' })
+    setLinkModal({ open: true, projectId, folderId, editing: null })
+  }
+
+  const handleEditLink = (link) => {
+    setLinkForm({ name: link.name, url: link.url })
+    setLinkModal({ open: true, projectId: link.project, folderId: link.folder, editing: link })
+  }
+
+  const handleSaveLink = async (e) => {
+    e.preventDefault()
+    if (!linkForm.name.trim() || !linkForm.url.trim()) return
+    const payload = {
+      name: linkForm.name.trim(),
+      url: linkForm.url.trim(),
+      project: linkModal.projectId,
+      folder: linkModal.folderId || null,
+    }
+    try {
+      if (linkModal.editing) {
+        await api.patch(`/files/links/${linkModal.editing.id}/`, payload)
+      } else {
+        await api.post('/files/links/', payload)
+      }
+      setLinkModal({ open: false, projectId: '', folderId: null, editing: null })
+      setLinkForm({ name: '', url: '' })
+      loadTree()
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось сохранить ссылку')
+    }
+  }
+
   const handleUploadClick = (projectId, folderId = null) => {
     setUploadTarget({ projectId, folderId })
     uploadInputRef.current?.click()
@@ -262,6 +495,7 @@ export default function Files() {
     return (
       p.name.toLowerCase().includes(q) ||
       p.files?.some(f => f.name.toLowerCase().includes(q)) ||
+      p.links?.some(l => l.name.toLowerCase().includes(q) || l.url.toLowerCase().includes(q)) ||
       hasFolderMatch(p.folders, q)
     )
   })
@@ -270,6 +504,7 @@ export default function Files() {
     return folders?.some(folder =>
       folder.name.toLowerCase().includes(q) ||
       folder.files?.some(f => f.name.toLowerCase().includes(q)) ||
+      folder.links?.some(l => l.name.toLowerCase().includes(q) || l.url.toLowerCase().includes(q)) ||
       hasFolderMatch(folder.children, q)
     )
   }
@@ -347,8 +582,12 @@ export default function Files() {
               e.preventDefault()
               e.currentTarget.classList.remove('ring-2', 'ring-primary/30')
               const fileId = e.dataTransfer.getData('files/file-id')
-              if (!fileId) return
-              await handleMove(Number(fileId), { project: project.id, folder: null })
+              const linkId = e.dataTransfer.getData('files/link-id')
+              if (fileId) {
+                await handleMove(Number(fileId), { project: project.id, folder: null })
+              } else if (linkId) {
+                await handleMoveLink(Number(linkId), { project: project.id, folder: null })
+              }
             }}
             className="bg-surface rounded-xl border border-border p-4 transition-shadow"
           >
@@ -357,6 +596,9 @@ export default function Files() {
               <div className="flex items-center gap-1">
                 <Button type="button" size="sm" variant="secondary" onClick={() => handleUploadClick(project.id)} title="Загрузить файл">
                   <Upload size={14} />
+                </Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => handleAddLink(project.id)} title="Добавить ссылку">
+                  <LinkIcon size={14} />
                 </Button>
                 <Button type="button" size="sm" variant="secondary" onClick={() => setFolderModal({ open: true, projectId: project.id, parentId: null })} title="Создать папку">
                   <Folder size={14} />
@@ -375,6 +617,13 @@ export default function Files() {
                   onPreview={setPreviewFile}
                   onDeleteFolder={handleDeleteFolder}
                   onUpload={handleUploadClick}
+                  onRenameFolder={handleRenameFolder}
+                  onRenameFile={handleRenameFile}
+                  onMoveLink={handleMoveLink}
+                  onDeleteLink={handleDeleteLink}
+                  onRenameLink={handleRenameLink}
+                  onAddLink={handleAddLink}
+                  onEditLink={handleEditLink}
                 />
               ))}
               {project.files?.map(file => (
@@ -384,10 +633,20 @@ export default function Files() {
                   onMove={handleMove}
                   onDelete={handleDeleteFile}
                   onPreview={setPreviewFile}
+                  onRename={handleRenameFile}
                 />
               ))}
-              {!project.folders?.length && !project.files?.length && (
-                <div className="text-sm text-text-muted text-center py-6">Нет файлов</div>
+              {project.links?.map(link => (
+                <LinkItem
+                  key={link.id}
+                  link={link}
+                  onMove={handleMoveLink}
+                  onDelete={handleDeleteLink}
+                  onEdit={handleEditLink}
+                />
+              ))}
+              {!project.folders?.length && !project.files?.length && !project.links?.length && (
+                <div className="text-sm text-text-muted text-center py-6">Нет файлов и ссылок</div>
               )}
             </div>
           </div>
@@ -421,6 +680,33 @@ export default function Files() {
           <div className="flex justify-end gap-3">
             <Button type="button" variant="secondary" onClick={() => setFolderModal({ open: false, projectId: '', parentId: null })}>Отмена</Button>
             <Button type="submit">Создать</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={linkModal.open}
+        onClose={() => setLinkModal({ open: false, projectId: '', folderId: null, editing: null })}
+        title={linkModal.editing ? 'Изменить ссылку' : 'Новая ссылка'}
+      >
+        <form onSubmit={handleSaveLink} className="space-y-4">
+          <Input
+            label="Название"
+            value={linkForm.name}
+            onChange={e => setLinkForm({ ...linkForm, name: e.target.value })}
+            required
+            autoFocus
+          />
+          <Input
+            label="Ссылка"
+            type="url"
+            value={linkForm.url}
+            onChange={e => setLinkForm({ ...linkForm, url: e.target.value })}
+            required
+          />
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="secondary" onClick={() => setLinkModal({ open: false, projectId: '', folderId: null, editing: null })}>Отмена</Button>
+            <Button type="submit">{linkModal.editing ? 'Сохранить' : 'Добавить'}</Button>
           </div>
         </form>
       </Modal>

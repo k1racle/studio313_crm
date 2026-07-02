@@ -79,3 +79,38 @@ class ProjectFile(models.Model):
 
     def __str__(self):
         return self.name or str(self.file)
+
+
+class ProjectLink(models.Model):
+    project = models.ForeignKey(
+        'projects.Project',
+        on_delete=models.CASCADE,
+        related_name='project_links',
+        verbose_name='Проект'
+    )
+    folder = models.ForeignKey(
+        FileFolder,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='links',
+        verbose_name='Папка'
+    )
+    name = models.CharField(max_length=255, verbose_name='Название')
+    url = models.URLField(verbose_name='Ссылка')
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_links',
+        verbose_name='Создал'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создана')
+
+    class Meta:
+        verbose_name = 'Ссылка'
+        verbose_name_plural = 'Ссылки'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name

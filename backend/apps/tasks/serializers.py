@@ -63,6 +63,14 @@ class TaskSerializer(serializers.ModelSerializer):
         required=False,
         write_only=True
     )
+    members = UserSerializer(many=True, read_only=True)
+    member_ids = serializers.PrimaryKeyRelatedField(
+        source='members',
+        queryset=Task._meta.get_field('members').related_model.objects.all(),
+        many=True,
+        required=False,
+        write_only=True
+    )
     comments = TaskCommentSerializer(many=True, read_only=True)
     attachments = TaskAttachmentSerializer(many=True, read_only=True)
 
@@ -72,7 +80,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'status', 'priority', 'source',
             'project', 'project_id',
             'client', 'client_id',
-            'creator', 'assignee', 'assignee_id', 'due_date',
+            'creator', 'assignee', 'assignee_id', 'members', 'member_ids', 'due_date',
             'is_archived',
             'tags', 'tag_ids',
             'created_at', 'updated_at', 'comments', 'attachments'

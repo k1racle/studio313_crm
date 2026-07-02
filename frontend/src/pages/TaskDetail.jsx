@@ -176,6 +176,20 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
           </div>
         </div>
 
+        {task.members?.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-text-muted uppercase mb-2">Участники</h3>
+            <div className="flex flex-wrap gap-2">
+              {task.members.map(member => (
+                <div key={member.id} className="flex items-center gap-2 px-3 py-1.5 bg-subtle rounded-lg">
+                  <Avatar user={member} size={20} />
+                  <span className="text-sm text-text">{formatShortName(member)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-text-muted uppercase mb-2">Описание</h3>
           <p className="text-text whitespace-pre-wrap">{task.description || 'Нет описания'}</p>

@@ -5,11 +5,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from apps.projects.models import Project
-from .models import FileFolder, ProjectFile
+from .models import FileFolder, ProjectFile, ProjectLink
 from .serializers import (
     ProjectTreeSerializer,
     FolderCreateSerializer,
     ProjectFileSerializer,
+    ProjectLinkSerializer,
 )
 
 
@@ -25,7 +26,9 @@ class FileTreeView(APIView):
         projects = projects.prefetch_related(
             'file_folders__children',
             'file_folders__files',
+            'file_folders__links',
             'project_files',
+            'project_links',
         )
         serializer = ProjectTreeSerializer(projects, many=True)
         return Response(serializer.data)
@@ -67,3 +70,18 @@ class ProjectFileDetailView(generics.RetrieveUpdateDestroyAPIView):
         if 'file' in serializer.validated_data and not serializer.validated_data.get('name'):
             serializer.validated_data['name'] = instance.file.name
         serializer.save()
+
+
+class ProjectLinkListCreateView(generics.ListCreateAPIView):
+    queryset = ProjectLink.objects.all()
+    serializer_class = ProjectLinkSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class ProjectLinkDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ProjectLink.objects.all()
+    serializer_class = ProjectLinkSerializer
+    permission_classes = [IsAuthenticated]

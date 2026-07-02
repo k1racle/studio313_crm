@@ -93,6 +93,7 @@ const emptyForm = {
   client_id: '',
   due_date: '',
   tag_ids: [],
+  member_ids: [],
 }
 
 export default function Tasks() {
@@ -214,6 +215,7 @@ export default function Tasks() {
       client_id: task.client?.id || '',
       due_date: task.due_date ? task.due_date.slice(0, 10) : '',
       tag_ids: task.tags?.map(t => t.id) || [],
+      member_ids: task.members?.map(m => m.id) || [],
     })
     setIsModalOpen(true)
   }
@@ -581,6 +583,23 @@ export default function Tasks() {
             >
               {tags.map(tag => (
                 <option key={tag.id} value={tag.id}>{tag.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text mb-1.5">Участники</label>
+            <select
+              multiple
+              value={form.member_ids}
+              onChange={e => {
+                const options = Array.from(e.target.selectedOptions).map(o => Number(o.value))
+                setForm({ ...form, member_ids: options })
+              }}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              style={{ minHeight: '6rem' }}
+            >
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.get_short_name || `${u.last_name} ${u.first_name}`.trim() || u.username}</option>
               ))}
             </select>
           </div>
