@@ -49,6 +49,7 @@ LOCAL_APPS = [
     'apps.timesheets',
     'apps.knowledge_base',
     'apps.media_plan',
+    'apps.production',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

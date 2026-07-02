@@ -22,6 +22,7 @@ urlpatterns = [
     path('api/time-entries/', include('apps.timesheets.urls')),
     path('api/knowledge/', include('apps.knowledge_base.urls')),
     path('api/media-plan/', include('apps.media_plan.urls')),
+    path('api/production/', include('apps.production.urls')),
 ]
 
 if settings.DEBUG:

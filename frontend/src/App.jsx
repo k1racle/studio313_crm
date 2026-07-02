@@ -23,6 +23,7 @@ import PaymentFail from './pages/PaymentFail'
 import ClientPortal from './pages/ClientPortal'
 import KnowledgeBase from './pages/KnowledgeBase'
 import MediaPlan from './pages/MediaPlan'
+import Production from './pages/Production'
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
@@ -42,6 +43,7 @@ function App() {
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="tasks" element={<Tasks />} />
+        <Route path="production" element={<Production />} />
 
         <Route path="clients" element={<Clients />} />
         <Route path="bookings" element={<Bookings />} />
