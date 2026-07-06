@@ -13,12 +13,13 @@ class Project(models.Model):
     )
     is_active = models.BooleanField(default=True, verbose_name='Активен')
     is_archived = models.BooleanField(default=False, verbose_name='В архиве')
+    order = models.PositiveIntegerField(default=0, verbose_name='Порядок')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
 
     class Meta:
         verbose_name = 'Проект'
         verbose_name_plural = 'Проекты'
-        ordering = ['-created_at']
+        ordering = ['order', '-created_at']
 
     def __str__(self):
         return self.name

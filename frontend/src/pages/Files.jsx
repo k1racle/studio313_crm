@@ -8,7 +8,7 @@ import SearchableSelect from '../components/ui/SearchableSelect'
 import {
   Folder, FileText, Image as ImageIcon, Film, Headphones, File as FileIcon,
   Upload, Plus, Pencil, Trash2, ChevronDown, ChevronRight, X, Search, FolderOpen,
-  Link as LinkIcon
+  Link as LinkIcon, GripVertical
 } from 'lucide-react'
 
 function formatBytes(bytes) {
@@ -293,6 +293,7 @@ export default function Files() {
   const [folderName, setFolderName] = useState('')
   const [linkModal, setLinkModal] = useState({ open: false, projectId: '', folderId: null, editing: null })
   const [linkForm, setLinkForm] = useState({ name: '', url: '' })
+  const [dropTarget, setDropTarget] = useState(null)
 
   const uploadInputRef = useRef(null)
   const [uploadTarget, setUploadTarget] = useState({ projectId: '', folderId: null })
@@ -389,6 +390,43 @@ export default function Files() {
     } catch (err) {
       console.error(err)
       alert('Не удалось переместить ссылку')
+    }
+  }
+
+  const handleReorderProject = async (draggedId, targetId, clientX) => {
+    if (draggedId === targetId || selectedProject) return
+    const targetEl = document.querySelector(`[data-project-id="${targetId}"]`)
+    if (!targetEl) return
+    const rect = targetEl.getBoundingClientRect()
+    const insertAfter = clientX > rect.left + rect.width / 2
+
+    const list = [...projects]
+    const draggedIndex = list.findIndex(p => p.id === draggedId)
+    const targetIndex = list.findIndex(p => p.id === targetId)
+    if (draggedIndex === -1 || targetIndex === -1) return
+
+    const [draggedProject] = list.splice(draggedIndex, 1)
+    let newIndex = targetIndex
+    if (draggedIndex < targetIndex && insertAfter) {
+      newIndex = targetIndex
+    } else if (draggedIndex < targetIndex && !insertAfter) {
+      newIndex = targetIndex - 1
+    } else if (draggedIndex > targetIndex && insertAfter) {
+      newIndex = targetIndex + 1
+    } else {
+      newIndex = targetIndex
+    }
+    list.splice(newIndex, 0, draggedProject)
+
+    const updated = list.map((p, idx) => ({ ...p, order: idx * 10 }))
+    setProjects(updated)
+
+    try {
+      await Promise.all(updated.map(p => api.patch(`/projects/${p.id}/`, { order: p.order })))
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось сохранить порядок проектов')
+      loadTree()
     }
   }
 
@@ -576,11 +614,30 @@ export default function Files() {
         {filteredProjects.map(project => (
           <div
             key={project.id}
-            onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('ring-2', 'ring-primary/30') }}
-            onDragLeave={e => { e.currentTarget.classList.remove('ring-2', 'ring-primary/30') }}
+            data-project-id={project.id}
+            onDragOver={e => {
+              e.preventDefault()
+              const isProject = e.dataTransfer.types.includes('files/project-id')
+              if (isProject && !selectedProject) {
+                const rect = e.currentTarget.getBoundingClientRect()
+                const position = e.clientX > rect.left + rect.width / 2 ? 'after' : 'before'
+                setDropTarget({ id: project.id, position })
+              }
+              e.currentTarget.classList.add('ring-2', 'ring-primary/30')
+            }}
+            onDragLeave={e => {
+              e.currentTarget.classList.remove('ring-2', 'ring-primary/30')
+              setDropTarget(null)
+            }}
             onDrop={async (e) => {
               e.preventDefault()
               e.currentTarget.classList.remove('ring-2', 'ring-primary/30')
+              const projectId = e.dataTransfer.getData('files/project-id')
+              if (projectId) {
+                await handleReorderProject(Number(projectId), project.id, e.clientX)
+                setDropTarget(null)
+                return
+              }
               const fileId = e.dataTransfer.getData('files/file-id')
               const linkId = e.dataTransfer.getData('files/link-id')
               if (fileId) {
@@ -588,11 +645,31 @@ export default function Files() {
               } else if (linkId) {
                 await handleMoveLink(Number(linkId), { project: project.id, folder: null })
               }
+              setDropTarget(null)
             }}
-            className="bg-surface rounded-xl border border-border p-4 transition-shadow"
+            className="relative bg-surface rounded-xl border border-border p-4 transition-shadow"
           >
+            {dropTarget?.id === project.id && dropTarget?.position === 'before' && (
+              <div className="absolute -left-1 top-0 bottom-0 w-0.5 bg-primary rounded-full z-10" />
+            )}
+            {dropTarget?.id === project.id && dropTarget?.position === 'after' && (
+              <div className="absolute -right-1 top-0 bottom-0 w-0.5 bg-primary rounded-full z-10" />
+            )}
             <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-border">
-              <h3 className="font-semibold text-text truncate">{project.name}</h3>
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  draggable
+                  onDragStart={e => {
+                    e.dataTransfer.setData('files/project-id', String(project.id))
+                    e.dataTransfer.effectAllowed = 'move'
+                  }}
+                  className="p-1 text-text-muted hover:text-text cursor-move shrink-0"
+                  title="Перетащить для изменения порядка"
+                >
+                  <GripVertical size={18} />
+                </div>
+                <h3 className="font-semibold text-text truncate">{project.name}</h3>
+              </div>
               <div className="flex items-center gap-1">
                 <Button type="button" size="sm" variant="secondary" onClick={() => handleUploadClick(project.id)} title="Загрузить файл">
                   <Upload size={14} />

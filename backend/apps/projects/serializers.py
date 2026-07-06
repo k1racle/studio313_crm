@@ -15,5 +15,5 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['id', 'name', 'description', 'members', 'member_ids', 'is_active', 'is_archived', 'created_at']
+        fields = ['id', 'name', 'description', 'members', 'member_ids', 'is_active', 'is_archived', 'order', 'created_at']
         read_only_fields = ['created_at']
