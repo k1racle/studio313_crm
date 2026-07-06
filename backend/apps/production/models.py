@@ -51,13 +51,11 @@ class Production(models.Model):
         related_name='created_productions',
         verbose_name='Создал'
     )
-    assignee = models.ForeignKey(
+    assignees = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name='assigned_productions',
-        verbose_name='Ответственный'
+        verbose_name='Исполнители'
     )
     due_date = models.DateTimeField(null=True, blank=True, verbose_name='Срок')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')

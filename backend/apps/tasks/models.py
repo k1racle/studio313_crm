@@ -58,7 +58,12 @@ class Task(models.Model):
     project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, null=True, blank=True, related_name='tasks', verbose_name='Проект')
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', verbose_name='Клиент')
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_tasks', verbose_name='Создатель')
-    assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks', verbose_name='Исполнитель')
+    assignees = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='assigned_tasks',
+        verbose_name='Исполнители'
+    )
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
