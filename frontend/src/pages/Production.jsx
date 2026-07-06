@@ -11,6 +11,7 @@ import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
+import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Avatar from '../components/ui/Avatar'
 import { Plus, Pencil, Trash2, Search, List, LayoutGrid, Calendar as CalendarIcon, BarChart3 } from 'lucide-react'
 import { formatShortName } from '../utils/format'
@@ -321,34 +322,25 @@ export default function Production() {
               rows="3"
             />
           </div>
-          {editingItem && (
-            <Select
-              label="Статус"
-              value={form.status}
-              onChange={e => setForm({ ...form, status: e.target.value })}
-              options={Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))}
-            />
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text mb-1.5">Исполнители</label>
-              <select
-                multiple
-                value={form.assignee_ids}
-                onChange={e => {
-                  const options = Array.from(e.target.selectedOptions).map(o => Number(o.value))
-                  setForm({ ...form, assignee_ids: options })
-                }}
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                style={{ minHeight: '6rem' }}
-              >
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{formatShortName(u)}</option>
-                ))}
-              </select>
+          {editingItem ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Select
+                label="Статус"
+                value={form.status}
+                onChange={e => setForm({ ...form, status: e.target.value })}
+                options={Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))}
+              />
+              <Input label="Срок" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
             </div>
+          ) : (
             <Input label="Срок" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
-          </div>
+          )}
+          <SearchableMultiSelect
+            label="Исполнители"
+            value={form.assignee_ids}
+            onChange={val => setForm({ ...form, assignee_ids: val })}
+            options={users.map(u => ({ value: u.id, label: formatShortName(u) }))}
+          />
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingItem ? 'Сохранить' : 'Создать'}</Button>

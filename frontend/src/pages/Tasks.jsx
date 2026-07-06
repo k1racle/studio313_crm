@@ -9,6 +9,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import SearchableSelect from '../components/ui/SearchableSelect'
+import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
@@ -570,59 +571,26 @@ export default function Tasks() {
               onChange={e => setForm({ ...form, priority: e.target.value })}
               options={priorityOptions.filter(o => o.value !== '')}
             />
-            <div>
-              <label className="block text-sm font-medium text-text mb-1.5">Исполнители</label>
-              <select
-                multiple
-                value={form.assignee_ids}
-                onChange={e => {
-                  const options = Array.from(e.target.selectedOptions).map(o => Number(o.value))
-                  setForm({ ...form, assignee_ids: options })
-                }}
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                style={{ minHeight: '6rem' }}
-              >
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>{formatShortName(u)}</option>
-                ))}
-              </select>
-            </div>
+            <Input label="Срок выполнения" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
           </div>
-          <Input label="Срок выполнения" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
-          <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Теги</label>
-            <select
-              multiple
-              value={form.tag_ids}
-              onChange={e => {
-                const options = Array.from(e.target.selectedOptions).map(o => Number(o.value))
-                setForm({ ...form, tag_ids: options })
-              }}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              style={{ minHeight: '6rem' }}
-            >
-              {tags.map(tag => (
-                <option key={tag.id} value={tag.id}>{tag.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Участники</label>
-            <select
-              multiple
-              value={form.member_ids}
-              onChange={e => {
-                const options = Array.from(e.target.selectedOptions).map(o => Number(o.value))
-                setForm({ ...form, member_ids: options })
-              }}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              style={{ minHeight: '6rem' }}
-            >
-              {users.map(u => (
-                <option key={u.id} value={u.id}>{u.get_short_name || `${u.last_name} ${u.first_name}`.trim() || u.username}</option>
-              ))}
-            </select>
-          </div>
+          <SearchableMultiSelect
+            label="Исполнители"
+            value={form.assignee_ids}
+            onChange={val => setForm({ ...form, assignee_ids: val })}
+            options={users.map(u => ({ value: u.id, label: formatShortName(u) }))}
+          />
+          <SearchableMultiSelect
+            label="Теги"
+            value={form.tag_ids}
+            onChange={val => setForm({ ...form, tag_ids: val })}
+            options={tags.map(tag => ({ value: tag.id, label: tag.name }))}
+          />
+          <SearchableMultiSelect
+            label="Участники"
+            value={form.member_ids}
+            onChange={val => setForm({ ...form, member_ids: val })}
+            options={users.map(u => ({ value: u.id, label: formatShortName(u) }))}
+          />
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={handleCloseEdit}>Отмена</Button>
             <Button type="submit">{editingTask ? 'Сохранить' : 'Создать'}</Button>
