@@ -29,12 +29,12 @@ class ProductionCommentSerializer(serializers.ModelSerializer):
 
 class ProductionSerializer(serializers.ModelSerializer):
     creator = UserSerializer(read_only=True)
-    assignee = UserSerializer(read_only=True)
-    assignee_id = serializers.PrimaryKeyRelatedField(
-        source='assignee',
-        queryset=Production._meta.get_field('assignee').related_model.objects.all(),
+    assignees = UserSerializer(many=True, read_only=True)
+    assignee_ids = serializers.PrimaryKeyRelatedField(
+        source='assignees',
+        queryset=Production._meta.get_field('assignees').related_model.objects.all(),
+        many=True,
         required=False,
-        allow_null=True,
         write_only=True,
     )
     project = ProjectSerializer(read_only=True)
@@ -62,7 +62,7 @@ class ProductionSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'status',
             'project', 'project_id',
             'client', 'client_id',
-            'creator', 'assignee', 'assignee_id', 'due_date',
+            'creator', 'assignees', 'assignee_ids', 'due_date',
             'comments', 'attachments',
             'created_at', 'updated_at',
         ]

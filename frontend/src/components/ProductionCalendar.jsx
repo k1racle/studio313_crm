@@ -123,10 +123,12 @@ export default function ProductionCalendar({ items, onItemMoved, onItemClick }) 
                       title={item.title}
                     >
                       <span className="line-clamp-2 leading-tight">{item.title}</span>
-                      {item.assignee && (
+                      {item.assignees?.length > 0 && (
                         <span className="mt-1 flex items-center gap-1 text-[10px] text-text-muted">
-                          <Avatar user={item.assignee} size={14} />
-                          <span className="truncate">{formatShortName(item.assignee)}</span>
+                          {item.assignees.slice(0, 2).map(u => (
+                            <Avatar key={u.id} user={u} size={14} title={formatShortName(u)} />
+                          ))}
+                          {item.assignees.length > 2 && <span>+{item.assignees.length - 2}</span>}
                         </span>
                       )}
                     </button>

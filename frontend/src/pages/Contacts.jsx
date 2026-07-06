@@ -6,7 +6,7 @@ import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
-import { Plus, Pencil, Trash2, Search, Phone, Mail, MessageCircle, Building2, User, StickyNote } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Phone, Mail, MessageCircle, Building2, User, StickyNote, Download } from 'lucide-react'
 
 const messengerOptions = [
   { value: 'Telegram', label: 'Telegram' },
@@ -113,6 +113,26 @@ export default function Contacts() {
 
   const orgOptions = [{ value: '', label: 'Все организации' }, ...organizations.map(o => ({ value: o, label: o }))]
 
+  const handleExport = async () => {
+    try {
+      const params = {}
+      if (search.trim()) params.search = search.trim()
+      if (orgFilter) params.organization = orgFilter
+      const res = await api.get('/contacts/export/', { params, responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'contacts.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось выгрузить контакты')
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -120,12 +140,18 @@ export default function Contacts() {
           <h1 className="text-2xl font-bold text-text">Контакты</h1>
           <p className="text-text-muted">Адресная книга</p>
         </div>
-        {user?.is_manager && (
-          <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1.5" />
-            Новый контакт
+        <div className="flex items-center gap-2">
+          {user?.is_manager && (
+            <Button onClick={openCreate}>
+              <Plus size={16} className="mr-1.5" />
+              Новый контакт
+            </Button>
+          )}
+          <Button variant="secondary" onClick={handleExport}>
+            <Download size={16} className="mr-1.5" />
+            Выгрузить
           </Button>
-        )}
+        </div>
       </div>
 
       <Card className="mb-6">

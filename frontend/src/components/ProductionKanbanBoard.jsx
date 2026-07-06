@@ -91,10 +91,14 @@ export default function ProductionKanbanBoard({ items, onItemMoved, onItemClick 
                       <div className="text-xs text-primary mb-2">{item.project.name}</div>
                     )}
                     <div className="flex items-center justify-between">
-                      {item.assignee && (
-                        <div className="flex items-center gap-1.5" title={formatShortName(item.assignee)}>
-                          <Avatar user={item.assignee} size={24} />
-                          <span className="text-xs text-text-muted">{formatShortName(item.assignee)}</span>
+                      {item.assignees?.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          {item.assignees.slice(0, 2).map(u => (
+                            <Avatar key={u.id} user={u} size={24} title={formatShortName(u)} />
+                          ))}
+                          {item.assignees.length > 2 && (
+                            <span className="text-xs text-text-muted">+{item.assignees.length - 2}</span>
+                          )}
                         </div>
                       )}
                     </div>

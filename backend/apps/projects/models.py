@@ -13,6 +13,7 @@ class Project(models.Model):
     )
     is_active = models.BooleanField(default=True, verbose_name='Активен')
     is_archived = models.BooleanField(default=False, verbose_name='В архиве')
+    archived_at = models.DateTimeField(null=True, blank=True, verbose_name='Дата архивации')
     order = models.PositiveIntegerField(default=0, verbose_name='Порядок')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
 

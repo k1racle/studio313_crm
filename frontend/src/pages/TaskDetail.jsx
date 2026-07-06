@@ -164,10 +164,14 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
             <div className="font-medium text-text">{priorityLabels[task.priority]}</div>
           </div>
           <div className="p-3 bg-subtle rounded-lg">
-            <div className="text-xs text-text-muted uppercase">Исполнитель</div>
-            <div className="flex items-center gap-2 font-medium text-text">
-              {task.assignee ? <Avatar user={task.assignee} size={24} /> : null}
-              {task.assignee ? formatShortName(task.assignee) : 'Не назначен'}
+            <div className="text-xs text-text-muted uppercase">Исполнители</div>
+            <div className="flex flex-wrap items-center gap-2 font-medium text-text">
+              {task.assignees?.length ? task.assignees.map(u => (
+                <span key={u.id} className="inline-flex items-center gap-1.5">
+                  <Avatar user={u} size={24} />
+                  <span>{formatShortName(u)}</span>
+                </span>
+              )) : 'Не назначены'}
             </div>
           </div>
           <div className="p-3 bg-subtle rounded-lg">

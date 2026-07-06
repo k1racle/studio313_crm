@@ -9,6 +9,7 @@ class Client(models.Model):
     birthday = models.DateField(null=True, blank=True, verbose_name='Дата рождения')
     notes = models.TextField(blank=True, verbose_name='Заметки')
     is_archived = models.BooleanField(default=False, verbose_name='В архиве')
+    archived_at = models.DateTimeField(null=True, blank=True, verbose_name='Дата архивации')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлён')
 

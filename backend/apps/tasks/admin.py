@@ -9,11 +9,15 @@ class TaskCommentInline(admin.TabularInline):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ['title', 'status', 'priority', 'assignee', 'creator', 'created_at', 'due_date']
+    list_display = ['title', 'status', 'priority', 'get_assignees', 'creator', 'created_at', 'due_date']
     list_filter = ['status', 'priority', 'source', 'created_at']
     search_fields = ['title', 'description']
-    filter_horizontal = ['members']
+    filter_horizontal = ['assignees', 'members']
     inlines = [TaskCommentInline]
+
+    @admin.display(description='Исполнители')
+    def get_assignees(self, obj):
+        return ', '.join(str(u) for u in obj.assignees.all())
 
 
 @admin.register(TaskAttachment)

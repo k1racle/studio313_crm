@@ -5,7 +5,7 @@ from .models import Client
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
-        fields = ['id', 'name', 'phone', 'email', 'telegram', 'notes', 'is_archived', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'phone', 'email', 'telegram', 'notes', 'is_archived', 'archived_at', 'created_at', 'updated_at']
 
 
 class ClientDetailSerializer(serializers.ModelSerializer):
@@ -15,7 +15,7 @@ class ClientDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Client
-        fields = ['id', 'name', 'phone', 'email', 'telegram', 'notes', 'is_archived', 'created_at', 'updated_at', 'bookings', 'tasks', 'projects']
+        fields = ['id', 'name', 'phone', 'email', 'telegram', 'notes', 'is_archived', 'archived_at', 'created_at', 'updated_at', 'bookings', 'tasks', 'projects']
 
     def get_bookings(self, obj):
         return [

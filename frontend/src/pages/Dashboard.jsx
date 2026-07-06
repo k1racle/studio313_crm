@@ -112,7 +112,9 @@ export default function Dashboard() {
                 <Link key={t.id} to={`/tasks?task=${t.id}`} className="flex items-center justify-between p-3 bg-subtle rounded-lg hover:bg-primary/10 transition-colors">
                   <div>
                     <div className="font-medium text-text">{t.title}</div>
-                    <div className="text-xs text-text-muted">{t.assignee__first_name || t.assignee__username || 'Не назначен'}</div>
+                    <div className="text-xs text-text-muted">
+                      {t.assignees?.length ? t.assignees.map(u => u.first_name || u.username).join(', ') : 'Не назначен'}
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-medium text-danger">{new Date(t.due_date).toLocaleString('ru')}</div>

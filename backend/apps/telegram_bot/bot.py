@@ -230,8 +230,9 @@ def create_task_from_news(message_obj: TelegramMessage, assignee=None):
         description=description,
         source=Task.SOURCE_TELEGRAM,
         status=Task.STATUS_NEW,
-        assignee=assignee,
     )
+    if assignee:
+        task.assignees.add(assignee)
     suggestion = NewsSuggestion.objects.create(
         message=message_obj,
         title=title,
@@ -257,11 +258,12 @@ async def notify_journalists(bot, task, journalists, source_chat_title):
     if not journalists:
         logger.info('Нет журналистов с привязанным Telegram для уведомления')
         return
-    assignee_name = task.assignee.get_full_name() if task.assignee else 'не назначен'
+    assignees = list(task.assignees.all())
+    assignee_name = ', '.join(u.get_full_name() for u in assignees) if assignees else 'не назначен'
     text = (
         f'📰 Новая задача из Telegram-источника «{source_chat_title}»\n\n'
         f'#{task.id}: {task.title}\n'
-        f'Исполнитель: {assignee_name}'
+        f'Исполнители: {assignee_name}'
     )
     for journalist in journalists:
         try:

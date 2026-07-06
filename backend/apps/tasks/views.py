@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from rest_framework import generics, permissions, filters, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
@@ -12,7 +14,7 @@ class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
     pagination_class = None
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'priority', 'assignee', 'source', 'project']
+    filterset_fields = ['status', 'priority', 'assignees', 'source', 'project']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'due_date', 'priority']
 
@@ -21,19 +23,22 @@ class TaskListCreateView(generics.ListCreateAPIView):
         qs = Task.objects.all()
         if self.request.query_params.get('archived') != '1':
             qs = qs.filter(is_archived=False)
+        else:
+            qs = qs.filter(is_archived=True, archived_at__gte=timezone.now() - timedelta(days=7))
         if user.is_manager:
             return qs
         return qs.filter(project__members=user)
 
     def perform_create(self, serializer):
         task = serializer.save(creator=self.request.user)
-        if task.assignee and task.assignee != self.request.user:
-            create_in_app_notification(
-                user=task.assignee,
-                title='Новая задача',
-                message=f'Вам назначена задача «{task.title}»',
-                link=f'/tasks/{task.id}',
-            )
+        for user in task.assignees.all():
+            if user != self.request.user:
+                create_in_app_notification(
+                    user=user,
+                    title='Новая задача',
+                    message=f'Вам назначена задача «{task.title}»',
+                    link=f'/tasks/{task.id}',
+                )
         return task
 
 
@@ -45,6 +50,17 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
         if user.is_manager:
             return Task.objects.all()
         return Task.objects.filter(project__members=user)
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        old_archived = instance.is_archived
+        new_archived = serializer.validated_data.get('is_archived', old_archived)
+        if new_archived and not old_archived:
+            serializer.save(archived_at=timezone.now())
+        elif not new_archived and old_archived:
+            serializer.save(archived_at=None)
+        else:
+            serializer.save()
 
 
 class TaskCommentListCreateView(generics.ListCreateAPIView):

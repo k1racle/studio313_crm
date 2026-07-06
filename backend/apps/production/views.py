@@ -13,7 +13,7 @@ class ProductionListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductionSerializer
     pagination_class = None
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'assignee', 'project', 'client']
+    filterset_fields = ['status', 'assignees', 'project', 'client']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'due_date']
 
@@ -22,7 +22,7 @@ class ProductionListCreateView(generics.ListCreateAPIView):
         qs = Production.objects.all()
         if user.is_manager:
             return qs
-        return qs.filter(assignee=user)
+        return qs.filter(assignees=user)
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user)
@@ -35,7 +35,7 @@ class ProductionDetailView(generics.RetrieveUpdateDestroyAPIView):
         user = self.request.user
         if user.is_manager:
             return Production.objects.all()
-        return Production.objects.filter(assignee=user)
+        return Production.objects.filter(assignees=user)
 
 
 class ProductionCommentListCreateView(generics.ListCreateAPIView):

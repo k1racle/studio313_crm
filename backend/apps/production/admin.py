@@ -4,9 +4,14 @@ from .models import Production, ProductionComment, ProductionAttachment
 
 @admin.register(Production)
 class ProductionAdmin(admin.ModelAdmin):
-    list_display = ['title', 'status', 'project', 'client', 'assignee', 'due_date', 'created_at']
+    list_display = ['title', 'status', 'project', 'client', 'get_assignees', 'due_date', 'created_at']
     list_filter = ['status', 'created_at']
     search_fields = ['title', 'description']
+    filter_horizontal = ['assignees']
+
+    @admin.display(description='Исполнители')
+    def get_assignees(self, obj):
+        return ', '.join(str(u) for u in obj.assignees.all())
 
 
 @admin.register(ProductionComment)

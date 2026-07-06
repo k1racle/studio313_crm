@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from rest_framework import generics, permissions
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Project
@@ -20,6 +22,8 @@ class ProjectListCreateView(generics.ListCreateAPIView):
         qs = Project.objects.all()
         if self.request.query_params.get('archived') != '1':
             qs = qs.filter(is_archived=False)
+        else:
+            qs = qs.filter(is_archived=True, archived_at__gte=timezone.now() - timedelta(days=7))
         if user.is_manager:
             return qs
         return qs.filter(members=user)
@@ -33,3 +37,14 @@ class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
         if user.is_manager:
             return Project.objects.all()
         return Project.objects.filter(members=user)
+
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        old_archived = instance.is_archived
+        new_archived = serializer.validated_data.get('is_archived', old_archived)
+        if new_archived and not old_archived:
+            serializer.save(archived_at=timezone.now())
+        elif not new_archived and old_archived:
+            serializer.save(archived_at=None)
+        else:
+            serializer.save()

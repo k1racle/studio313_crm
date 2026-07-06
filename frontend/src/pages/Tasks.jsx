@@ -88,7 +88,7 @@ const emptyForm = {
   title: '',
   description: '',
   priority: 'medium',
-  assignee_id: '',
+  assignee_ids: [],
   project_id: '',
   client_id: '',
   due_date: '',
@@ -108,7 +108,7 @@ export default function Tasks() {
   const [filters, setFilters] = useState({
     status: '',
     priority: '',
-    assignee: '',
+    assignees: '',
     project: searchParams.get('project') || '',
     search: ''
   })
@@ -133,7 +133,7 @@ export default function Tasks() {
     const params = {}
     if (filters.status) params.status = filters.status
     if (filters.priority) params.priority = filters.priority
-    if (filters.assignee) params.assignee = filters.assignee
+    if (filters.assignees) params.assignees = filters.assignees
     if (filters.project) params.project = filters.project
     if (filters.search) params.search = filters.search
     if (showArchived) params.archived = '1'
@@ -210,7 +210,7 @@ export default function Tasks() {
       title: task.title,
       description: task.description || '',
       priority: task.priority,
-      assignee_id: task.assignee?.id || '',
+      assignee_ids: task.assignees?.map(a => a.id) || [],
       project_id: task.project?.id || '',
       client_id: task.client?.id || '',
       due_date: task.due_date ? task.due_date.slice(0, 10) : '',
@@ -224,7 +224,7 @@ export default function Tasks() {
     e.preventDefault()
     const payload = {
       ...form,
-      assignee_id: form.assignee_id || null,
+      assignee_ids: form.assignee_ids,
       project_id: form.project_id || null,
       client_id: form.client_id || null,
       due_date: form.due_date ? form.due_date + 'T00:00:00' : null,
@@ -314,7 +314,7 @@ export default function Tasks() {
             <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityOptions} />
           </div>
           <div className="shrink-0 w-44">
-            <SearchableSelect value={filters.assignee} onChange={val => setFilters({ ...filters, assignee: val })} options={userOptions} />
+            <SearchableSelect value={filters.assignees} onChange={val => setFilters({ ...filters, assignees: val })} options={userOptions} />
           </div>
           <div className="flex shrink-0 items-center gap-3 w-auto">
             <Input
@@ -384,10 +384,17 @@ export default function Tasks() {
                     <td className="py-3"><Badge variant={statusBadgeVariant[task.status]}>{statusLabels[task.status]}</Badge></td>
                     <td className="py-3">{priorityLabels[task.priority]}</td>
                     <td className="py-3">
-                      {task.assignee ? (
-                        <div className="flex items-center gap-2">
-                          <Avatar user={task.assignee} size={24} />
-                          <span>{formatShortName(task.assignee)}</span>
+                      {task.assignees?.length ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {task.assignees.slice(0, 2).map(u => (
+                            <span key={u.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-subtle rounded text-xs" title={formatShortName(u)}>
+                              <Avatar user={u} size={16} />
+                              <span className="truncate max-w-[80px]">{formatShortName(u)}</span>
+                            </span>
+                          ))}
+                          {task.assignees.length > 2 && (
+                            <span className="text-xs text-text-muted">+{task.assignees.length - 2}</span>
+                          )}
                         </div>
                       ) : (
                         '—'
@@ -513,10 +520,12 @@ export default function Tasks() {
                         title={task.title}
                       >
                         <span className="line-clamp-2 leading-tight">{task.title}</span>
-                        {task.assignee && (
+                        {task.assignees?.length > 0 && (
                           <span className="mt-1 flex items-center gap-1 text-[10px] text-text-muted">
-                            <Avatar user={task.assignee} size={14} />
-                            <span className="truncate">{formatShortName(task.assignee)}</span>
+                            {task.assignees.slice(0, 2).map(u => (
+                              <Avatar key={u.id} user={u} size={14} title={formatShortName(u)} />
+                            ))}
+                            {task.assignees.length > 2 && <span>+{task.assignees.length - 2}</span>}
                           </span>
                         )}
                       </button>
@@ -561,12 +570,23 @@ export default function Tasks() {
               onChange={e => setForm({ ...form, priority: e.target.value })}
               options={priorityOptions.filter(o => o.value !== '')}
             />
-            <SearchableSelect
-              label="Исполнитель"
-              value={form.assignee_id}
-              onChange={val => setForm({ ...form, assignee_id: val })}
-              options={[{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]}
-            />
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5">Исполнители</label>
+              <select
+                multiple
+                value={form.assignee_ids}
+                onChange={e => {
+                  const options = Array.from(e.target.selectedOptions).map(o => Number(o.value))
+                  setForm({ ...form, assignee_ids: options })
+                }}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                style={{ minHeight: '6rem' }}
+              >
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{formatShortName(u)}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <Input label="Срок выполнения" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
           <div>

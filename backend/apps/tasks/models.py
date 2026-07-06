@@ -67,6 +67,7 @@ class Task(models.Model):
     )
     due_date = models.DateTimeField(null=True, blank=True, verbose_name='Срок выполнения')
     is_archived = models.BooleanField(default=False, verbose_name='В архиве')
+    archived_at = models.DateTimeField(null=True, blank=True, verbose_name='Дата архивации')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создана')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Обновлена')
 

@@ -37,7 +37,7 @@ const emptyForm = {
   title: '',
   description: '',
   status: 'new',
-  assignee_id: '',
+  assignee_ids: [],
   project_id: '',
   client_id: '',
   due_date: '',
@@ -52,7 +52,7 @@ export default function Production() {
   const [view, setView] = useState('kanban')
   const [filters, setFilters] = useState({
     status: '',
-    assignee: '',
+    assignees: '',
     project: '',
     search: '',
   })
@@ -63,7 +63,7 @@ export default function Production() {
   const loadItems = async () => {
     const params = {}
     if (filters.status) params.status = filters.status
-    if (filters.assignee) params.assignee = filters.assignee
+    if (filters.assignees) params.assignees = filters.assignees
     if (filters.project) params.project = filters.project
     if (filters.search) params.search = filters.search
     const res = await api.get('/production/', { params })
@@ -96,7 +96,7 @@ export default function Production() {
       title: item.title,
       description: item.description || '',
       status: item.status,
-      assignee_id: item.assignee?.id || '',
+      assignee_ids: item.assignees?.map(a => a.id) || [],
       project_id: item.project?.id || '',
       client_id: item.client?.id || '',
       due_date: item.due_date ? item.due_date.slice(0, 10) : '',
@@ -108,7 +108,7 @@ export default function Production() {
     e.preventDefault()
     const payload = {
       ...form,
-      assignee_id: form.assignee_id || null,
+      assignee_ids: form.assignee_ids,
       project_id: form.project_id || null,
       client_id: form.client_id || null,
       due_date: form.due_date ? form.due_date + 'T00:00:00' : null,
@@ -188,7 +188,7 @@ export default function Production() {
             </div>
           )}
           <div className="shrink-0 w-44">
-            <SearchableSelect value={filters.assignee} onChange={val => setFilters({ ...filters, assignee: val })} options={userOptions} />
+            <SearchableSelect value={filters.assignees} onChange={val => setFilters({ ...filters, assignees: val })} options={userOptions} />
           </div>
           <div className="flex shrink-0 items-center gap-3 w-auto">
             <Input
@@ -231,7 +231,7 @@ export default function Production() {
                   <th className="pb-3 font-medium w-40">Клиент</th>
                   <th className="pb-3 font-medium w-64">Название</th>
                   <th className="pb-3 font-medium w-36">Статус</th>
-                  <th className="pb-3 font-medium w-44">Ответственный</th>
+                  <th className="pb-3 font-medium w-44">Исполнители</th>
                   <th className="pb-3 font-medium w-28">Срок</th>
                   <th className="pb-3 font-medium w-24"></th>
                 </tr>
@@ -252,10 +252,17 @@ export default function Production() {
                     </td>
                     <td className="py-3"><Badge variant={statusBadgeVariant[item.status]}>{statusLabels[item.status]}</Badge></td>
                     <td className="py-3">
-                      {item.assignee ? (
-                        <div className="flex items-center gap-2">
-                          <Avatar user={item.assignee} size={24} />
-                          <span>{formatShortName(item.assignee)}</span>
+                      {item.assignees?.length ? (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {item.assignees.slice(0, 2).map(u => (
+                            <span key={u.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-subtle rounded text-xs" title={formatShortName(u)}>
+                              <Avatar user={u} size={16} />
+                              <span className="truncate max-w-[80px]">{formatShortName(u)}</span>
+                            </span>
+                          ))}
+                          {item.assignees.length > 2 && (
+                            <span className="text-xs text-text-muted">+{item.assignees.length - 2}</span>
+                          )}
                         </div>
                       ) : (
                         '—'
@@ -323,12 +330,23 @@ export default function Production() {
             />
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <SearchableSelect
-              label="Ответственный"
-              value={form.assignee_id}
-              onChange={val => setForm({ ...form, assignee_id: val })}
-              options={[{ value: '', label: 'Не назначен' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]}
-            />
+            <div>
+              <label className="block text-sm font-medium text-text mb-1.5">Исполнители</label>
+              <select
+                multiple
+                value={form.assignee_ids}
+                onChange={e => {
+                  const options = Array.from(e.target.selectedOptions).map(o => Number(o.value))
+                  setForm({ ...form, assignee_ids: options })
+                }}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                style={{ minHeight: '6rem' }}
+              >
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{formatShortName(u)}</option>
+                ))}
+              </select>
+            </div>
             <Input label="Срок" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
           </div>
           <div className="flex justify-end gap-3 pt-2">

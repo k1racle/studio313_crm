@@ -110,10 +110,14 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
                       <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
                         {priorityLabels[task.priority]}
                       </span>
-                      {task.assignee && (
-                        <div className="flex items-center gap-1.5" title={formatShortName(task.assignee)}>
-                          <Avatar user={task.assignee} size={24} />
-                          <span className="text-xs text-text-muted">{formatShortName(task.assignee)}</span>
+                      {task.assignees?.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          {task.assignees.slice(0, 2).map(u => (
+                            <Avatar key={u.id} user={u} size={24} title={formatShortName(u)} />
+                          ))}
+                          {task.assignees.length > 2 && (
+                            <span className="text-xs text-text-muted">+{task.assignees.length - 2}</span>
+                          )}
                         </div>
                       )}
                     </div>

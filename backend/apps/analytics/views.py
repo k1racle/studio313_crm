@@ -55,7 +55,7 @@ class DashboardStatsView(APIView):
             item['total'] = float(item['total'])
 
         deadline_threshold = now + timedelta(days=3)
-        upcoming_deadlines = list(
+        upcoming_deadlines_qs = (
             Task.objects.filter(
                 is_archived=False,
                 due_date__isnull=False,
@@ -64,8 +64,21 @@ class DashboardStatsView(APIView):
             )
             .exclude(status__in=['done', 'canceled'])
             .order_by('due_date')
-            .values('id', 'title', 'due_date', 'status', 'assignee__first_name', 'assignee__username')[:10]
+            .prefetch_related('assignees')[:10]
         )
+        upcoming_deadlines = [
+            {
+                'id': t.id,
+                'title': t.title,
+                'due_date': t.due_date,
+                'status': t.status,
+                'assignees': [
+                    {'id': u.id, 'first_name': u.first_name, 'username': u.username}
+                    for u in t.assignees.all()
+                ],
+            }
+            for t in upcoming_deadlines_qs
+        ]
 
         debtors = list(
             Booking.objects.filter(

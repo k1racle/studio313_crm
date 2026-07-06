@@ -6,7 +6,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
-import { Plus, Pencil, Trash2, Search, Mail, Send, Phone, FileText, Eye, Archive, RotateCcw, Copy, ExternalLink } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Mail, Send, Phone, FileText, Eye, Archive, RotateCcw, Copy, ExternalLink, Download } from 'lucide-react'
 
 const emptyForm = { name: '', phone: '', email: '', telegram: '', notes: '', is_archived: false }
 
@@ -186,6 +186,25 @@ export default function Clients() {
     }
   }
 
+  const handleExport = async () => {
+    try {
+      const params = {}
+      if (showArchived) params.archived = '1'
+      const res = await api.get('/clients/export/', { params, responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'clients.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err)
+      alert('Не удалось выгрузить клиентов')
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -193,12 +212,18 @@ export default function Clients() {
           <h1 className="text-2xl font-bold text-text">Клиенты</h1>
           <p className="text-text-muted">Клиентская база студии</p>
         </div>
-        {user?.is_manager && (
-          <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1.5" />
-            Новый клиент
+        <div className="flex items-center gap-2">
+          {user?.is_manager && (
+            <Button onClick={openCreate}>
+              <Plus size={16} className="mr-1.5" />
+              Новый клиент
+            </Button>
+          )}
+          <Button variant="secondary" onClick={handleExport}>
+            <Download size={16} className="mr-1.5" />
+            Выгрузить
           </Button>
-        )}
+        </div>
       </div>
 
       <Card className="mb-6">
