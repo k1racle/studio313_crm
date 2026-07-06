@@ -21,14 +21,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='production',
-            name='assignee',
-        ),
         migrations.AddField(
             model_name='production',
             name='assignees',
             field=models.ManyToManyField(blank=True, related_name='assigned_productions', to=settings.AUTH_USER_MODEL, verbose_name='Исполнители'),
         ),
         migrations.RunPython(copy_assignee_to_assignees, noop),
+        migrations.RemoveField(
+            model_name='production',
+            name='assignee',
+        ),
     ]
