@@ -436,13 +436,13 @@ def run_bot():
             _application = None
             application = get_application()
             application.run_polling(timeout=10, poll_interval=1)
-        except (NetworkError, httpx.ConnectError, httpx.ConnectTimeout) as e:
+        except (NetworkError, httpx.ConnectError, httpx.ConnectTimeout, httpx.TimeoutException) as e:
             logger.error('Ошибка сети Telegram-бота: %s. Повтор через 30 секунд...', e)
         except Exception as e:
             logger.exception('Неожиданная ошибка Telegram-бота: %s', e)
         try:
-            import asyncio
-            asyncio.get_event_loop().run_until_complete(asyncio.sleep(30))
+            import time
+            time.sleep(30)
         except KeyboardInterrupt:
             logger.info('Остановка Telegram-бота')
             break
