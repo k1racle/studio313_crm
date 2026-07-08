@@ -1,7 +1,13 @@
 from rest_framework import serializers
-from .models import Publication, PublicationAttachment
+from .models import Publication, PublicationAttachment, Platform
 from apps.users.serializers import UserSerializer
 from apps.projects.serializers import ProjectSerializer
+
+
+class PlatformSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Platform
+        fields = ['id', 'slug', 'name']
 
 
 class LinkedTaskSerializer(serializers.Serializer):
@@ -27,7 +33,14 @@ class PublicationSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
     attachments = PublicationAttachmentSerializer(many=True, read_only=True)
     linked_task = LinkedTaskSerializer(read_only=True)
-    platform_label = serializers.CharField(source='get_platform_display', read_only=True)
+    platforms = PlatformSerializer(many=True, read_only=True)
+    platform_ids = serializers.PrimaryKeyRelatedField(
+        source='platforms',
+        queryset=Platform.objects.all(),
+        many=True,
+        required=False,
+        write_only=True,
+    )
     status_label = serializers.CharField(source='get_status_display', read_only=True)
     project = ProjectSerializer(read_only=True)
     project_id = serializers.PrimaryKeyRelatedField(
@@ -41,7 +54,7 @@ class PublicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Publication
         fields = [
-            'id', 'title', 'description', 'platform', 'platform_label',
+            'id', 'title', 'description', 'platforms', 'platform_ids',
             'status', 'status_label', 'priority',
             'project', 'project_id',
             'publish_at', 'responsible', 'responsible_id',

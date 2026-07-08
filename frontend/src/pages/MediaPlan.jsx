@@ -8,22 +8,11 @@ import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Select from '../components/ui/Select'
 import SearchableSelect from '../components/ui/SearchableSelect'
+import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Avatar from '../components/ui/Avatar'
 import { Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight, Calendar, Briefcase, ExternalLink, Search } from 'lucide-react'
 import { formatShortName } from '../utils/format'
 import { Link } from 'react-router-dom'
-
-const platformOptions = [
-  { value: 'telegram', label: 'Telegram' },
-  { value: 'vk', label: 'VK' },
-  { value: 'max', label: 'MAX' },
-  { value: 'dzen', label: 'Дзен' },
-  { value: 'youtube', label: 'YouTube' },
-  { value: 'rutube', label: 'RuTube' },
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'site', label: 'Сайт' },
-  { value: 'other', label: 'Другое' },
-]
 
 const statusOptions = [
   { value: 'draft', label: 'Черновик' },
@@ -107,7 +96,7 @@ function formatDateTimeLocalInput(value) {
 const emptyForm = {
   title: '',
   description: '',
-  platform: 'telegram',
+  platform_ids: [],
   status: 'draft',
   priority: 'medium',
   publish_at: '',
@@ -133,6 +122,7 @@ export default function MediaPlan() {
     project: '',
     search: '',
   })
+  const [platforms, setPlatforms] = useState([])
 
   const loadPublications = async () => {
     try {
@@ -167,11 +157,24 @@ export default function MediaPlan() {
     }
   }
 
+  const loadPlatforms = async () => {
+    try {
+      const res = await api.get('/media-plan/platforms/')
+      setPlatforms(res.data.results || res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   useEffect(() => {
     loadPublications()
+  }, [filters])
+
+  useEffect(() => {
     loadUsers()
     loadProjects()
-  }, [filters])
+    loadPlatforms()
+  }, [])
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -200,7 +203,7 @@ export default function MediaPlan() {
     setForm({
       title: pub.title,
       description: pub.description || '',
-      platform: pub.platform,
+      platform_ids: (pub.platforms || []).map(p => p.id),
       status: pub.status,
       priority: pub.priority || 'medium',
       publish_at: formatDateTimeLocalInput(pub.publish_at),
@@ -420,7 +423,15 @@ export default function MediaPlan() {
                         className="text-left p-2 rounded-lg bg-subtle hover:bg-hover border border-border transition-colors group"
                       >
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <Badge variant={platformBadgeVariant[pub.platform]}>{pub.platform_label}</Badge>
+                          <div className="flex flex-wrap gap-1">
+                            {(pub.platforms || []).length > 0 ? (
+                              pub.platforms.map(p => (
+                                <Badge key={p.id} variant={platformBadgeVariant[p.slug] || 'gray'}>{p.name}</Badge>
+                              ))
+                            ) : (
+                              <Badge variant="gray">-</Badge>
+                            )}
+                          </div>
                           {pub.linked_task && (
                             <Link
                               to={`/tasks?task=${pub.linked_task.id}`}
@@ -488,11 +499,11 @@ export default function MediaPlan() {
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <SearchableSelect
-              label="Платформа"
-              value={form.platform}
-              onChange={val => setForm({ ...form, platform: val })}
-              options={platformOptions}
+            <SearchableMultiSelect
+              label="Платформы"
+              value={form.platform_ids}
+              onChange={val => setForm({ ...form, platform_ids: val })}
+              options={platforms.map(p => ({ value: p.id, label: p.name }))}
             />
             <SearchableSelect
               label="Статус"

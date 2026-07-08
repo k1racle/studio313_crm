@@ -3,29 +3,20 @@ from django.conf import settings
 from apps.tasks.models import Task
 
 
+class Platform(models.Model):
+    slug = models.SlugField(unique=True, verbose_name='Код')
+    name = models.CharField(max_length=50, verbose_name='Название')
+
+    class Meta:
+        verbose_name = 'Платформа'
+        verbose_name_plural = 'Платформы'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Publication(models.Model):
-    PLATFORM_TELEGRAM = 'telegram'
-    PLATFORM_VK = 'vk'
-    PLATFORM_MAX = 'max'
-    PLATFORM_DZEN = 'dzen'
-    PLATFORM_YOUTUBE = 'youtube'
-    PLATFORM_RUTUBE = 'rutube'
-    PLATFORM_INSTAGRAM = 'instagram'
-    PLATFORM_SITE = 'site'
-    PLATFORM_OTHER = 'other'
-
-    PLATFORM_CHOICES = [
-        (PLATFORM_TELEGRAM, 'Telegram'),
-        (PLATFORM_VK, 'VK'),
-        (PLATFORM_MAX, 'MAX'),
-        (PLATFORM_DZEN, 'Дзен'),
-        (PLATFORM_YOUTUBE, 'YouTube'),
-        (PLATFORM_RUTUBE, 'RuTube'),
-        (PLATFORM_INSTAGRAM, 'Instagram'),
-        (PLATFORM_SITE, 'Сайт'),
-        (PLATFORM_OTHER, 'Другое'),
-    ]
-
     STATUS_DRAFT = 'draft'
     STATUS_APPROVAL = 'approval'
     STATUS_SCHEDULED = 'scheduled'
@@ -54,7 +45,12 @@ class Publication(models.Model):
 
     title = models.CharField(max_length=255, verbose_name='Тема публикации')
     description = models.TextField(blank=True, verbose_name='Текст / описание')
-    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default=PLATFORM_OTHER, verbose_name='Платформа')
+    platforms = models.ManyToManyField(
+        Platform,
+        blank=True,
+        related_name='publications',
+        verbose_name='Платформы',
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT, verbose_name='Статус')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default=PRIORITY_MEDIUM, verbose_name='Приоритет')
     project = models.ForeignKey(
@@ -99,7 +95,8 @@ class Publication(models.Model):
         ordering = ['publish_at']
 
     def __str__(self):
-        return f'{self.title} ({self.get_platform_display()})'
+        platforms = ', '.join(self.platforms.values_list('name', flat=True))
+        return f'{self.title} ({platforms or "не указано"})'
 
 
 class PublicationAttachment(models.Model):

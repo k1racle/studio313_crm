@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -7,17 +7,24 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from .models import Publication, PublicationAttachment
-from .serializers import PublicationSerializer, PublicationAttachmentSerializer
+from .models import Publication, PublicationAttachment, Platform
+from .serializers import PublicationSerializer, PublicationAttachmentSerializer, PlatformSerializer
 from apps.tasks.models import Task
 
 
+class PlatformListView(generics.ListAPIView):
+    queryset = Platform.objects.all()
+    serializer_class = PlatformSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+
 class PublicationViewSet(viewsets.ModelViewSet):
-    queryset = Publication.objects.all().select_related('responsible', 'created_by', 'linked_task', 'project').prefetch_related('attachments')
+    queryset = Publication.objects.all().select_related('responsible', 'created_by', 'linked_task', 'project').prefetch_related('attachments', 'platforms')
     serializer_class = PublicationSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['platform', 'status', 'priority', 'responsible', 'project']
+    filterset_fields = ['platforms', 'status', 'priority', 'responsible', 'project']
     search_fields = ['title', 'description']
     ordering_fields = ['publish_at', 'priority', 'created_at']
 
@@ -48,9 +55,10 @@ class PublicationViewSet(viewsets.ModelViewSet):
             description=publication.description or '',
             due_date=publication.publish_at,
             creator=request.user,
-            assignee=publication.responsible,
             status=Task.STATUS_NEW,
         )
+        if publication.responsible:
+            task.assignees.add(publication.responsible)
         publication.linked_task = task
         publication.save(update_fields=['linked_task'])
         return Response({'id': task.id, 'title': task.title}, status=status.HTTP_201_CREATED)
