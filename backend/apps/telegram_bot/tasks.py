@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from config import socks5_ipv4_patch  # noqa: F401
 from celery import shared_task
 from telegram import Bot
 from telegram.request import HTTPXRequest

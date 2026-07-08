@@ -1,6 +1,7 @@
 import logging
 import random
 import re
+from config import socks5_ipv4_patch  # noqa: F401
 from asgiref.sync import sync_to_async
 from telegram import Update
 from telegram.error import NetworkError

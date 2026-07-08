@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from config import socks5_ipv4_patch  # noqa: F401
 import httpx
 from asgiref.sync import sync_to_async
 from django.conf import settings
