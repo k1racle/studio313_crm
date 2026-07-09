@@ -5,9 +5,11 @@ from .views import (
     ProductionCommentListCreateView,
     ProductionAttachmentListCreateView,
     ProductionAttachmentDeleteView,
+    ProductionExportView,
 )
 
 urlpatterns = [
+    path('export/', ProductionExportView.as_view(), name='production_export'),
     path('', ProductionListCreateView.as_view(), name='production_list_create'),
     path('<int:pk>/', ProductionDetailView.as_view(), name='production_detail'),
     path('<int:production_pk>/comments/', ProductionCommentListCreateView.as_view(), name='production_comments'),

@@ -13,8 +13,9 @@ import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Avatar from '../components/ui/Avatar'
-import { Plus, Pencil, Trash2, Search, List, LayoutGrid, Calendar as CalendarIcon, BarChart3 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, List, LayoutGrid, Calendar as CalendarIcon, BarChart3, Download } from 'lucide-react'
 import { formatShortName } from '../utils/format'
+import { downloadExport } from '../utils/export'
 
 const statusLabels = {
   new: 'Новая',
@@ -136,6 +137,20 @@ export default function Production() {
     loadItems()
   }
 
+  const handleExport = async () => {
+    const params = {}
+    if (filters.status) params.status = filters.status
+    if (filters.assignees) params.assignees = filters.assignees
+    if (filters.project) params.project = filters.project
+    if (filters.search) params.search = filters.search
+    try {
+      await downloadExport('/production/export/', params, 'production.xlsx')
+    } catch (err) {
+      console.error('Ошибка выгрузки производства:', err)
+      alert('Не удалось выгрузить производство')
+    }
+  }
+
   const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]
   const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(p => ({ value: p.id, label: p.name }))]
   const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
@@ -199,6 +214,10 @@ export default function Production() {
               onChange={e => setFilters({ ...filters, search: e.target.value })}
               className="w-48 sm:w-64"
             />
+            <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
+              <Download size={14} className="mr-1" />
+              Excel
+            </Button>
           </div>
         </div>
       </Card>

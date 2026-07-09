@@ -13,8 +13,9 @@ import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
-import { Plus, Pencil, Trash2, Search, Archive, RotateCcw, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Archive, RotateCcw, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { formatShortName } from '../utils/format'
+import { downloadExport } from '../utils/export'
 import Avatar from '../components/ui/Avatar'
 
 const statusLabels = {
@@ -261,6 +262,22 @@ export default function Tasks() {
     loadTasks()
   }
 
+  const handleExport = async () => {
+    const params = {}
+    if (filters.status) params.status = filters.status
+    if (filters.priority) params.priority = filters.priority
+    if (filters.assignees) params.assignees = filters.assignees
+    if (filters.project) params.project = filters.project
+    if (filters.search) params.search = filters.search
+    if (showArchived) params.archived = '1'
+    try {
+      await downloadExport('/tasks/export/', params, 'tasks.xlsx')
+    } catch (err) {
+      console.error('Ошибка выгрузки задач:', err)
+      alert('Не удалось выгрузить задачи')
+    }
+  }
+
   const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]
   const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(p => ({ value: p.id, label: p.name }))]
   const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
@@ -334,6 +351,10 @@ export default function Tasks() {
               />
               Показать архив
             </label>
+            <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
+              <Download size={14} className="mr-1" />
+              Excel
+            </Button>
           </div>
         </div>
       </Card>

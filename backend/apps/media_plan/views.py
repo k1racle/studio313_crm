@@ -1,3 +1,5 @@
+from django.http import HttpResponse
+from openpyxl import Workbook
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,6 +9,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from config.export_utils import filter_queryset_from_view
 from .models import Publication, PublicationAttachment, Platform
 from .serializers import PublicationSerializer, PublicationAttachmentSerializer, PlatformSerializer
 from apps.tasks.models import Task
@@ -72,6 +75,44 @@ class PublicationViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Не передан файл'}, status=status.HTTP_400_BAD_REQUEST)
         attachment = PublicationAttachment.objects.create(publication=publication, file=file, caption=caption)
         return Response(PublicationAttachmentSerializer(attachment).data, status=status.HTTP_201_CREATED)
+
+
+class PublicationExportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = filter_queryset_from_view(request, PublicationViewSet)
+        qs = qs.select_related('responsible', 'created_by', 'linked_task', 'project').prefetch_related('platforms')
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Медиа-план'
+        ws.append([
+            'ID', 'Тема', 'Описание', 'Платформы', 'Статус', 'Приоритет',
+            'Проект', 'Дата и время публикации', 'Ответственный',
+            'Создал', 'Связанная задача', 'Создано', 'Обновлено',
+        ])
+        for pub in qs:
+            ws.append([
+                pub.id,
+                pub.title,
+                pub.description or '',
+                ', '.join(pub.platforms.values_list('name', flat=True)),
+                pub.get_status_display(),
+                pub.get_priority_display(),
+                pub.project.name if pub.project else '—',
+                pub.publish_at.strftime('%d.%m.%Y %H:%M') if pub.publish_at else '—',
+                pub.responsible.get_full_name() or pub.responsible.username if pub.responsible else '—',
+                pub.created_by.get_full_name() or pub.created_by.username if pub.created_by else '—',
+                f"#{pub.linked_task.id} {pub.linked_task.title}" if pub.linked_task else '—',
+                pub.created_at.strftime('%d.%m.%Y %H:%M'),
+                pub.updated_at.strftime('%d.%m.%Y %H:%M'),
+            ])
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="media_plan.xlsx"'
+        wb.save(response)
+        return response
 
 
 class PublicationAttachmentDeleteView(APIView):

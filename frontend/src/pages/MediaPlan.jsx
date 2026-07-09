@@ -10,8 +10,9 @@ import Select from '../components/ui/Select'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Avatar from '../components/ui/Avatar'
-import { Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight, Calendar, Briefcase, ExternalLink, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight, Calendar, Briefcase, ExternalLink, Search, Download } from 'lucide-react'
 import { formatShortName } from '../utils/format'
+import { downloadExport } from '../utils/export'
 import { Link } from 'react-router-dom'
 
 const statusOptions = [
@@ -303,6 +304,27 @@ export default function MediaPlan() {
     }
   }
 
+  const handleExport = async () => {
+    const params = {}
+    if (filters.status) params.status = filters.status
+    if (filters.priority) params.priority = filters.priority
+    if (filters.responsible) params.responsible = filters.responsible
+    if (filters.project) params.project = filters.project
+    if (filters.search) params.search = filters.search
+    const start = new Date(weekStart)
+    start.setHours(0, 0, 0, 0)
+    const end = addDays(weekStart, 6)
+    end.setHours(23, 59, 59, 999)
+    params.start = start.toISOString()
+    params.end = end.toISOString()
+    try {
+      await downloadExport('/media-plan/publications/export/', params, 'media_plan.xlsx')
+    } catch (err) {
+      console.error('Ошибка выгрузки медиа-плана:', err)
+      alert('Не удалось выгрузить медиа-план')
+    }
+  }
+
   const addPendingFile = () => {
     const input = document.getElementById('media-plan-file-input')
     if (!input?.files?.[0]) return
@@ -359,6 +381,10 @@ export default function MediaPlan() {
               onChange={e => setFilters({ ...filters, search: e.target.value })}
               className="w-48 sm:w-64"
             />
+            <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
+              <Download size={14} className="mr-1" />
+              Excel
+            </Button>
           </div>
         </div>
       </Card>
