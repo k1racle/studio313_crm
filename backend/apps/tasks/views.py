@@ -9,8 +9,11 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from config.export_utils import filter_queryset_from_view
-from .models import Task, TaskAttachment
-from .serializers import TaskSerializer, TaskCommentSerializer, TaskAttachmentSerializer
+from .models import Task, TaskAttachment, TaskSubTask
+from .serializers import (
+    TaskSerializer, TaskCommentSerializer, TaskAttachmentSerializer,
+    TaskSubTaskSerializer,
+)
 from apps.users.permissions import IsManagerOrHigher
 from apps.notifications.services import create_in_app_notification
 
@@ -25,7 +28,7 @@ class TaskListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Task.objects.all()
+        qs = Task.objects.all().prefetch_related('assignees', 'members', 'tags', 'subtasks')
         if self.request.query_params.get('archived') != '1':
             qs = qs.filter(is_archived=False)
         else:
@@ -52,9 +55,10 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        qs = Task.objects.all().prefetch_related('assignees', 'members', 'tags', 'subtasks')
         if user.is_manager:
-            return Task.objects.all()
-        return Task.objects.filter(project__members=user)
+            return qs
+        return qs.filter(project__members=user)
 
     def perform_update(self, serializer):
         instance = serializer.instance
@@ -73,7 +77,7 @@ class TaskExportView(APIView):
 
     def get(self, request):
         qs = filter_queryset_from_view(request, TaskListCreateView)
-        qs = qs.select_related('project', 'client', 'creator').prefetch_related('assignees', 'members', 'tags')
+        qs = qs.select_related('project', 'client', 'creator').prefetch_related('assignees', 'members', 'tags', 'subtasks')
 
         wb = Workbook()
         ws = wb.active
@@ -106,6 +110,29 @@ class TaskExportView(APIView):
         response['Content-Disposition'] = 'attachment; filename="tasks.xlsx"'
         wb.save(response)
         return response
+
+
+class TaskSubTaskListCreateView(generics.ListCreateAPIView):
+    serializer_class = TaskSubTaskSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        accessible_tasks = Task.objects.all() if user.is_manager else Task.objects.filter(project__members=user)
+        return TaskSubTask.objects.filter(task_id=self.kwargs['task_pk'], task__in=accessible_tasks)
+
+    def perform_create(self, serializer):
+        serializer.save(task_id=self.kwargs['task_pk'])
+
+
+class TaskSubTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = TaskSubTaskSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        accessible_tasks = Task.objects.all() if user.is_manager else Task.objects.filter(project__members=user)
+        return TaskSubTask.objects.filter(task__in=accessible_tasks)
 
 
 class TaskCommentListCreateView(generics.ListCreateAPIView):

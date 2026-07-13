@@ -104,3 +104,24 @@ class ProductionAttachment(models.Model):
     class Meta:
         verbose_name = 'Вложение'
         verbose_name_plural = 'Вложения'
+
+
+class ProductionSubTask(models.Model):
+    production = models.ForeignKey(
+        Production,
+        on_delete=models.CASCADE,
+        related_name='subtasks',
+        verbose_name='Производство'
+    )
+    title = models.CharField(max_length=255, verbose_name='Название')
+    is_done = models.BooleanField(default=False, verbose_name='Выполнено')
+    order = models.PositiveIntegerField(default=0, verbose_name='Порядок')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
+
+    class Meta:
+        verbose_name = 'Подзадача'
+        verbose_name_plural = 'Подзадачи'
+        ordering = ['order', 'created_at']
+
+    def __str__(self):
+        return self.title

@@ -12,6 +12,7 @@ import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
+import Subtasks from '../components/Subtasks'
 import Avatar from '../components/ui/Avatar'
 import { Plus, Pencil, Trash2, Search, List, LayoutGrid, Calendar as CalendarIcon, BarChart3, Download } from 'lucide-react'
 import { formatShortName } from '../utils/format'
@@ -360,6 +361,16 @@ export default function Production() {
             onChange={val => setForm({ ...form, assignee_ids: val })}
             options={users.map(u => ({ value: u.id, label: formatShortName(u) }))}
           />
+          {editingItem && (
+            <div className="border-t border-border pt-4">
+              <h4 className="text-sm font-semibold text-text-muted uppercase mb-3">Подзадачи</h4>
+              <Subtasks
+                parentId={editingItem.id}
+                listEndpoint={`/production/${editingItem.id}/subtasks/`}
+                detailEndpointPrefix="/production/subtasks"
+              />
+            </div>
+          )}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingItem ? 'Сохранить' : 'Создать'}</Button>

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Production, ProductionComment, ProductionAttachment
+from .models import Production, ProductionComment, ProductionAttachment, ProductionSubTask
 from apps.clients.models import Client
 from apps.users.serializers import UserSerializer
 from apps.projects.serializers import ProjectSerializer
@@ -16,6 +16,13 @@ class ProductionAttachmentSerializer(serializers.ModelSerializer):
         model = ProductionAttachment
         fields = ['id', 'file', 'uploaded_at']
         read_only_fields = ['uploaded_at']
+
+
+class ProductionSubTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductionSubTask
+        fields = ['id', 'title', 'is_done', 'order', 'created_at']
+        read_only_fields = ['created_at']
 
 
 class ProductionCommentSerializer(serializers.ModelSerializer):
@@ -63,7 +70,7 @@ class ProductionSerializer(serializers.ModelSerializer):
             'project', 'project_id',
             'client', 'client_id',
             'creator', 'assignees', 'assignee_ids', 'due_date',
-            'comments', 'attachments',
+            'comments', 'attachments', 'subtasks',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['creator', 'created_at', 'updated_at']

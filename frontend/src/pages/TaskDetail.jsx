@@ -5,6 +5,7 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import Input from '../components/ui/Input'
+import Subtasks from '../components/Subtasks'
 import { ArrowLeft, Send, Upload, FileText, Clock, Trash2 } from 'lucide-react'
 import { formatFullName, formatShortName } from '../utils/format'
 import Avatar from '../components/ui/Avatar'
@@ -198,6 +199,14 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
           <h3 className="text-sm font-semibold text-text-muted uppercase mb-2">Описание</h3>
           <p className="text-text whitespace-pre-wrap">{task.description || 'Нет описания'}</p>
         </div>
+
+        <Card title="Подзадачи" className="mb-6">
+          <Subtasks
+            parentId={id}
+            listEndpoint={`/tasks/${id}/subtasks/`}
+            detailEndpointPrefix="/tasks/subtasks"
+          />
+        </Card>
 
         <div>
           <h3 className="text-sm font-semibold text-text-muted uppercase mb-3">Сменить статус</h3>

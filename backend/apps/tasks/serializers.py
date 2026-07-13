@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Task, TaskComment, TaskAttachment
+from .models import Task, TaskComment, TaskAttachment, TaskSubTask
 from apps.clients.models import Client
 from apps.users.serializers import UserSerializer
 from apps.projects.serializers import ProjectSerializer
@@ -18,6 +18,13 @@ class TaskAttachmentSerializer(serializers.ModelSerializer):
         model = TaskAttachment
         fields = ['id', 'file', 'uploaded_at']
         read_only_fields = ['uploaded_at']
+
+
+class TaskSubTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskSubTask
+        fields = ['id', 'title', 'is_done', 'order', 'created_at']
+        read_only_fields = ['created_at']
 
 
 class TaskCommentSerializer(serializers.ModelSerializer):
@@ -82,7 +89,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'client', 'client_id',
             'creator', 'assignees', 'assignee_ids', 'members', 'member_ids', 'due_date',
             'is_archived', 'archived_at',
-            'tags', 'tag_ids',
+            'tags', 'tag_ids', 'subtasks',
             'created_at', 'updated_at', 'comments', 'attachments'
         ]
         read_only_fields = ['creator', 'source', 'created_at', 'updated_at']
