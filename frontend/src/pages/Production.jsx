@@ -13,6 +13,7 @@ import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Subtasks from '../components/Subtasks'
+import ProductionDetail from '../pages/ProductionDetail'
 import Avatar from '../components/ui/Avatar'
 import { Plus, Pencil, Trash2, Search, List, LayoutGrid, Calendar as CalendarIcon, BarChart3, Download } from 'lucide-react'
 import { formatShortName } from '../utils/format'
@@ -62,6 +63,10 @@ export default function Production() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailItemId, setDetailItemId] = useState(null)
+  const [detailItem, setDetailItem] = useState(null)
+  const [pendingDetailId, setPendingDetailId] = useState(null)
 
   const loadItems = async () => {
     const params = {}
@@ -107,6 +112,41 @@ export default function Production() {
     setIsModalOpen(true)
   }
 
+  const openDetail = (id) => {
+    setDetailItemId(id)
+    setDetailItem(null)
+    setDetailOpen(true)
+  }
+
+  const closeDetail = () => {
+    setDetailOpen(false)
+    setDetailItemId(null)
+    setDetailItem(null)
+  }
+
+  const handleEditDetail = () => {
+    if (!detailItem) return
+    setPendingDetailId(detailItem.id)
+    closeDetail()
+    openEdit(detailItem)
+  }
+
+  const handleDeleteDetail = async () => {
+    if (!detailItem || !confirm(`Удалить «${detailItem.title}»?`)) return
+    await api.delete(`/production/${detailItem.id}/`)
+    closeDetail()
+    loadItems()
+  }
+
+  const handleCloseEdit = () => {
+    setIsModalOpen(false)
+    setEditingItem(null)
+    if (pendingDetailId) {
+      openDetail(pendingDetailId)
+      setPendingDetailId(null)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     const payload = {
@@ -126,6 +166,10 @@ export default function Production() {
       setEditingItem(null)
       setIsModalOpen(false)
       await loadItems()
+      if (pendingDetailId) {
+        openDetail(pendingDetailId)
+        setPendingDetailId(null)
+      }
     } catch (err) {
       console.error('Ошибка сохранения:', err)
       alert('Не удалось сохранить. Проверьте данные и попробуйте снова.')
@@ -224,21 +268,15 @@ export default function Production() {
       </Card>
 
       {view === 'kanban' && (
-        <ProductionKanbanBoard items={items} onItemMoved={loadItems} onItemClick={openEdit} />
+        <ProductionKanbanBoard items={items} onItemMoved={loadItems} onItemClick={(item) => openDetail(item.id)} />
       )}
 
       {view === 'gantt' && (
-        <GanttChart
-          tasks={items}
-          onTaskClick={(id) => {
-            const item = items.find(i => i.id === id)
-            if (item) openEdit(item)
-          }}
-        />
+        <GanttChart tasks={items} onTaskClick={(id) => openDetail(id)} />
       )}
 
       {view === 'calendar' && (
-        <ProductionCalendar items={items} onItemMoved={loadItems} onItemClick={openEdit} />
+        <ProductionCalendar items={items} onItemMoved={loadItems} onItemClick={(item) => openDetail(item.id)} />
       )}
 
       {view === 'list' && (
@@ -265,7 +303,7 @@ export default function Production() {
                     <td className="py-3 truncate">{item.client?.name || '—'}</td>
                     <td className="py-3">
                       <button
-                        onClick={() => openEdit(item)}
+                        onClick={() => openDetail(item.id)}
                         className="font-medium text-text hover:text-primary text-left block whitespace-normal break-words leading-snug"
                       >
                         {item.title}
@@ -318,7 +356,7 @@ export default function Production() {
         </Card>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'Изменить производство' : 'Новая заявка'}>
+      <Modal isOpen={isModalOpen} onClose={handleCloseEdit} title={editingItem ? 'Изменить производство' : 'Новая заявка'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Select
             label="Проект"
@@ -372,10 +410,38 @@ export default function Production() {
             </div>
           )}
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Отмена</Button>
+            <Button type="button" variant="secondary" onClick={handleCloseEdit}>Отмена</Button>
             <Button type="submit">{editingItem ? 'Сохранить' : 'Создать'}</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={detailOpen}
+        onClose={closeDetail}
+        title={`Производство #${detailItemId}`}
+        size="xl"
+        headerActions={
+          detailItem && user?.is_manager ? (
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Button variant="secondary" size="sm" onClick={handleEditDetail} title="Редактировать">
+                <Pencil size={16} className="sm:mr-1.5" />
+                <span className="hidden sm:inline">Редактировать</span>
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleDeleteDetail} title="Удалить">
+                <Trash2 size={16} className="sm:mr-1.5" />
+                <span className="hidden sm:inline">Удалить</span>
+              </Button>
+            </div>
+          ) : null
+        }
+      >
+        <ProductionDetail
+          id={detailItemId}
+          isPanel
+          onClose={closeDetail}
+          onLoad={setDetailItem}
+        />
       </Modal>
     </div>
   )
