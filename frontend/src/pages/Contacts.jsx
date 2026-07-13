@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
 import Button from '../components/ui/Button'
@@ -34,23 +34,49 @@ export default function Contacts() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingContact, setEditingContact] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const sentinelRef = useRef(null)
 
-  const loadContacts = async () => {
+  const loadContacts = useCallback(async (pageNum = 1, append = false) => {
+    setLoading(true)
     try {
-      const params = {}
+      const params = { page: pageNum }
       if (search.trim()) params.search = search.trim()
       if (orgFilter) params.organization = orgFilter
       const res = await api.get('/contacts/', { params })
-      setContacts(res.data.results || res.data)
+      const results = res.data.results || []
+      setContacts(prev => append ? [...prev, ...results] : results)
+      setHasMore(!!res.data.next)
     } catch (err) {
       console.error(err)
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [search, orgFilter])
 
   useEffect(() => {
-    const timeout = setTimeout(loadContacts, 300)
-    return () => clearTimeout(timeout)
+    setPage(1)
+    setContacts([])
+    setHasMore(true)
   }, [search, orgFilter])
+
+  useEffect(() => {
+    loadContacts(page, page > 1)
+  }, [page])
+
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && hasMore && !loading) {
+        setPage(p => p + 1)
+      }
+    }, { rootMargin: '200px' })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, loading])
 
   const organizations = [...new Set(contacts.map(c => c.organization).filter(Boolean))].sort()
 
@@ -93,7 +119,7 @@ export default function Contacts() {
         await api.post('/contacts/', payload)
       }
       closeModal()
-      loadContacts()
+      loadContacts(1, false)
     } catch (err) {
       console.error(err)
       alert('Не удалось сохранить контакт')
@@ -104,7 +130,7 @@ export default function Contacts() {
     if (!confirm(`Удалить контакт «${contact.full_name}»?`)) return
     try {
       await api.delete(`/contacts/${contact.id}/`)
-      loadContacts()
+      loadContacts(1, false)
     } catch (err) {
       console.error(err)
       alert('Не удалось удалить контакт')
@@ -261,6 +287,14 @@ export default function Contacts() {
           </table>
         </div>
       </Card>
+
+      <div ref={sentinelRef} className="h-4 mt-4" />
+      {loading && (
+        <div className="text-center py-6 text-text-muted">
+          <span className="inline-block w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin mr-2" />
+          Загрузка...
+        </div>
+      )}
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingContact ? 'Изменить контакт' : 'Новый контакт'}>
         <form onSubmit={handleSubmit} className="space-y-4">
