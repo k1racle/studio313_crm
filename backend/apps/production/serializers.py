@@ -62,6 +62,7 @@ class ProductionSerializer(serializers.ModelSerializer):
     )
     comments = ProductionCommentSerializer(many=True, read_only=True)
     attachments = ProductionAttachmentSerializer(many=True, read_only=True)
+    subtasks = ProductionSubTaskSerializer(many=True, read_only=True)
 
     class Meta:
         model = Production

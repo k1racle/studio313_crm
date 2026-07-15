@@ -80,6 +80,7 @@ class TaskSerializer(serializers.ModelSerializer):
     )
     comments = TaskCommentSerializer(many=True, read_only=True)
     attachments = TaskAttachmentSerializer(many=True, read_only=True)
+    subtasks = TaskSubTaskSerializer(many=True, read_only=True)
 
     class Meta:
         model = Task
