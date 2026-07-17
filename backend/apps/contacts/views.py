@@ -41,7 +41,7 @@ class ContactExportView(APIView):
         wb = Workbook()
         ws = wb.active
         ws.title = 'Контакты'
-        ws.append(['ID', 'ФИО', 'Организация', 'Должность', 'Телефон', 'Email', 'Мессенджеры', 'Заметки', 'Создан', 'Обновлён'])
+        ws.append(['ID', 'ФИО', 'Организация', 'Должность', 'Телефон', 'Email', 'Мессенджеры', 'Соцсети', 'Дата рождения', 'Город', 'Оперативный канал связи', 'Заметки', 'Создан', 'Обновлён'])
         for contact in qs:
             ws.append([
                 contact.id,
@@ -51,6 +51,10 @@ class ContactExportView(APIView):
                 contact.phone,
                 contact.email,
                 contact.messengers,
+                contact.social_networks,
+                contact.birth_date.strftime('%d.%m.%Y') if contact.birth_date else '',
+                contact.city,
+                'Да' if contact.quick_communication else 'Нет',
                 contact.notes,
                 contact.created_at.strftime('%d.%m.%Y %H:%M'),
                 contact.updated_at.strftime('%d.%m.%Y %H:%M'),

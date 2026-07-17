@@ -3,10 +3,11 @@ import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import Select from '../components/ui/Select'
 import Modal from '../components/ui/Modal'
 import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
-import { Plus, Pencil, Trash2, Search, Phone, Mail, MessageCircle, Building2, User, StickyNote, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Phone, Mail, MessageCircle, Building2, User, StickyNote, Download, Share2, Cake, MapPin, Zap } from 'lucide-react'
 
 const messengerOptions = [
   { value: 'Telegram', label: 'Telegram' },
@@ -23,6 +24,10 @@ const emptyForm = {
   phone: '',
   email: '',
   messengers: [],
+  social_networks: '',
+  birth_date: '',
+  city: '',
+  quick_communication: 'no',
   notes: '',
 }
 
@@ -95,6 +100,10 @@ export default function Contacts() {
       phone: contact.phone || '',
       email: contact.email || '',
       messengers: contact.messengers ? contact.messengers.split(',').map(s => s.trim()).filter(Boolean) : [],
+      social_networks: contact.social_networks || '',
+      birth_date: contact.birth_date || '',
+      city: contact.city || '',
+      quick_communication: contact.quick_communication ? 'yes' : 'no',
       notes: contact.notes || '',
     })
     setIsModalOpen(true)
@@ -111,6 +120,8 @@ export default function Contacts() {
     const payload = {
       ...form,
       messengers: form.messengers.join(', '),
+      birth_date: form.birth_date || null,
+      quick_communication: form.quick_communication === 'yes',
     }
     try {
       if (editingContact) {
@@ -202,7 +213,7 @@ export default function Contacts() {
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full min-w-[900px]">
+          <table className="w-full min-w-[1200px]">
             <thead>
               <tr className="border-b border-border text-left text-sm text-text-muted">
                 <th className="pb-3 font-medium w-48">ФИО</th>
@@ -211,6 +222,10 @@ export default function Contacts() {
                 <th className="pb-3 font-medium w-36">Телефон</th>
                 <th className="pb-3 font-medium w-40">Email</th>
                 <th className="pb-3 font-medium w-40">Мессенджеры</th>
+                <th className="pb-3 font-medium w-40">Соцсети</th>
+                <th className="pb-3 font-medium w-32">Дата рождения</th>
+                <th className="pb-3 font-medium w-32">Город</th>
+                <th className="pb-3 font-medium w-28">Опер. канал</th>
                 <th className="pb-3 font-medium w-24"></th>
               </tr>
             </thead>
@@ -257,6 +272,38 @@ export default function Contacts() {
                     )}
                   </td>
                   <td className="py-3">
+                    {contact.social_networks && (
+                      <div className="flex items-center gap-1.5 text-text">
+                        <Share2 size={14} className="text-text-muted" />
+                        {contact.social_networks}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3">
+                    {contact.birth_date && (
+                      <div className="flex items-center gap-1.5 text-text">
+                        <Cake size={14} className="text-text-muted" />
+                        {new Date(contact.birth_date + 'T00:00:00').toLocaleDateString('ru-RU')}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3">
+                    {contact.city && (
+                      <div className="flex items-center gap-1.5 text-text">
+                        <MapPin size={14} className="text-text-muted" />
+                        {contact.city}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3">
+                    {contact.quick_communication && (
+                      <div className="flex items-center gap-1.5 text-text">
+                        <Zap size={14} className="text-primary" />
+                        Да
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3">
                     {user?.is_manager && (
                       <div className="flex items-center gap-1">
                         <button
@@ -280,7 +327,7 @@ export default function Contacts() {
               ))}
               {contacts.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-text-muted">Контакты не найдены</td>
+                  <td colSpan={11} className="py-8 text-center text-text-muted">Контакты не найдены</td>
                 </tr>
               )}
             </tbody>
@@ -345,6 +392,35 @@ export default function Contacts() {
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
             </select>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Соцсети"
+              value={form.social_networks}
+              onChange={e => setForm({ ...form, social_networks: e.target.value })}
+            />
+            <Input
+              label="Город"
+              value={form.city}
+              onChange={e => setForm({ ...form, city: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Дата рождения"
+              type="date"
+              value={form.birth_date}
+              onChange={e => setForm({ ...form, birth_date: e.target.value })}
+            />
+            <Select
+              label="Оперативный канал связи"
+              value={form.quick_communication}
+              onChange={e => setForm({ ...form, quick_communication: e.target.value })}
+              options={[
+                { value: 'no', label: 'Нет' },
+                { value: 'yes', label: 'Да' },
+              ]}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-1.5">Заметки</label>
