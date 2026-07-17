@@ -5,8 +5,29 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from openpyxl import Workbook
+import json
 from .models import Contact
 from .serializers import ContactSerializer
+
+
+def format_links(value):
+    """Отрендерить JSON-список [{'name', 'link'}] в читаемый текст для экспорта."""
+    if not value:
+        return ''
+    try:
+        items = json.loads(value)
+    except (ValueError, TypeError):
+        return value
+    if not isinstance(items, list):
+        return value
+    parts = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        name = item.get('name', '')
+        link = item.get('link', '')
+        parts.append(f'{name}: {link}' if link else name)
+    return '\n'.join(p for p in parts if p)
 
 
 class ContactListCreateView(generics.ListCreateAPIView):
@@ -50,8 +71,8 @@ class ContactExportView(APIView):
                 contact.position,
                 contact.phone,
                 contact.email,
-                contact.messengers,
-                contact.social_networks,
+                format_links(contact.messengers),
+                format_links(contact.social_networks),
                 contact.birth_date.strftime('%d.%m.%Y') if contact.birth_date else '',
                 contact.city,
                 'Да' if contact.quick_communication else 'Нет',

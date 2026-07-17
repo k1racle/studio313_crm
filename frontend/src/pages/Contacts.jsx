@@ -7,15 +7,113 @@ import Select from '../components/ui/Select'
 import Modal from '../components/ui/Modal'
 import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
-import { Plus, Pencil, Trash2, Search, Phone, Mail, MessageCircle, Building2, User, StickyNote, Download, Share2, Cake, MapPin, Zap } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Phone, Mail, MessageCircle, Building2, User, Download, Share2, Cake, MapPin, Zap, X } from 'lucide-react'
 
-const messengerOptions = [
-  { value: 'Telegram', label: 'Telegram' },
-  { value: 'WhatsApp', label: 'WhatsApp' },
-  { value: 'Viber', label: 'Viber' },
-  { value: 'MAX', label: 'MAX' },
-  { value: 'VK', label: 'VK' },
-]
+const messengerOptions = ['Telegram', 'WhatsApp', 'Viber', 'MAX', 'VK']
+
+const socialOptions = ['VK', 'Instagram', 'Facebook', 'TikTok', 'YouTube', 'Одноклассники', 'Другое']
+
+// Поля хранятся как JSON-строка вида [{"name": "Telegram", "link": "https://t.me/..."}]
+const parseLinks = (raw) => {
+  if (!raw) return []
+  try {
+    const arr = JSON.parse(raw)
+    if (Array.isArray(arr)) {
+      return arr
+        .filter(i => i && typeof i === 'object')
+        .map(i => ({ name: i.name || '', link: i.link || '' }))
+    }
+  } catch {
+    // старый формат — просто текст: "Telegram, WhatsApp" или свободная строка
+  }
+  return raw.split(',').map(s => s.trim()).filter(Boolean).map(s => ({ name: s, link: '' }))
+}
+
+const serializeLinks = (entries) =>
+  JSON.stringify(entries.filter(e => e.name.trim() || e.link.trim()))
+
+const linkHref = (link) => /^https?:\/\//i.test(link) ? link : null
+
+function LinksEditor({ label, options, entries, onChange, linkPlaceholder }) {
+  const addEntry = () => onChange([...entries, { name: options[0], link: '' }])
+  const updateEntry = (idx, patch) =>
+    onChange(entries.map((e, i) => (i === idx ? { ...e, ...patch } : e)))
+  const removeEntry = (idx) => onChange(entries.filter((_, i) => i !== idx))
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-text mb-1.5">{label}</label>
+      <div className="space-y-2">
+        {entries.map((entry, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <select
+              value={entry.name}
+              onChange={e => updateEntry(idx, { name: e.target.value })}
+              className="w-36 shrink-0 px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              {options.map(o => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={entry.link}
+              onChange={e => updateEntry(idx, { link: e.target.value })}
+              placeholder={linkPlaceholder}
+              className="flex-1 px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+            <button
+              type="button"
+              onClick={() => removeEntry(idx)}
+              className="p-2 text-text-muted hover:text-danger hover:bg-subtle rounded-lg transition-colors shrink-0"
+              title="Удалить"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={addEntry}
+        className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+      >
+        <Plus size={14} />
+        Добавить
+      </button>
+    </div>
+  )
+}
+
+function LinksCell({ icon: Icon, raw }) {
+  const entries = parseLinks(raw)
+  if (entries.length === 0) return null
+  return (
+    <div className="flex items-start gap-1.5 text-text">
+      <Icon size={14} className="text-text-muted mt-0.5 shrink-0" />
+      <div className="space-y-0.5">
+        {entries.map((e, i) => {
+          const href = linkHref(e.link)
+          if (!e.link) {
+            return <div key={i} className="whitespace-nowrap">{e.name}</div>
+          }
+          return (
+            <div key={i} className="whitespace-nowrap">
+              <span className="text-text-muted">{e.name}:</span>{' '}
+              {href ? (
+                <a href={href} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  {e.link}
+                </a>
+              ) : (
+                <span>{e.link}</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 const emptyForm = {
   full_name: '',
@@ -24,7 +122,7 @@ const emptyForm = {
   phone: '',
   email: '',
   messengers: [],
-  social_networks: '',
+  social_networks: [],
   birth_date: '',
   city: '',
   quick_communication: 'no',
@@ -99,8 +197,8 @@ export default function Contacts() {
       position: contact.position || '',
       phone: contact.phone || '',
       email: contact.email || '',
-      messengers: contact.messengers ? contact.messengers.split(',').map(s => s.trim()).filter(Boolean) : [],
-      social_networks: contact.social_networks || '',
+      messengers: parseLinks(contact.messengers),
+      social_networks: parseLinks(contact.social_networks),
       birth_date: contact.birth_date || '',
       city: contact.city || '',
       quick_communication: contact.quick_communication ? 'yes' : 'no',
@@ -119,7 +217,8 @@ export default function Contacts() {
     e.preventDefault()
     const payload = {
       ...form,
-      messengers: form.messengers.join(', '),
+      messengers: serializeLinks(form.messengers),
+      social_networks: serializeLinks(form.social_networks),
       birth_date: form.birth_date || null,
       quick_communication: form.quick_communication === 'yes',
     }
@@ -213,32 +312,32 @@ export default function Contacts() {
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full min-w-[1200px]">
+          <table className="w-full min-w-[1600px]">
             <thead>
               <tr className="border-b border-border text-left text-sm text-text-muted">
-                <th className="pb-3 font-medium w-48">ФИО</th>
-                <th className="pb-3 font-medium w-40">Организация</th>
-                <th className="pb-3 font-medium w-40">Должность</th>
-                <th className="pb-3 font-medium w-36">Телефон</th>
-                <th className="pb-3 font-medium w-40">Email</th>
-                <th className="pb-3 font-medium w-40">Мессенджеры</th>
-                <th className="pb-3 font-medium w-40">Соцсети</th>
-                <th className="pb-3 font-medium w-32">Дата рождения</th>
-                <th className="pb-3 font-medium w-32">Город</th>
-                <th className="pb-3 font-medium w-28">Опер. канал</th>
-                <th className="pb-3 font-medium w-24"></th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">ФИО</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Организация</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Должность</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Телефон</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Email</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Мессенджеры</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Соцсети</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Дата рождения</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Город</th>
+                <th className="pb-3 pr-6 font-medium whitespace-nowrap">Опер. канал</th>
+                <th className="pb-3 font-medium whitespace-nowrap"></th>
               </tr>
             </thead>
             <tbody className="text-sm">
               {contacts.map(contact => (
                 <tr key={contact.id} className="border-b border-border hover:bg-subtle">
-                  <td className="py-3">
+                  <td className="py-3 pr-6 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <User size={16} className="text-primary" />
                       <span className="font-medium text-text">{contact.full_name}</span>
                     </div>
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 pr-6 whitespace-nowrap">
                     {contact.organization && (
                       <div className="flex items-center gap-1.5 text-text">
                         <Building2 size={14} className="text-text-muted" />
@@ -246,8 +345,8 @@ export default function Contacts() {
                       </div>
                     )}
                   </td>
-                  <td className="py-3 text-text">{contact.position || '—'}</td>
-                  <td className="py-3">
+                  <td className="py-3 pr-6 whitespace-nowrap text-text">{contact.position || '—'}</td>
+                  <td className="py-3 pr-6 whitespace-nowrap">
                     {contact.phone && (
                       <div className="flex items-center gap-1.5 text-text">
                         <Phone size={14} className="text-text-muted" />
@@ -255,7 +354,7 @@ export default function Contacts() {
                       </div>
                     )}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 pr-6 whitespace-nowrap">
                     {contact.email && (
                       <a href={`mailto:${contact.email}`} className="flex items-center gap-1.5 text-primary hover:underline">
                         <Mail size={14} />
@@ -263,23 +362,13 @@ export default function Contacts() {
                       </a>
                     )}
                   </td>
-                  <td className="py-3">
-                    {contact.messengers && (
-                      <div className="flex items-center gap-1.5 text-text">
-                        <MessageCircle size={14} className="text-text-muted" />
-                        {contact.messengers}
-                      </div>
-                    )}
+                  <td className="py-3 pr-6 align-top">
+                    <LinksCell icon={MessageCircle} raw={contact.messengers} />
                   </td>
-                  <td className="py-3">
-                    {contact.social_networks && (
-                      <div className="flex items-center gap-1.5 text-text">
-                        <Share2 size={14} className="text-text-muted" />
-                        {contact.social_networks}
-                      </div>
-                    )}
+                  <td className="py-3 pr-6 align-top">
+                    <LinksCell icon={Share2} raw={contact.social_networks} />
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 pr-6 whitespace-nowrap">
                     {contact.birth_date && (
                       <div className="flex items-center gap-1.5 text-text">
                         <Cake size={14} className="text-text-muted" />
@@ -287,7 +376,7 @@ export default function Contacts() {
                       </div>
                     )}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 pr-6 whitespace-nowrap">
                     {contact.city && (
                       <div className="flex items-center gap-1.5 text-text">
                         <MapPin size={14} className="text-text-muted" />
@@ -295,7 +384,7 @@ export default function Contacts() {
                       </div>
                     )}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 pr-6 whitespace-nowrap">
                     {contact.quick_communication && (
                       <div className="flex items-center gap-1.5 text-text">
                         <Zap size={14} className="text-primary" />
@@ -303,7 +392,7 @@ export default function Contacts() {
                       </div>
                     )}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 whitespace-nowrap">
                     {user?.is_manager && (
                       <div className="flex items-center gap-1">
                         <button
@@ -376,29 +465,21 @@ export default function Contacts() {
               onChange={e => setForm({ ...form, email: e.target.value })}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Мессенджеры</label>
-            <select
-              multiple
-              value={form.messengers}
-              onChange={e => {
-                const options = Array.from(e.target.selectedOptions).map(o => o.value)
-                setForm({ ...form, messengers: options })
-              }}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              style={{ minHeight: '6rem' }}
-            >
-              {messengerOptions.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-          </div>
+          <LinksEditor
+            label="Мессенджеры"
+            options={messengerOptions}
+            entries={form.messengers}
+            onChange={entries => setForm({ ...form, messengers: entries })}
+            linkPlaceholder="Ссылка или ник, например https://t.me/username"
+          />
+          <LinksEditor
+            label="Соцсети"
+            options={socialOptions}
+            entries={form.social_networks}
+            onChange={entries => setForm({ ...form, social_networks: entries })}
+            linkPlaceholder="Ссылка на профиль"
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Соцсети"
-              value={form.social_networks}
-              onChange={e => setForm({ ...form, social_networks: e.target.value })}
-            />
             <Input
               label="Город"
               value={form.city}
