@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Copy, Eye, EyeOff, Key, Link as LinkIcon, Pencil, Plus, Save, Search, Shield, Trash2 } from 'lucide-react'
+import { Copy, Eye, EyeOff, Key, Link as LinkIcon, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 
 import api from '../api/axios'
 import Badge from '../components/ui/Badge'
@@ -25,13 +25,6 @@ const categoryBadgeVariant = {
   email: 'yellow',
 }
 
-const permissionActions = [
-  { key: 'view', label: 'Смотреть' },
-  { key: 'add', label: 'Добавлять' },
-  { key: 'change', label: 'Изменять' },
-  { key: 'delete', label: 'Удалять' },
-]
-
 export default function PasswordVault() {
   const [meta, setMeta] = useState(null)
   const [entries, setEntries] = useState([])
@@ -43,8 +36,6 @@ export default function PasswordVault() {
   const [editingEntry, setEditingEntry] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [visiblePasswords, setVisiblePasswords] = useState({})
-  const [permissionMatrix, setPermissionMatrix] = useState([])
-  const [savingPermissionUserId, setSavingPermissionUserId] = useState(null)
 
   const categories = meta?.categories || []
   const currentPermissions = meta?.current_permissions || {}
@@ -57,7 +48,6 @@ export default function PasswordVault() {
   const loadMeta = async () => {
     const res = await api.get('/password-vault/meta/')
     setMeta(res.data)
-    setPermissionMatrix(res.data.permission_matrix || [])
   }
 
   const loadEntries = async () => {
@@ -157,36 +147,6 @@ export default function PasswordVault() {
     }
   }
 
-  const updatePermissionValue = (userId, category, action, checked) => {
-    setPermissionMatrix(prev => prev.map(row => {
-      if (row.user.id !== userId) return row
-      return {
-        ...row,
-        permissions: {
-          ...row.permissions,
-          [category]: {
-            ...row.permissions[category],
-            [action]: checked,
-          },
-        },
-      }
-    }))
-  }
-
-  const savePermissions = async (row) => {
-    setSavingPermissionUserId(row.user.id)
-    try {
-      const res = await api.put(`/password-vault/permissions/${row.user.id}/`, {
-        permissions: row.permissions,
-      })
-      setPermissionMatrix(prev => prev.map(item => item.user.id === row.user.id ? res.data : item))
-    } catch (error) {
-      alert(error.response?.data?.detail || 'Не удалось сохранить права.')
-    } finally {
-      setSavingPermissionUserId(null)
-    }
-  }
-
   const createCategories = categories.filter(category => currentPermissions[category.value]?.add)
   const editCategories = editingEntry
     ? categories.filter(category => category.value === editingEntry.category || currentPermissions[category.value]?.add)
@@ -197,7 +157,7 @@ export default function PasswordVault() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Доступы и пароли</h1>
-          <p className="text-text-muted">IT, соцсети и почта с персональной выдачей доступа сотрудникам.</p>
+          <p className="text-text-muted">Выдача доступов по записям выполняется здесь, а права по категориям настраиваются в админке.</p>
         </div>
         {canCreate && (
           <Button onClick={openCreate}>
@@ -355,66 +315,6 @@ export default function PasswordVault() {
           <div className="px-6 pb-6 text-sm text-text-muted">Загрузка...</div>
         )}
       </Card>
-
-      {meta?.can_manage_permissions && (
-        <Card title="Права сотрудников" action={<div className="text-sm text-text-muted">Администратор всегда имеет полный доступ.</div>}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1150px] text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-text-muted">
-                  <th className="pb-3 font-medium">Сотрудник</th>
-                  {categories.map(category => (
-                    <th key={category.value} className="pb-3 font-medium">{category.label}</th>
-                  ))}
-                  <th className="pb-3 font-medium w-32"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {permissionMatrix.map(row => (
-                  <tr key={row.user.id} className="border-b border-border align-top">
-                    <td className="py-4 pr-4">
-                      <div className="font-medium text-text">{row.user.full_name}</div>
-                      <div className="text-xs text-text-muted mt-1">{row.user.role}</div>
-                    </td>
-                    {categories.map(category => (
-                      <td key={category.value} className="py-4 pr-4">
-                        {row.user.is_admin ? (
-                          <div className="inline-flex items-center gap-2 text-primary">
-                            <Shield size={14} />
-                            Полный доступ
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {permissionActions.map(action => (
-                              <label key={action.key} className="flex items-center gap-2 text-text">
-                                <input
-                                  type="checkbox"
-                                  checked={!!row.permissions?.[category.value]?.[action.key]}
-                                  onChange={event => updatePermissionValue(row.user.id, category.value, action.key, event.target.checked)}
-                                  className="w-4 h-4 text-primary rounded border-border"
-                                />
-                                <span className="text-xs">{action.label}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </td>
-                    ))}
-                    <td className="py-4 text-right">
-                      {!row.user.is_admin && (
-                        <Button size="sm" onClick={() => savePermissions(row)} disabled={savingPermissionUserId === row.user.id}>
-                          <Save size={14} className="mr-1.5" />
-                          {savingPermissionUserId === row.user.id ? 'Сохранение...' : 'Сохранить'}
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingEntry ? 'Изменить запись' : 'Новая запись'} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
