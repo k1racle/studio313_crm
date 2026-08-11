@@ -13,8 +13,6 @@ import Avatar from '../components/ui/Avatar'
 const statusLabels = {
   new: 'Новая',
   in_progress: 'В работе',
-  shooting: 'Съемка',
-  editing: 'Монтаж',
   approval: 'На согласовании',
   review: 'На проверке',
   content_placement: 'Выкладка контента',
@@ -25,8 +23,6 @@ const statusLabels = {
 const statusBadgeVariant = {
   new: 'blue',
   in_progress: 'yellow',
-  shooting: 'orange',
-  editing: 'cyan',
   approval: 'pink',
   review: 'purple',
   content_placement: 'indigo',
@@ -39,6 +35,13 @@ const priorityLabels = {
   medium: 'Средний',
   high: 'Высокий',
   critical: 'Критический',
+}
+
+function normalizeTaskStatus(status) {
+  if (status === 'shooting' || status === 'editing') {
+    return 'in_progress'
+  }
+  return status
 }
 
 export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoad }) {
@@ -109,7 +112,7 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
     loadTask()
   }
 
-  const totalTimeMinutes = timeEntries.reduce((sum, e) => sum + (e.duration_minutes || 0), 0)
+  const totalTimeMinutes = timeEntries.reduce((sum, entry) => sum + (entry.duration_minutes || 0), 0)
 
   const addTimeEntry = async (e) => {
     e.preventDefault()
@@ -124,7 +127,11 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
     loadTimeEntries()
   }
 
-  if (!task) return <div className="p-8 text-center text-text-muted">Загрузка...</div>
+  if (!task) {
+    return <div className="p-8 text-center text-text-muted">Загрузка...</div>
+  }
+
+  const normalizedStatus = normalizeTaskStatus(task.status)
 
   return (
     <div className="space-y-6">
@@ -142,7 +149,7 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <h1 className={`font-bold text-text break-words ${isPanel ? 'text-xl' : 'text-2xl'}`}>{task.title}</h1>
-              <Badge variant={statusBadgeVariant[task.status]}>{statusLabels[task.status]}</Badge>
+              <Badge variant={statusBadgeVariant[normalizedStatus]}>{statusLabels[normalizedStatus]}</Badge>
             </div>
             {task.project && (
               <div className="text-primary font-medium">{task.project.name}</div>
@@ -167,10 +174,10 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
           <div className="p-3 bg-subtle rounded-lg">
             <div className="text-xs text-text-muted uppercase">Исполнители</div>
             <div className="flex flex-wrap items-center gap-2 font-medium text-text">
-              {task.assignees?.length ? task.assignees.map(u => (
-                <span key={u.id} className="inline-flex items-center gap-1.5">
-                  <Avatar user={u} size={24} />
-                  <span>{formatShortName(u)}</span>
+              {task.assignees?.length ? task.assignees.map(user => (
+                <span key={user.id} className="inline-flex items-center gap-1.5">
+                  <Avatar user={user} size={24} />
+                  <span>{formatShortName(user)}</span>
                 </span>
               )) : 'Не назначены'}
             </div>
@@ -211,12 +218,12 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
         <div>
           <h3 className="text-sm font-semibold text-text-muted uppercase mb-3">Сменить статус</h3>
           <div className="flex flex-wrap gap-2">
-            {Object.entries(statusLabels).map(([s, label]) => (
+            {Object.entries(statusLabels).map(([status, label]) => (
               <button
-                key={s}
-                onClick={() => updateStatus(s)}
+                key={status}
+                onClick={() => updateStatus(status)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  task.status === s
+                  normalizedStatus === status
                     ? 'bg-primary text-white'
                     : 'bg-subtle text-text hover:bg-hover'
                 }`}
@@ -245,7 +252,7 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
             <div key={entry.id} className="flex items-center justify-between p-2 bg-subtle rounded-lg text-sm">
               <div>
                 <span className="text-text">{entry.duration_minutes} мин</span>
-                <span className="text-text-muted ml-2">{new Date(entry.start_time).toLocaleString('ru')} — {entry.end_time ? new Date(entry.end_time).toLocaleString('ru') : '—'}</span>
+                <span className="text-text-muted ml-2">{new Date(entry.start_time).toLocaleString('ru')} - {entry.end_time ? new Date(entry.end_time).toLocaleString('ru') : '-'}</span>
                 {entry.note && <span className="text-text-muted ml-2">({entry.note})</span>}
               </div>
               <button onClick={() => deleteTimeEntry(entry.id)} className="p-1 text-text-muted hover:text-danger rounded" title="Удалить">
@@ -282,16 +289,16 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
             </div>
           </form>
           <div className="space-y-2">
-            {Array.isArray(task.attachments) && task.attachments.map(a => {
-              const fileUrl = a.file || ''
-              const fileName = typeof fileUrl === 'string' ? fileUrl.split('/').pop() : (a.name || 'Файл')
+            {Array.isArray(task.attachments) && task.attachments.map(attachment => {
+              const fileUrl = attachment.file || ''
+              const fileName = typeof fileUrl === 'string' ? fileUrl.split('/').pop() : (attachment.name || 'Файл')
               return (
-                <div key={a.id} className="flex items-center justify-between p-3 bg-subtle rounded-lg gap-3">
+                <div key={attachment.id} className="flex items-center justify-between p-3 bg-subtle rounded-lg gap-3">
                   <a href={fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline truncate">
                     <FileText size={16} />
                     <span className="truncate">{fileName || 'Файл'}</span>
                   </a>
-                  <Button variant="danger" size="sm" onClick={() => deleteAttachment(a.id)}>
+                  <Button variant="danger" size="sm" onClick={() => deleteAttachment(attachment.id)}>
                     <Trash2 size={14} className="mr-1" />
                     Удалить
                   </Button>
@@ -318,13 +325,13 @@ export default function TaskDetail({ id: propId, isPanel = false, onClose, onLoa
             </Button>
           </form>
           <div className="space-y-3 max-h-[400px] overflow-auto">
-            {task.comments?.map(c => (
-              <div key={c.id} className="p-3 bg-subtle rounded-lg">
+            {task.comments?.map(comment => (
+              <div key={comment.id} className="p-3 bg-subtle rounded-lg">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm text-text">{formatFullName(c.author)}</span>
-                  <span className="text-xs text-text-muted">{new Date(c.created_at).toLocaleString('ru')}</span>
+                  <span className="font-medium text-sm text-text">{formatFullName(comment.author)}</span>
+                  <span className="text-xs text-text-muted">{new Date(comment.created_at).toLocaleString('ru')}</span>
                 </div>
-                <p className="text-sm text-text">{c.text}</p>
+                <p className="text-sm text-text">{comment.text}</p>
               </div>
             ))}
           </div>

@@ -13,7 +13,7 @@ import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
-import { Plus, Pencil, Trash2, Search, Archive, RotateCcw, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Archive, RotateCcw, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { formatShortName } from '../utils/format'
 import { downloadExport } from '../utils/export'
 import Avatar from '../components/ui/Avatar'
@@ -21,8 +21,6 @@ import Avatar from '../components/ui/Avatar'
 const statusLabels = {
   new: 'Новая',
   in_progress: 'В работе',
-  shooting: 'Съемка',
-  editing: 'Монтаж',
   approval: 'На согласовании',
   review: 'На проверке',
   content_placement: 'Выкладка контента',
@@ -33,8 +31,6 @@ const statusLabels = {
 const statusBadgeVariant = {
   new: 'blue',
   in_progress: 'yellow',
-  shooting: 'orange',
-  editing: 'cyan',
   approval: 'pink',
   review: 'purple',
   content_placement: 'indigo',
@@ -45,38 +41,11 @@ const statusBadgeVariant = {
 const statusBorderColor = {
   new: 'border-blue-500',
   in_progress: 'border-yellow-500',
-  shooting: 'border-orange-500',
-  editing: 'border-cyan-500',
   approval: 'border-pink-500',
   review: 'border-purple-500',
   content_placement: 'border-indigo-500',
   done: 'border-green-500',
   canceled: 'border-gray-500',
-}
-
-function formatYMD(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function getCalendarDays(date) {
-  const year = date.getFullYear()
-  const month = date.getMonth()
-  const start = new Date(year, month, 1)
-  const startDay = (start.getDay() + 6) % 7
-  const days = []
-  const prevEnd = new Date(year, month, 0)
-  for (let i = startDay - 1; i >= 0; i--) {
-    days.push(new Date(year, month - 1, prevEnd.getDate() - i))
-  }
-  const monthEnd = new Date(year, month + 1, 0)
-  for (let i = 1; i <= monthEnd.getDate(); i++) {
-    days.push(new Date(year, month, i))
-  }
-  const tail = (7 - (days.length % 7)) % 7
-  for (let i = 1; i <= tail; i++) {
-    days.push(new Date(year, month + 1, i))
-  }
-  return days
 }
 
 const priorityLabels = {
@@ -98,6 +67,42 @@ const emptyForm = {
   member_ids: [],
 }
 
+function formatYMD(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function getCalendarDays(date) {
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const start = new Date(year, month, 1)
+  const startDay = (start.getDay() + 6) % 7
+  const days = []
+  const prevEnd = new Date(year, month, 0)
+
+  for (let i = startDay - 1; i >= 0; i--) {
+    days.push(new Date(year, month - 1, prevEnd.getDate() - i))
+  }
+
+  const monthEnd = new Date(year, month + 1, 0)
+  for (let i = 1; i <= monthEnd.getDate(); i++) {
+    days.push(new Date(year, month, i))
+  }
+
+  const tail = (7 - (days.length % 7)) % 7
+  for (let i = 1; i <= tail; i++) {
+    days.push(new Date(year, month + 1, i))
+  }
+
+  return days
+}
+
+function normalizeTaskStatus(status) {
+  if (status === 'shooting' || status === 'editing') {
+    return 'in_progress'
+  }
+  return status
+}
+
 export default function Tasks() {
   const [searchParams] = useSearchParams()
   const [tasks, setTasks] = useState([])
@@ -112,7 +117,7 @@ export default function Tasks() {
     priority: '',
     assignees: '',
     project: searchParams.get('project') || '',
-    search: ''
+    search: '',
   })
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
@@ -139,6 +144,7 @@ export default function Tasks() {
     if (filters.project) params.project = filters.project
     if (filters.search) params.search = filters.search
     if (showArchived) params.archived = '1'
+
     const res = await api.get('/tasks/', { params })
     setTasks(res.data.results || res.data)
   }
@@ -212,12 +218,12 @@ export default function Tasks() {
       title: task.title,
       description: task.description || '',
       priority: task.priority,
-      assignee_ids: task.assignees?.map(a => a.id) || [],
+      assignee_ids: task.assignees?.map(assignee => assignee.id) || [],
       project_id: task.project?.id || '',
       client_id: task.client?.id || '',
       due_date: task.due_date ? task.due_date.slice(0, 10) : '',
-      tag_ids: task.tags?.map(t => t.id) || [],
-      member_ids: task.members?.map(m => m.id) || [],
+      tag_ids: task.tags?.map(tag => tag.id) || [],
+      member_ids: task.members?.map(member => member.id) || [],
     })
     setIsModalOpen(true)
   }
@@ -229,18 +235,21 @@ export default function Tasks() {
       assignee_ids: form.assignee_ids,
       project_id: form.project_id || null,
       client_id: form.client_id || null,
-      due_date: form.due_date ? form.due_date + 'T00:00:00' : null,
+      due_date: form.due_date ? `${form.due_date}T00:00:00` : null,
     }
+
     try {
       if (editingTask) {
         await api.put(`/tasks/${editingTask.id}/`, payload)
       } else {
         await api.post('/tasks/', payload)
       }
+
       setForm(emptyForm)
       setEditingTask(null)
       setIsModalOpen(false)
       await loadTasks()
+
       if (pendingDetailId) {
         openDetail(pendingDetailId)
         setPendingDetailId(null)
@@ -270,6 +279,7 @@ export default function Tasks() {
     if (filters.project) params.project = filters.project
     if (filters.search) params.search = filters.search
     if (showArchived) params.archived = '1'
+
     try {
       await downloadExport('/tasks/export/', params, 'tasks.xlsx')
     } catch (err) {
@@ -278,10 +288,10 @@ export default function Tasks() {
     }
   }
 
-  const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(u => ({ value: u.id, label: formatShortName(u) }))]
-  const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(p => ({ value: p.id, label: p.name }))]
-  const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
-  const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
+  const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(user => ({ value: user.id, label: formatShortName(user) }))]
+  const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(project => ({ value: project.id, label: project.name }))]
+  const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(client => ({ value: client.id, label: client.name }))]
+  const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([value, label]) => ({ value, label }))]
   const priorityOptions = [
     { value: '', label: 'Все приоритеты' },
     { value: 'low', label: 'Низкий' },
@@ -308,15 +318,15 @@ export default function Tasks() {
       <Card className="mb-6">
         <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
           <div className="flex shrink-0 gap-2 bg-subtle p-1 rounded-lg">
-            {['kanban', 'gantt', 'calendar', 'list'].map(v => (
+            {['kanban', 'gantt', 'calendar', 'list'].map(currentView => (
               <button
-                key={v}
-                onClick={() => setView(v)}
+                key={currentView}
+                onClick={() => setView(currentView)}
                 className={`px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                  view === v ? 'bg-surface text-primary shadow-sm' : 'text-text-muted hover:text-text'
+                  view === currentView ? 'bg-surface text-primary shadow-sm' : 'text-text-muted hover:text-text'
                 }`}
               >
-                {v === 'kanban' ? 'Kanban' : v === 'gantt' ? 'Gantt' : v === 'calendar' ? 'Календарь' : 'Список'}
+                {currentView === 'kanban' ? 'Kanban' : currentView === 'gantt' ? 'Gantt' : currentView === 'calendar' ? 'Календарь' : 'Список'}
               </button>
             ))}
           </div>
@@ -332,7 +342,7 @@ export default function Tasks() {
             <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityOptions} />
           </div>
           <div className="shrink-0 w-44">
-            <SearchableSelect value={filters.assignees} onChange={val => setFilters({ ...filters, assignees: val })} options={userOptions} />
+            <SearchableSelect value={filters.assignees} onChange={value => setFilters({ ...filters, assignees: value })} options={userOptions} />
           </div>
           <div className="flex shrink-0 items-center gap-3 w-auto">
             <Input
@@ -381,79 +391,82 @@ export default function Tasks() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {tasks.map(task => (
-                  <tr key={task.id} className={`border-b border-border hover:bg-subtle ${task.is_archived ? 'opacity-60' : ''}`}>
-                    <td className="py-3 text-text-muted">#{task.id}</td>
-                    <td className="py-3 truncate">{task.project?.name || '—'}</td>
-                    <td className="py-3 truncate">{task.client?.name || '—'}</td>
-                    <td className="py-3 align-top">
-                      <button
-                        onClick={() => openDetail(task.id)}
-                        className="font-medium text-text hover:text-primary text-left block whitespace-normal break-words leading-snug"
-                      >
-                        {task.title}
-                      </button>
-                      {task.tags?.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {task.tags.map(tag => (
-                            <span key={tag.id} className="px-1.5 py-0.5 rounded-full text-[10px] text-white" style={{ backgroundColor: tag.color }}>
-                              {tag.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3"><Badge variant={statusBadgeVariant[task.status]}>{statusLabels[task.status]}</Badge></td>
-                    <td className="py-3">{priorityLabels[task.priority]}</td>
-                    <td className="py-3">
-                      {task.assignees?.length ? (
-                        <div className="flex flex-wrap items-center gap-1">
-                          {task.assignees.slice(0, 2).map(u => (
-                            <span key={u.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-subtle rounded text-xs" title={formatShortName(u)}>
-                              <Avatar user={u} size={16} />
-                              <span className="truncate max-w-[80px]">{formatShortName(u)}</span>
-                            </span>
-                          ))}
-                          {task.assignees.length > 2 && (
-                            <span className="text-xs text-text-muted">+{task.assignees.length - 2}</span>
+                {tasks.map(task => {
+                  const normalizedStatus = normalizeTaskStatus(task.status)
+                  return (
+                    <tr key={task.id} className={`border-b border-border hover:bg-subtle ${task.is_archived ? 'opacity-60' : ''}`}>
+                      <td className="py-3 text-text-muted">#{task.id}</td>
+                      <td className="py-3 truncate">{task.project?.name || '—'}</td>
+                      <td className="py-3 truncate">{task.client?.name || '—'}</td>
+                      <td className="py-3 align-top">
+                        <button
+                          onClick={() => openDetail(task.id)}
+                          className="font-medium text-text hover:text-primary text-left block whitespace-normal break-words leading-snug"
+                        >
+                          {task.title}
+                        </button>
+                        {task.tags?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {task.tags.map(tag => (
+                              <span key={tag.id} className="px-1.5 py-0.5 rounded-full text-[10px] text-white" style={{ backgroundColor: tag.color }}>
+                                {tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3"><Badge variant={statusBadgeVariant[normalizedStatus]}>{statusLabels[normalizedStatus]}</Badge></td>
+                      <td className="py-3">{priorityLabels[task.priority]}</td>
+                      <td className="py-3">
+                        {task.assignees?.length ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {task.assignees.slice(0, 2).map(assignee => (
+                              <span key={assignee.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-subtle rounded text-xs" title={formatShortName(assignee)}>
+                                <Avatar user={assignee} size={16} />
+                                <span className="truncate max-w-[80px]">{formatShortName(assignee)}</span>
+                              </span>
+                            ))}
+                            {task.assignees.length > 2 && (
+                              <span className="text-xs text-text-muted">+{task.assignees.length - 2}</span>
+                            )}
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="py-3 text-text-muted">{task.due_date ? new Date(task.due_date).toLocaleDateString('ru') : '—'}</td>
+                      <td className="py-3">
+                        <div className="flex items-center gap-1">
+                          {user?.is_manager && (
+                            <>
+                              <button
+                                onClick={() => openEdit(task)}
+                                className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors"
+                                title="Изменить"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                onClick={() => toggleArchive(task)}
+                                className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors"
+                                title={task.is_archived ? 'Восстановить' : 'В архив'}
+                              >
+                                {task.is_archived ? <RotateCcw size={16} /> : <Archive size={16} />}
+                              </button>
+                              <button
+                                onClick={() => handleDelete(task)}
+                                className="p-1.5 text-text-muted hover:text-danger hover:bg-subtle rounded-lg transition-colors"
+                                title="Удалить"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
                           )}
                         </div>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                    <td className="py-3 text-text-muted">{task.due_date ? new Date(task.due_date).toLocaleDateString('ru') : '—'}</td>
-                    <td className="py-3">
-                      <div className="flex items-center gap-1">
-                        {user?.is_manager && (
-                          <>
-                            <button
-                              onClick={() => openEdit(task)}
-                              className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors"
-                              title="Изменить"
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              onClick={() => toggleArchive(task)}
-                              className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors"
-                              title={task.is_archived ? 'Восстановить' : 'В архив'}
-                            >
-                              {task.is_archived ? <RotateCcw size={16} /> : <Archive size={16} />}
-                            </button>
-                            <button
-                              onClick={() => handleDelete(task)}
-                              className="p-1.5 text-text-muted hover:text-danger hover:bg-subtle rounded-lg transition-colors"
-                              title="Удалить"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -464,99 +477,110 @@ export default function Tasks() {
         <Card className="overflow-x-auto">
           <div className="min-w-[800px]">
             <div className="flex items-center justify-between p-4 border-b border-border">
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentMonth(date => new Date(date.getFullYear(), date.getMonth() - 1, 1))}
+                  className="p-1.5 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <h3 className="text-lg font-semibold text-text min-w-[170px] text-center capitalize">
+                  {currentMonth.toLocaleString('ru', { month: 'long', year: 'numeric' })}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setCurrentMonth(date => new Date(date.getFullYear(), date.getMonth() + 1, 1))}
+                  className="p-1.5 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
               <button
                 type="button"
-                onClick={() => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
-                className="p-1.5 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+                onClick={() => setCurrentMonth(new Date())}
+                className="text-sm text-primary hover:underline"
               >
-                <ChevronLeft size={18} />
-              </button>
-              <h3 className="text-lg font-semibold text-text min-w-[170px] text-center capitalize">
-                {currentMonth.toLocaleString('ru', { month: 'long', year: 'numeric' })}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
-                className="p-1.5 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
-              >
-                <ChevronRight size={18} />
+                Сегодня
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setCurrentMonth(new Date())}
-              className="text-sm text-primary hover:underline"
-            >
-              Сегодня
-            </button>
-          </div>
-          <div className="grid grid-cols-7 border-b border-border bg-subtle">
-            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => (
-              <div key={d} className="px-2 py-2 text-xs font-medium text-text-muted text-center">{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7">
-            {getCalendarDays(currentMonth).map((date, idx) => {
-              const ymd = formatYMD(date)
-              const isCurrentMonth = date.getMonth() === currentMonth.getMonth()
-              const isToday = ymd === formatYMD(new Date())
-              const dayTasks = tasks.filter(t => t.due_date && formatYMD(new Date(t.due_date)) === ymd)
-              return (
-                <div
-                  key={idx}
-                  onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('bg-primary/5') }}
-                  onDragLeave={e => { e.currentTarget.classList.remove('bg-primary/5') }}
-                  onDrop={async (e) => {
-                    e.preventDefault()
-                    e.currentTarget.classList.remove('bg-primary/5')
-                    const taskId = e.dataTransfer.getData('task/id')
-                    if (!taskId) return
-                    const task = tasks.find(t => String(t.id) === taskId)
-                    if (!task) return
-                    const newDue = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)
-                    try {
-                      await api.patch(`/tasks/${task.id}/`, { due_date: newDue.toISOString() })
-                      loadTasks()
-                    } catch (err) {
-                      console.error(err)
-                      alert('Не удалось перенести задачу')
-                    }
-                  }}
-                  className={`min-h-[140px] p-2 border-b border-r border-border flex flex-col gap-1 transition-colors ${
-                    isCurrentMonth ? 'bg-surface' : 'bg-subtle/50'
-                  } ${isToday ? 'ring-1 ring-inset ring-primary bg-primary/5' : ''}`}
-                >
-                  <div className={`text-xs font-medium text-right ${isToday ? 'text-primary' : isCurrentMonth ? 'text-text' : 'text-text-muted'}`}>
-                    {date.getDate()}
+            <div className="grid grid-cols-7 border-b border-border bg-subtle">
+              {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
+                <div key={day} className="px-2 py-2 text-xs font-medium text-text-muted text-center">{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7">
+              {getCalendarDays(currentMonth).map((date, idx) => {
+                const ymd = formatYMD(date)
+                const isCurrentMonth = date.getMonth() === currentMonth.getMonth()
+                const isToday = ymd === formatYMD(new Date())
+                const dayTasks = tasks.filter(task => task.due_date && formatYMD(new Date(task.due_date)) === ymd)
+
+                return (
+                  <div
+                    key={idx}
+                    onDragOver={e => {
+                      e.preventDefault()
+                      e.currentTarget.classList.add('bg-primary/5')
+                    }}
+                    onDragLeave={e => {
+                      e.currentTarget.classList.remove('bg-primary/5')
+                    }}
+                    onDrop={async (e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.remove('bg-primary/5')
+                      const taskId = e.dataTransfer.getData('task/id')
+                      if (!taskId) return
+
+                      const task = tasks.find(item => String(item.id) === taskId)
+                      if (!task) return
+
+                      const newDue = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0)
+                      try {
+                        await api.patch(`/tasks/${task.id}/`, { due_date: newDue.toISOString() })
+                        loadTasks()
+                      } catch (err) {
+                        console.error(err)
+                        alert('Не удалось перенести задачу')
+                      }
+                    }}
+                    className={`min-h-[140px] p-2 border-b border-r border-border flex flex-col gap-1 transition-colors ${
+                      isCurrentMonth ? 'bg-surface' : 'bg-subtle/50'
+                    } ${isToday ? 'ring-1 ring-inset ring-primary bg-primary/5' : ''}`}
+                  >
+                    <div className={`text-xs font-medium text-right ${isToday ? 'text-primary' : isCurrentMonth ? 'text-text' : 'text-text-muted'}`}>
+                      {date.getDate()}
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1 overflow-y-auto">
+                      {dayTasks.map(task => {
+                        const normalizedStatus = normalizeTaskStatus(task.status)
+                        return (
+                          <button
+                            key={task.id}
+                            type="button"
+                            draggable
+                            onClick={() => openDetail(task.id)}
+                            onDragStart={e => e.dataTransfer.setData('task/id', String(task.id))}
+                            className={`text-left text-xs px-2 py-1 rounded bg-subtle border-l-2 ${statusBorderColor[normalizedStatus] || 'border-gray-500'} hover:bg-hover cursor-grab active:cursor-grabbing`}
+                            title={task.title}
+                          >
+                            <span className="line-clamp-2 leading-tight">{task.title}</span>
+                            {task.assignees?.length > 0 && (
+                              <span className="mt-1 flex items-center gap-1 text-[10px] text-text-muted">
+                                {task.assignees.slice(0, 2).map(assignee => (
+                                  <Avatar key={assignee.id} user={assignee} size={14} title={formatShortName(assignee)} />
+                                ))}
+                                {task.assignees.length > 2 && <span>+{task.assignees.length - 2}</span>}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <div className="flex-1 flex flex-col gap-1 overflow-y-auto">
-                    {dayTasks.map(task => (
-                      <button
-                        key={task.id}
-                        type="button"
-                        draggable
-                        onClick={() => openDetail(task.id)}
-                        onDragStart={e => e.dataTransfer.setData('task/id', String(task.id))}
-                        className={`text-left text-xs px-2 py-1 rounded bg-subtle border-l-2 ${statusBorderColor[task.status] || 'border-gray-500'} hover:bg-hover cursor-grab active:cursor-grabbing`}
-                        title={task.title}
-                      >
-                        <span className="line-clamp-2 leading-tight">{task.title}</span>
-                        {task.assignees?.length > 0 && (
-                          <span className="mt-1 flex items-center gap-1 text-[10px] text-text-muted">
-                            {task.assignees.slice(0, 2).map(u => (
-                              <Avatar key={u.id} user={u} size={14} title={formatShortName(u)} />
-                            ))}
-                            {task.assignees.length > 2 && <span>+{task.assignees.length - 2}</span>}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
           </div>
         </Card>
       )}
@@ -567,12 +591,12 @@ export default function Tasks() {
             label="Проект"
             value={form.project_id}
             onChange={e => setForm({ ...form, project_id: e.target.value })}
-            options={[{ value: '', label: 'Без проекта' }, ...projects.map(p => ({ value: p.id, label: p.name }))]}
+            options={[{ value: '', label: 'Без проекта' }, ...projects.map(project => ({ value: project.id, label: project.name }))]}
           />
           <SearchableSelect
             label="Клиент"
             value={form.client_id}
-            onChange={val => setForm({ ...form, client_id: val })}
+            onChange={value => setForm({ ...form, client_id: value })}
             options={clientOptions}
           />
           <Input label="Название" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
@@ -590,27 +614,27 @@ export default function Tasks() {
               label="Приоритет"
               value={form.priority}
               onChange={e => setForm({ ...form, priority: e.target.value })}
-              options={priorityOptions.filter(o => o.value !== '')}
+              options={priorityOptions.filter(option => option.value !== '')}
             />
             <Input label="Срок выполнения" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
           </div>
           <SearchableMultiSelect
             label="Исполнители"
             value={form.assignee_ids}
-            onChange={val => setForm({ ...form, assignee_ids: val })}
-            options={users.map(u => ({ value: u.id, label: formatShortName(u) }))}
+            onChange={value => setForm({ ...form, assignee_ids: value })}
+            options={users.map(user => ({ value: user.id, label: formatShortName(user) }))}
           />
           <SearchableMultiSelect
             label="Теги"
             value={form.tag_ids}
-            onChange={val => setForm({ ...form, tag_ids: val })}
+            onChange={value => setForm({ ...form, tag_ids: value })}
             options={tags.map(tag => ({ value: tag.id, label: tag.name }))}
           />
           <SearchableMultiSelect
             label="Участники"
             value={form.member_ids}
-            onChange={val => setForm({ ...form, member_ids: val })}
-            options={users.map(u => ({ value: u.id, label: formatShortName(u) }))}
+            onChange={value => setForm({ ...form, member_ids: value })}
+            options={users.map(user => ({ value: user.id, label: formatShortName(user) }))}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={handleCloseEdit}>Отмена</Button>

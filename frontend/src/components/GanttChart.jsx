@@ -1,27 +1,31 @@
 import { useMemo } from 'react'
-import { format, addDays, startOfWeek, differenceInDays, isSameDay } from 'date-fns'
+import { addDays, differenceInDays, format, isSameDay, startOfWeek } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { ArrowRight } from 'lucide-react'
 
 const DAY_WIDTH = 50
 
+const normalizeTaskStatus = (status) => (
+  status === 'shooting' || status === 'editing' ? 'in_progress' : status
+)
+
 export default function GanttChart({ tasks, onTaskClick }) {
-  const { startDate, endDate, days } = useMemo(() => {
+  const { startDate, days } = useMemo(() => {
     if (!tasks.length) {
       const start = startOfWeek(new Date(), { weekStartsOn: 1 })
       const end = addDays(start, 13)
-      const d = []
-      for (let i = 0; i <= differenceInDays(end, start); i++) d.push(addDays(start, i))
-      return { startDate: start, endDate: end, days: d }
+      const items = []
+      for (let i = 0; i <= differenceInDays(end, start); i += 1) items.push(addDays(start, i))
+      return { startDate: start, days: items }
     }
     const dates = tasks
-      .filter(t => t.created_at)
-      .map(t => new Date(t.created_at))
+      .filter(task => task.created_at)
+      .map(task => new Date(task.created_at))
     const start = startOfWeek(new Date(Math.min(...dates)), { weekStartsOn: 1 })
     const end = addDays(new Date(Math.max(...dates)), 7)
-    const d = []
-    for (let i = 0; i <= differenceInDays(end, start); i++) d.push(addDays(start, i))
-    return { startDate: start, endDate: end, days: d }
+    const items = []
+    for (let i = 0; i <= differenceInDays(end, start); i += 1) items.push(addDays(start, i))
+    return { startDate: start, days: items }
   }, [tasks])
 
   const getBarStyle = (task) => {
@@ -39,8 +43,6 @@ export default function GanttChart({ tasks, onTaskClick }) {
   const statusColors = {
     new: 'bg-blue-500',
     in_progress: 'bg-yellow-500',
-    shooting: 'bg-orange-500',
-    editing: 'bg-cyan-500',
     approval: 'bg-pink-500',
     review: 'bg-purple-500',
     content_placement: 'bg-indigo-500',
@@ -54,7 +56,6 @@ export default function GanttChart({ tasks, onTaskClick }) {
     <div className="bg-surface rounded-xl border border-border overflow-hidden">
       <div className="overflow-x-auto">
         <div className="min-w-max">
-          {/* Header */}
           <div className="flex border-b border-border">
             <div className="w-64 p-3 font-semibold text-sm border-r border-border bg-subtle sticky left-0 z-10 text-text">Задача</div>
             <div className="flex">
@@ -70,7 +71,6 @@ export default function GanttChart({ tasks, onTaskClick }) {
               ))}
             </div>
           </div>
-          {/* Rows */}
           {tasks.map(task => (
             <div key={task.id} className="flex border-b border-border hover:bg-subtle">
               <div className="w-64 p-3 border-r border-border bg-surface sticky left-0 z-10">
@@ -84,10 +84,16 @@ export default function GanttChart({ tasks, onTaskClick }) {
               </div>
               <div className="relative" style={{ width: days.length * DAY_WIDTH }}>
                 <div
-                  className={`absolute top-3 h-6 rounded-md text-xs text-white flex items-center px-2 shadow-sm ${statusColors[task.status]}`}
+                  className={`absolute top-3 h-6 rounded-md text-xs text-white flex items-center px-2 shadow-sm ${statusColors[normalizeTaskStatus(task.status)] || 'bg-gray-400'}`}
                   style={getBarStyle(task)}
                 >
-                  {format(new Date(task.created_at), 'dd.MM')} {task.due_date && <><ArrowRight size={10} className="mx-1 inline" /> {format(new Date(task.due_date), 'dd.MM')}</>}
+                  {format(new Date(task.created_at), 'dd.MM')}
+                  {task.due_date && (
+                    <>
+                      <ArrowRight size={10} className="mx-1 inline" />
+                      {format(new Date(task.due_date), 'dd.MM')}
+                    </>
+                  )}
                 </div>
               </div>
             </div>

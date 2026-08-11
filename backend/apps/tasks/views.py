@@ -33,6 +33,11 @@ class TaskListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(is_archived=False)
         else:
             qs = qs.filter(is_archived=True, archived_at__gte=timezone.now() - timedelta(days=7))
+        status_param = self.request.query_params.get('status')
+        if status_param == Task.STATUS_IN_PROGRESS:
+            qs = qs.filter(status__in=[Task.STATUS_IN_PROGRESS, Task.STATUS_SHOOTING, Task.STATUS_EDITING])
+        elif status_param:
+            qs = qs.filter(status=status_param)
         if user.is_manager:
             return qs
         return qs.filter(project__members=user)

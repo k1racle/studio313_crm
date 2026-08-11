@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+
 import api from '../api/axios'
 import { formatShortName } from '../utils/format'
 import Avatar from './ui/Avatar'
@@ -6,8 +7,6 @@ import Avatar from './ui/Avatar'
 const columns = [
   { key: 'new', title: 'Новые', color: 'border-blue-400' },
   { key: 'in_progress', title: 'В работе', color: 'border-yellow-400' },
-  { key: 'shooting', title: 'Съемка', color: 'border-orange-400' },
-  { key: 'editing', title: 'Монтаж', color: 'border-cyan-400' },
   { key: 'approval', title: 'На согласовании', color: 'border-pink-400' },
   { key: 'review', title: 'На проверке', color: 'border-purple-400' },
   { key: 'content_placement', title: 'Выкладка контента', color: 'border-indigo-400' },
@@ -27,6 +26,10 @@ const priorityLabels = {
   high: 'Высокий',
   critical: 'Критический',
 }
+
+const normalizeTaskStatus = (status) => (
+  status === 'shooting' || status === 'editing' ? 'in_progress' : status
+)
 
 export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
   const [dragging, setDragging] = useState(null)
@@ -58,7 +61,7 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
   }
 
   const handleDrop = async (status) => {
-    if (!dragging || dragging.status === status) return
+    if (!dragging || normalizeTaskStatus(dragging.status) === status) return
     await api.patch(`/tasks/${dragging.id}/`, { status })
     setDragging(null)
     onTaskMoved()
@@ -75,12 +78,12 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
       </div>
       <div ref={boardRef} className="grid grid-flow-col auto-cols-[280px] gap-4 overflow-x-auto pb-4">
         {columns.map(col => {
-          const colTasks = tasks.filter(t => t.status === col.key)
+          const colTasks = tasks.filter(task => normalizeTaskStatus(task.status) === col.key)
           return (
             <div
               key={col.key}
               className="bg-subtle rounded-xl p-3 min-h-[400px]"
-              onDragOver={(e) => e.preventDefault()}
+              onDragOver={(event) => event.preventDefault()}
               onDrop={() => handleDrop(col.key)}
             >
               <div className={`flex items-center justify-between mb-3 pb-2 border-b-2 ${col.color}`}>
@@ -112,8 +115,8 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
                       </span>
                       {task.assignees?.length > 0 && (
                         <div className="flex items-center gap-1">
-                          {task.assignees.slice(0, 2).map(u => (
-                            <Avatar key={u.id} user={u} size={24} title={formatShortName(u)} />
+                          {task.assignees.slice(0, 2).map(user => (
+                            <Avatar key={user.id} user={user} size={24} title={formatShortName(user)} />
                           ))}
                           {task.assignees.length > 2 && (
                             <span className="text-xs text-text-muted">+{task.assignees.length - 2}</span>
