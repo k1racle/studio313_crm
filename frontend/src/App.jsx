@@ -1,31 +1,32 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './contexts/AuthContext'
-import Layout from './components/Layout'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Tasks from './pages/Tasks'
+import { Navigate, Route, Routes } from 'react-router-dom'
 
-import Clients from './pages/Clients'
+import Layout from './components/Layout'
+import { useAuth } from './contexts/AuthContext'
 import Bookings from './pages/Bookings'
-import Projects from './pages/Projects'
-import Helpdesk from './pages/Helpdesk'
-import Services from './pages/Services'
-import Payments from './pages/Payments'
-import Finance from './pages/Finance'
-import Tags from './pages/Tags'
-import Timesheets from './pages/Timesheets'
 import Chat from './pages/Chat'
+import ClientPortal from './pages/ClientPortal'
+import Clients from './pages/Clients'
+import Contacts from './pages/Contacts'
+import Dashboard from './pages/Dashboard'
+import Files from './pages/Files'
+import Finance from './pages/Finance'
+import Helpdesk from './pages/Helpdesk'
+import KnowledgeBase from './pages/KnowledgeBase'
+import Login from './pages/Login'
+import MediaPlan from './pages/MediaPlan'
+import PasswordVault from './pages/PasswordVault'
+import PaymentFail from './pages/PaymentFail'
+import Payments from './pages/Payments'
+import PaymentSuccess from './pages/PaymentSuccess'
+import Production from './pages/Production'
 import Profile from './pages/Profile'
+import Projects from './pages/Projects'
 import PublicBooking from './pages/PublicBooking'
 import PublicTicket from './pages/PublicTicket'
-import PaymentSuccess from './pages/PaymentSuccess'
-import PaymentFail from './pages/PaymentFail'
-import ClientPortal from './pages/ClientPortal'
-import KnowledgeBase from './pages/KnowledgeBase'
-import MediaPlan from './pages/MediaPlan'
-import Production from './pages/Production'
-import Files from './pages/Files'
-import Contacts from './pages/Contacts'
+import Services from './pages/Services'
+import Tags from './pages/Tags'
+import Tasks from './pages/Tasks'
+import Timesheets from './pages/Timesheets'
 
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
@@ -46,7 +47,6 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="tasks" element={<Tasks />} />
         <Route path="production" element={<Production />} />
-
         <Route path="clients" element={<Clients />} />
         <Route path="bookings" element={<Bookings />} />
         <Route path="services" element={<Services />} />
@@ -60,6 +60,7 @@ function App() {
         <Route path="media-plan" element={<MediaPlan />} />
         <Route path="files" element={<Files />} />
         <Route path="contacts" element={<Contacts />} />
+        <Route path="password-vault" element={<PasswordVault />} />
         <Route path="chat" element={<Chat />} />
         <Route path="profile" element={<Profile />} />
       </Route>

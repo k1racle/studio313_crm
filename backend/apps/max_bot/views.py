@@ -40,8 +40,7 @@ class MaxWebhookView(APIView):
             return Response({'ok': False, 'error': 'invalid json'}, status=400)
 
         token = getattr(settings, 'MAX_BOT_TOKEN', None)
-        proxy_url = getattr(settings, 'MAX_PROXY_URL', None)
-        client = MaxBotClient(token=token, proxy_url=proxy_url)
+        client = MaxBotClient(token=token)
 
         import asyncio
         try:

@@ -1,16 +1,34 @@
 import { useEffect, useState } from 'react'
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import api from '../api/axios'
-import ThemeToggle from './ThemeToggle'
-import NotificationBell from './NotificationBell'
-import FloatingChatButton from './FloatingChatButton'
-import { formatFullName } from '../utils/format'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, CheckSquare, FolderOpen, Users, Calendar, Briefcase,
-  CreditCard, HeadphonesIcon, LogOut, Menu, X,
-  BarChart3, Clock, BookOpen, Cake, Clapperboard, Newspaper, Folder, Contact
+  BarChart3,
+  BookOpen,
+  Briefcase,
+  Calendar,
+  Cake,
+  CheckSquare,
+  Clapperboard,
+  Contact,
+  CreditCard,
+  Folder,
+  FolderOpen,
+  HeadphonesIcon,
+  Key,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Newspaper,
+  Users,
+  X,
+  Clock,
 } from 'lucide-react'
+
+import api from '../api/axios'
+import { useAuth } from '../contexts/AuthContext'
+import { formatFullName } from '../utils/format'
+import FloatingChatButton from './FloatingChatButton'
+import NotificationBell from './NotificationBell'
+import ThemeToggle from './ThemeToggle'
 
 const menuItems = [
   { path: '/', label: 'Главная', icon: LayoutDashboard },
@@ -19,6 +37,7 @@ const menuItems = [
   { path: '/media-plan', label: 'Медиа-план', icon: Newspaper },
   { path: '/files', label: 'Файлы', icon: Folder },
   { path: '/contacts', label: 'Контакты', icon: Contact },
+  { path: '/password-vault', label: 'Доступы', icon: Key },
   { path: '/projects', label: 'Проекты', icon: FolderOpen },
   { path: '/clients', label: 'Клиенты', icon: Users },
   { path: '/bookings', label: 'Запись', icon: Calendar },
@@ -35,13 +54,12 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [birthdays, setBirthdays] = useState([])
 
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
-
-  const [birthdays, setBirthdays] = useState([])
 
   useEffect(() => {
     api.get('/auth/users/birthdays/?days=7')
@@ -79,10 +97,10 @@ export default function Layout() {
         <Cake size={16} className="text-primary mt-0.5 shrink-0" />
         <div className="min-w-0">
           <div className="text-xs font-medium text-text">
-            {birthdays.some(b => b.is_today) ? 'Сегодня день рождения' : 'Ближайшие дни рождения'}
+            {birthdays.some(item => item.is_today) ? 'Сегодня день рождения' : 'Ближайшие дни рождения'}
           </div>
           <div className="text-xs text-text-muted truncate">
-            {birthdays.map(b => b.full_name).join(', ')}
+            {birthdays.map(item => item.badge_name || item.full_name).join(', ')}
           </div>
         </div>
       </div>
@@ -131,14 +149,12 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen h-dvh bg-bg">
-      {/* Desktop sidebar */}
       <aside className="hidden md:flex w-64 bg-surface border-r border-border flex-col">
         {sidebarHeader}
         {navLinks}
         {userBlock}
       </aside>
 
-      {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-surface border-b border-border px-4 h-14 flex items-center justify-between">
         <div className="font-bold text-primary text-lg">Studio 313</div>
         <button
@@ -149,7 +165,6 @@ export default function Layout() {
         </button>
       </div>
 
-      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="w-64 bg-surface border-r border-border flex flex-col shadow-xl">

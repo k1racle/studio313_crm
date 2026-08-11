@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/production/', include('apps.production.urls')),
     path('api/files/', include('apps.files.urls')),
     path('api/contacts/', include('apps.contacts.urls')),
+    path('api/password-vault/', include('apps.password_vault.urls')),
 ]
 
 if settings.DEBUG:

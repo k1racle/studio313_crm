@@ -96,7 +96,7 @@ def make_task_title(text: str) -> str:
 class MaxBotClient:
     def __init__(self, token=None, proxy_url=None):
         self.token = token or getattr(settings, 'MAX_BOT_TOKEN', '')
-        self.proxy_url = proxy_url or getattr(settings, 'MAX_PROXY_URL', None)
+        self.proxy_url = proxy_url
         self.headers = {'Authorization': self.token}
         logger.info(
             'MaxBotClient init: api_base=%s token_set=%s proxy=%s',
@@ -388,10 +388,8 @@ async def run_max_bot():
         logger.error('MAX_BOT_TOKEN не настроен')
         return
 
-    proxy_url = getattr(settings, 'MAX_PROXY_URL', None)
-
     while True:
-        client = MaxBotClient(token=token, proxy_url=proxy_url)
+        client = MaxBotClient(token=token)
         try:
             me = await client.get_me()
             logger.info('MAX бот запущен: %s', me)
