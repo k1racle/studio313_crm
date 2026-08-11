@@ -70,6 +70,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='passwordvaultentry',
             name='shared_with',
-            field=models.ManyToManyField(blank=True, related_name='shared_password_vault_entries', through='password_vault.PasswordVaultEntryAccess', to=settings.AUTH_USER_MODEL, verbose_name='Доступ у сотрудников'),
+            field=models.ManyToManyField(blank=True, related_name='shared_password_vault_entries', through='password_vault.PasswordVaultEntryAccess', through_fields=('entry', 'user'), to=settings.AUTH_USER_MODEL, verbose_name='Доступ у сотрудников'),
         ),
     ]

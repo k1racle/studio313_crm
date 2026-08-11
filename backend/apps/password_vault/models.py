@@ -53,6 +53,7 @@ class PasswordVaultEntry(models.Model):
     shared_with = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         through='PasswordVaultEntryAccess',
+        through_fields=('entry', 'user'),
         related_name='shared_password_vault_entries',
         verbose_name='Доступ у сотрудников',
         blank=True,
@@ -100,4 +101,3 @@ class PasswordVaultEntryAccess(models.Model):
 
     def __str__(self):
         return f'{self.user} -> {self.entry}'
-
