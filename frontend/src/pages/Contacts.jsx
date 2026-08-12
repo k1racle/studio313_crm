@@ -603,7 +603,7 @@ export default function Contacts() {
               className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
-          <div className="flex justify-end gap-3">
+          <div className="modal-actions flex justify-end gap-3">
             <Button type="button" variant="secondary" onClick={closeModal}>Отмена</Button>
             <Button type="submit">{editingContact ? 'Сохранить' : 'Создать'}</Button>
           </div>

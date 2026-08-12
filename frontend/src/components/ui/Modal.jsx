@@ -2,41 +2,52 @@ import { useEffect } from 'react'
 import { X } from 'lucide-react'
 
 const sizeClasses = {
-  md: 'max-w-xl',
-  lg: 'max-w-5xl',
-  xl: 'max-w-6xl',
+  md: 'md:max-w-xl',
+  lg: 'md:max-w-5xl',
+  xl: 'md:max-w-6xl',
 }
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md', headerActions = null }) {
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    const previousTouchAction = document.body.style.touchAction
+
     const handleEsc = (event) => {
       if (event.key === 'Escape') onClose()
     }
+
     if (isOpen) {
       document.addEventListener('keydown', handleEsc)
+      document.body.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
     }
-    return () => document.removeEventListener('keydown', handleEsc)
+
+    return () => {
+      document.removeEventListener('keydown', handleEsc)
+      document.body.style.overflow = previousOverflow
+      document.body.style.touchAction = previousTouchAction
+    }
   }, [isOpen, onClose])
 
   return (
     <>
       <div
         onClick={onClose}
-        className={`fixed inset-0 z-40 bg-[rgba(7,11,18,0.48)] backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[90] bg-[rgba(7,11,18,0.48)] backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
         aria-hidden="true"
       />
 
       <aside
-        className={`fixed inset-y-0 right-0 z-50 flex w-full ${sizeClasses[size]} transform flex-col border-l border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
-          isOpen ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
+        className={`fixed inset-x-0 bottom-0 top-auto z-[91] flex max-h-[92dvh] w-full transform flex-col rounded-t-[28px] border border-border/70 border-b-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:rounded-none md:rounded-l-[32px] md:border-b md:border-l md:border-r-0 ${sizeClasses[size]} ${
+          isOpen ? 'pointer-events-auto translate-y-0 md:translate-x-0' : 'pointer-events-none translate-y-full md:translate-x-full'
         }`}
       >
         {(title || onClose) && (
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/70 px-6 py-5 md:px-7">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/70 px-4 py-3.5 md:px-6 md:py-5">
             <div className="min-w-0">
-              {title && <h3 className="truncate text-2xl font-semibold text-text">{title}</h3>}
+              {title && <h3 className="truncate text-lg font-semibold text-text md:text-2xl">{title}</h3>}
             </div>
             {headerActions && <div className="ml-auto flex items-center gap-2">{headerActions}</div>}
             <button
@@ -44,11 +55,11 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', h
               className="shrink-0 rounded-full border border-border/70 bg-surface/78 p-2.5 text-text-muted hover:bg-subtle hover:text-text"
               title="Закрыть"
             >
-              <X size={20} />
+              <X size={18} className="md:h-5 md:w-5" />
             </button>
           </div>
         )}
-        <div className="flex-1 overflow-y-auto p-6 md:p-7">{children}</div>
+        <div className="modal-form-shell flex-1 overflow-y-auto p-4 md:p-6 lg:p-7">{children}</div>
       </aside>
     </>
   )

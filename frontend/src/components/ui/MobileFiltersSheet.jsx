@@ -38,19 +38,16 @@ export default function MobileFiltersSheet({ open, onClose, title = 'Фильт�
       />
 
       <section
-        className={`safe-bottom fixed inset-x-0 bottom-0 z-[83] flex max-h-[85dvh] flex-col rounded-t-[30px] border border-border/70 border-b-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
-          open ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
+        className={`mobile-filters-shell safe-bottom fixed inset-x-0 bottom-0 z-[83] flex max-h-[85dvh] flex-col rounded-t-[28px] border border-border/70 border-b-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
+          open ? 'pointer-events-auto translate-y-0' : 'pointer-events-none translate-y-full'
         }`}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3.5 md:px-5 md:py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <SlidersHorizontal size={18} />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary md:h-10 md:w-10">
+              <SlidersHorizontal size={17} />
             </span>
-            <div className="min-w-0">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">Мобильная панель</div>
-              <h3 className="truncate text-lg font-semibold text-text">{title}</h3>
-            </div>
+            <h3 className="truncate text-base font-semibold text-text md:text-lg">{title}</h3>
           </div>
           <button
             type="button"
@@ -62,14 +59,14 @@ export default function MobileFiltersSheet({ open, onClose, title = 'Фильт�
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5">
-          <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-5 md:py-5">
+          <div className="space-y-3 md:space-y-4">
             {children}
           </div>
         </div>
 
         {footer ? (
-          <div className="border-t border-border/70 px-5 py-4">
+          <div className="border-t border-border/70 px-4 py-3 md:px-5 md:py-4">
             {footer}
           </div>
         ) : null}

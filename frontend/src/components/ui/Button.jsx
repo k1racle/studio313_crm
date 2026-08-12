@@ -7,9 +7,9 @@ export default function Button({ children, variant = 'primary', size = 'md', cla
     ghost: 'bg-transparent text-text-muted hover:bg-surface/72 hover:text-text',
   }
   const sizes = {
-    sm: 'min-h-10 px-4 text-sm',
-    md: 'min-h-11 px-5 text-sm',
-    lg: 'min-h-13 px-7 text-base',
+    sm: 'min-h-9 px-3.5 text-[13px] md:min-h-10 md:px-4 md:text-sm',
+    md: 'min-h-10 px-4 text-sm md:min-h-11 md:px-5',
+    lg: 'min-h-11 px-5 text-sm md:min-h-13 md:px-7 md:text-base',
   }
 
   return (

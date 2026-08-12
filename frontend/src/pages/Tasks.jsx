@@ -744,7 +744,7 @@ export default function Tasks() {
             onChange={value => setForm({ ...form, member_ids: value })}
             options={users.map(item => ({ value: item.id, label: formatShortName(item) }))}
           />
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={handleCloseEdit}>Отмена</Button>
             <Button type="submit">{editingTask ? 'Сохранить' : 'Создать'}</Button>
           </div>

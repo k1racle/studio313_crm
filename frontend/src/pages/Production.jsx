@@ -467,7 +467,7 @@ export default function Production() {
               />
             </div>
           )}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={handleCloseEdit}>Отмена</Button>
             <Button type="submit">{editingItem ? 'Сохранить' : 'Создать'}</Button>
           </div>

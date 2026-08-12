@@ -106,7 +106,7 @@ export default function Tags() {
               <Input value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} className="flex-1" />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingTag ? 'Сохранить' : 'Создать'}</Button>
           </div>

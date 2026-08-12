@@ -793,7 +793,7 @@ export default function Files() {
             required
             autoFocus
           />
-          <div className="flex justify-end gap-3">
+          <div className="modal-actions flex justify-end gap-3">
             <Button type="button" variant="secondary" onClick={() => setFolderModal({ open: false, projectId: '', parentId: null })}>Отмена</Button>
             <Button type="submit">Создать</Button>
           </div>
@@ -820,7 +820,7 @@ export default function Files() {
             onChange={e => setLinkForm({ ...linkForm, url: e.target.value })}
             required
           />
-          <div className="flex justify-end gap-3">
+          <div className="modal-actions flex justify-end gap-3">
             <Button type="button" variant="secondary" onClick={() => setLinkModal({ open: false, projectId: '', folderId: null, editing: null })}>Отмена</Button>
             <Button type="submit">{linkModal.editing ? 'Сохранить' : 'Добавить'}</Button>
           </div>

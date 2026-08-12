@@ -63,6 +63,8 @@ const mobileQuickNav = [
   { path: '/clients', label: 'Клиенты', icon: Users },
 ]
 
+const mobilePrimaryPaths = ['/', '/tasks', '/production', '/media-plan', '/projects', '/files', '/clients', '/finance']
+
 const birthdayKindLabels = {
   employee: 'Сотрудник',
   client: 'Клиент',
@@ -100,6 +102,7 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileMenuTab, setMobileMenuTab] = useState('primary')
   const [birthdays, setBirthdays] = useState([])
   const [birthdayOpen, setBirthdayOpen] = useState(false)
   const hasHeaderActions = Boolean(headerContent)
@@ -121,10 +124,15 @@ export default function Layout() {
   const hasBirthdays = birthdays.length > 0
 
   const birthdaySummary = useMemo(() => {
-    if (!hasBirthdays) return 'В ближайшие 7 дней дней рождений нет'
+    if (!hasBirthdays) return 'В ближайшие 7 дней дней рождения нет'
     if (birthdays.some(item => item.is_today)) return 'Есть именинники сегодня'
     return `${birthdays.length} в ближайшие 7 дней`
   }, [birthdays, hasBirthdays])
+
+  const mobilePrimaryItems = useMemo(
+    () => menuItems.filter(item => mobilePrimaryPaths.includes(item.path)),
+    []
+  )
 
   const handleLogout = () => {
     logout()
@@ -151,6 +159,7 @@ export default function Layout() {
 
   useEffect(() => {
     setMobileOpen(false)
+    setMobileMenuTab('primary')
   }, [location.pathname])
 
   useEffect(() => {
@@ -169,31 +178,65 @@ export default function Layout() {
     }
   }, [birthdayOpen, mobileOpen])
 
-  const navLinks = (
+  const renderMenuLink = (item) => {
+    const Icon = item.icon
+    const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+
+    return (
+      <Link
+        key={item.path}
+        to={item.path}
+        onClick={() => setMobileOpen(false)}
+        className={`group flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-medium transition-all ${
+          isActive
+            ? 'bg-white text-[#0f1728] shadow-[0_12px_28px_rgba(0,0,0,0.16)]'
+            : 'text-white/72 hover:bg-white/8 hover:text-white'
+        }`}
+      >
+        <span className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all ${
+          isActive ? 'bg-[rgba(34,80,255,0.12)] text-primary' : 'bg-white/6 text-white/75 group-hover:bg-white/10'
+        }`}>
+          <Icon size={17} />
+        </span>
+        <span className="truncate">{item.label}</span>
+      </Link>
+    )
+  }
+
+  const renderMenuCard = (item) => {
+    const Icon = item.icon
+    const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+
+    return (
+      <Link
+        key={item.path}
+        to={item.path}
+        onClick={() => setMobileOpen(false)}
+        className={`rounded-[22px] border px-3.5 py-3 transition-all ${
+          isActive
+            ? 'border-white/20 bg-white text-[#0f1728] shadow-[0_12px_28px_rgba(0,0,0,0.16)]'
+            : 'border-white/10 bg-white/6 text-white/82 hover:bg-white/9'
+        }`}
+      >
+        <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+          isActive ? 'bg-[rgba(34,80,255,0.12)] text-primary' : 'bg-white/8 text-white/78'
+        }`}>
+          <Icon size={17} />
+        </span>
+        <div className={`mt-3 truncate text-sm font-semibold ${isActive ? 'text-[#0f1728]' : 'text-white'}`}>{item.label}</div>
+      </Link>
+    )
+  }
+
+  const desktopNavLinks = (
     <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 pb-4 pt-3">
-      {menuItems.map(item => {
-        const Icon = item.icon
-        const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
-        return (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={() => setMobileOpen(false)}
-            className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all ${
-              isActive
-                ? 'bg-white text-[#0f1728] shadow-[0_12px_28px_rgba(0,0,0,0.16)]'
-                : 'text-white/72 hover:bg-white/8 hover:text-white'
-            }`}
-          >
-            <span className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all ${
-              isActive ? 'bg-[rgba(34,80,255,0.12)] text-primary' : 'bg-white/6 text-white/75 group-hover:bg-white/10'
-            }`}>
-              <Icon size={17} />
-            </span>
-            <span className="truncate">{item.label}</span>
-          </Link>
-        )
-      })}
+      {menuItems.map(renderMenuLink)}
+    </nav>
+  )
+
+  const mobileNavLinks = (
+    <nav className="space-y-1.5">
+      {menuItems.map(renderMenuLink)}
     </nav>
   )
 
@@ -202,9 +245,9 @@ export default function Layout() {
       <button
         type="button"
         onClick={() => setBirthdayOpen(true)}
-        className="flex w-full items-center gap-3 rounded-[24px] border border-white/12 bg-white/7 px-4 py-4 text-left text-white/88 transition-all hover:bg-white/10"
+        className="flex w-full items-center gap-3 rounded-[22px] border border-white/12 bg-white/7 px-3.5 py-3.5 text-left text-white/88 transition-all hover:bg-white/10"
       >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-blue-200">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-blue-200">
           <Cake size={20} />
         </span>
         <span className="min-w-0 flex-1">
@@ -251,7 +294,7 @@ export default function Layout() {
             <div className="px-6 pt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/34">
               Навигация
             </div>
-            {navLinks}
+            {desktopNavLinks}
 
             {birthdayButton}
 
@@ -274,23 +317,23 @@ export default function Layout() {
           </div>
         </aside>
 
-        <div className="fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.9)] px-4 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.88)] lg:hidden">
+        <div className="fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.9)] px-4 py-2.5 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.88)] lg:hidden">
           <div>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Studio 313</div>
-                <div className="brand-display truncate text-xl text-text">{currentItem.label}</div>
+                <div className="brand-display truncate text-[1.75rem] leading-none text-text">{currentItem.label}</div>
               </div>
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
                 className="shrink-0 rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)]"
+                aria-label="Открыть меню"
               >
                 <Menu size={20} />
               </button>
             </div>
             {hasHeaderActions ? (
-              <div className="mt-3 overflow-x-auto pb-1">
+              <div className="mt-2 overflow-x-auto pb-1">
                 <div className="w-max min-w-full">
                   {headerContent}
                 </div>
@@ -301,32 +344,74 @@ export default function Layout() {
 
         {mobileOpen && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
-            <div className="h-[100dvh] w-[88%] max-w-[340px] animate-rise-in overflow-hidden rounded-r-[30px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
+            <div className="h-[100dvh] w-[82%] max-w-[320px] animate-rise-in overflow-hidden rounded-r-[30px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
               <div className="flex h-full flex-col overflow-hidden">
-                <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
                   <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Навигация</div>
-                    <div className="brand-display text-2xl">Studio 313</div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Меню</div>
+                    <div className="text-sm text-white/62">{currentItem.label}</div>
                   </div>
                   <button type="button" onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
                     <X size={18} />
                   </button>
                 </div>
-                <div className="px-5 pt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/34">
-                  Навигация
+
+                <div className="border-b border-white/10 px-4 py-3">
+                  <div className="grid grid-cols-2 gap-2 rounded-[20px] bg-white/6 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setMobileMenuTab('primary')}
+                      className={`rounded-2xl px-3 py-2 text-sm font-semibold transition-all ${
+                        mobileMenuTab === 'primary'
+                          ? 'bg-white text-[#0f1728] shadow-[0_10px_22px_rgba(0,0,0,0.16)]'
+                          : 'text-white/72'
+                      }`}
+                    >
+                      Быстро
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileMenuTab('all')}
+                      className={`rounded-2xl px-3 py-2 text-sm font-semibold transition-all ${
+                        mobileMenuTab === 'all'
+                          ? 'bg-white text-[#0f1728] shadow-[0_10px_22px_rgba(0,0,0,0.16)]'
+                          : 'text-white/72'
+                      }`}
+                    >
+                      Все разделы
+                    </button>
+                  </div>
                 </div>
-                <div className="min-h-0 flex-1 overflow-hidden">
-                  {navLinks}
+
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+                  {mobileMenuTab === 'primary' ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {mobilePrimaryItems.map(renderMenuCard)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setMobileMenuTab('all')}
+                        className="w-full rounded-[22px] border border-white/10 bg-white/6 px-4 py-3 text-sm font-semibold text-white/82 transition-all hover:bg-white/10"
+                      >
+                        Открыть все разделы
+                      </button>
+                    </div>
+                  ) : mobileNavLinks}
                 </div>
-                <div className="shrink-0">
+
+                <div className="shrink-0 border-t border-white/10 px-4 pt-4">
                   {birthdayButton}
                 </div>
-                <div className="safe-bottom shrink-0 border-t border-white/10 px-5 py-4">
-                  <div className="mb-4 flex items-center gap-3">
+
+                <div className="safe-bottom shrink-0 px-4 py-4">
+                  <div className="mb-3 flex items-center gap-3">
                     <UserAvatar user={user} size="sm" />
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold">{formatFullName(user)}</div>
-                      <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">{user?.role || user?.username || 'Профиль'}</div>
+                      <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">
+                        {user?.role || user?.username || 'Профиль'}
+                      </div>
                     </div>
                   </div>
                   {sidebarControls}
@@ -337,7 +422,7 @@ export default function Layout() {
           </div>
         )}
 
-        <main className={`min-w-0 flex-1 ${hasHeaderActions ? 'pt-[132px]' : 'pt-[84px]'} pb-24 lg:pt-4 lg:pb-0`}>
+        <main className={`min-w-0 flex-1 ${hasHeaderActions ? 'pt-[118px]' : 'pt-[76px]'} pb-24 lg:pt-4 lg:pb-0`}>
           <div className="w-full px-4 pb-8 md:px-6 lg:px-8">
             <div className="soft-panel animate-fade-in sticky top-4 z-30 mb-6 hidden rounded-[28px] lg:block">
               <div className="flex items-center justify-between gap-4 px-6 py-4">
@@ -429,7 +514,7 @@ export default function Layout() {
             {birthdays.length === 0 ? (
               <div className="flex h-48 flex-col items-center justify-center rounded-[24px] border border-dashed border-border bg-surface/40 text-center text-sm text-text-muted">
                 <Cake size={40} className="mb-3 opacity-35" />
-                В ближайшие 7 дней дней рождений нет
+                В ближайшие 7 дней дней рождения нет
               </div>
             ) : (
               <div className="space-y-3">

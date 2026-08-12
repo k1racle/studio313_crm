@@ -227,7 +227,7 @@ export default function Projects() {
               <span className="text-sm text-text">В архиве</span>
             </label>
           )}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingProject ? 'Сохранить' : 'Создать'}</Button>
           </div>

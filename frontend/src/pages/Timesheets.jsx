@@ -137,7 +137,7 @@ export default function Timesheets() {
           <Input label="Начало" type="datetime-local" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} required />
           <Input label="Окончание" type="datetime-local" value={form.end_time} onChange={e => setForm({ ...form, end_time: e.target.value })} required />
           <Input label="Примечание" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} />
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingEntry ? 'Сохранить' : 'Добавить'}</Button>
           </div>

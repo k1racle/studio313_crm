@@ -208,7 +208,7 @@ export default function Payments() {
               onChange={e => setSettings({ ...settings, base_url: e.target.value })}
             />
             {saved && <div className="text-sm text-success">Настройки сохранены</div>}
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="modal-actions flex justify-end gap-3 pt-2">
               <Button type="submit" disabled={saving}>
                 <Save size={16} className="mr-1.5" />
                 {saving ? 'Сохранение...' : 'Сохранить настройки'}

@@ -255,7 +255,7 @@ export default function Bookings() {
           <Input label="Дата и время" type="datetime-local" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} required />
           <Select label="Статус" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} options={statusOptions} />
           <Input label="Примечания" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsBookingModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingBooking ? 'Сохранить' : 'Создать'}</Button>
           </div>

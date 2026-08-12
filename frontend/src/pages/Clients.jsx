@@ -420,7 +420,7 @@ export default function Clients() {
               <span className="text-sm text-text">В архиве</span>
             </label>
           )}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingClient ? 'Сохранить' : 'Добавить'}</Button>
           </div>
@@ -532,7 +532,7 @@ export default function Clients() {
                       </Button>
                     </div>
                   )}
-                  <div className="flex justify-end gap-3 pt-2">
+                  <div className="modal-actions flex justify-end gap-3 pt-2">
                     <Button variant="secondary" onClick={() => openEdit(detailData)}>
                       <Pencil size={14} className="mr-1.5" />
                       Изменить

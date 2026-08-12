@@ -417,7 +417,7 @@ export default function KnowledgeBase() {
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => { setFormOpen(false); setEditingItem(null); setForm(emptyForm) }}>Отмена</Button>
             <Button type="submit">{editingItem ? 'Сохранить' : 'Создать'}</Button>
           </div>
