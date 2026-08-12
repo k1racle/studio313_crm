@@ -112,11 +112,13 @@ export default function PasswordVault() {
         notes: form.notes,
         shared_user_ids: form.shared_user_ids,
       }
+
       if (editingEntry) {
         await api.put(`/password-vault/entries/${editingEntry.id}/`, payload)
       } else {
         await api.post('/password-vault/entries/', payload)
       }
+
       await loadEntries()
       closeModal()
     } catch (error) {
@@ -152,6 +154,7 @@ export default function PasswordVault() {
   const editCategories = editingEntry
     ? categories.filter(category => category.value === editingEntry.category || currentPermissions[category.value]?.add)
     : createCategories
+
   const headerActions = useMemo(() => (
     canCreate ? (
       <Button onClick={openCreate}>
@@ -174,7 +177,6 @@ export default function PasswordVault() {
             onChange={event => setSearch(event.target.value)}
           />
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Категория</label>
             <select
               value={categoryFilter}
               onChange={event => setCategoryFilter(event.target.value)}
@@ -200,7 +202,7 @@ export default function PasswordVault() {
                 <th className="pb-3 font-medium">Пароль</th>
                 <th className="pb-3 font-medium">Кому выдано</th>
                 <th className="pb-3 font-medium">Обновлено</th>
-                <th className="pb-3 font-medium w-32"></th>
+                <th className="w-32 pb-3 font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -214,13 +216,13 @@ export default function PasswordVault() {
                   <td className="py-3">
                     <div className="font-medium text-text">{entry.title}</div>
                     {entry.url && (
-                      <a href={entry.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline">
+                      <a href={entry.url} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline">
                         <LinkIcon size={12} />
                         {entry.url}
                       </a>
                     )}
                     {entry.notes && (
-                      <div className="text-xs text-text-muted mt-1 line-clamp-2">{entry.notes}</div>
+                      <div className="mt-1 line-clamp-2 text-xs text-text-muted">{entry.notes}</div>
                     )}
                   </td>
                   <td className="py-3">
@@ -230,7 +232,7 @@ export default function PasswordVault() {
                         <button
                           type="button"
                           onClick={() => copyText(entry.login, 'логин')}
-                          className="p-1 text-text-muted hover:text-primary hover:bg-surface rounded transition-colors"
+                          className="rounded p-1 text-text-muted transition-colors hover:bg-surface hover:text-primary"
                           title="Скопировать логин"
                         >
                           <Copy size={14} />
@@ -244,7 +246,7 @@ export default function PasswordVault() {
                       <button
                         type="button"
                         onClick={() => togglePasswordVisibility(entry.id)}
-                        className="p-1 text-text-muted hover:text-primary hover:bg-surface rounded transition-colors"
+                        className="rounded p-1 text-text-muted transition-colors hover:bg-surface hover:text-primary"
                         title={visiblePasswords[entry.id] ? 'Скрыть пароль' : 'Показать пароль'}
                       >
                         {visiblePasswords[entry.id] ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -252,7 +254,7 @@ export default function PasswordVault() {
                       <button
                         type="button"
                         onClick={() => copyText(entry.password, 'пароль')}
-                        className="p-1 text-text-muted hover:text-primary hover:bg-surface rounded transition-colors"
+                        className="rounded p-1 text-text-muted transition-colors hover:bg-surface hover:text-primary"
                         title="Скопировать пароль"
                       >
                         <Copy size={14} />
@@ -263,7 +265,7 @@ export default function PasswordVault() {
                     {entry.shared_users?.length ? (
                       <div className="flex flex-wrap gap-1">
                         {entry.shared_users.map(user => (
-                          <span key={user.id} className="px-2 py-0.5 rounded-full bg-subtle text-xs text-text">
+                          <span key={user.id} className="rounded-full bg-subtle px-2 py-0.5 text-xs text-text">
                             {user.short_name}
                           </span>
                         ))}
@@ -282,7 +284,7 @@ export default function PasswordVault() {
                         <button
                           type="button"
                           onClick={() => openEdit(entry)}
-                          className="p-1.5 text-text-muted hover:text-primary hover:bg-surface rounded-lg transition-colors"
+                          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface hover:text-primary"
                           title="Изменить"
                         >
                           <Pencil size={16} />
@@ -292,7 +294,7 @@ export default function PasswordVault() {
                         <button
                           type="button"
                           onClick={() => handleDelete(entry)}
-                          className="p-1.5 text-text-muted hover:text-danger hover:bg-surface rounded-lg transition-colors"
+                          className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-surface hover:text-danger"
                           title="Удалить"
                         >
                           <Trash2 size={16} />
@@ -305,9 +307,11 @@ export default function PasswordVault() {
             </tbody>
           </table>
         </div>
+
         {!loading && entries.length === 0 && (
           <div className="px-6 pb-6 text-sm text-text-muted">Доступных записей пока нет.</div>
         )}
+
         {loading && (
           <div className="px-6 pb-6 text-sm text-text-muted">Загрузка...</div>
         )}
@@ -315,13 +319,13 @@ export default function PasswordVault() {
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingEntry ? 'Изменить запись' : 'Новая запись'} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-text mb-1.5">Категория</label>
+              <label className="mb-1.5 block text-sm font-medium text-text">Категория</label>
               <select
                 value={form.category}
                 onChange={event => setForm(prev => ({ ...prev, category: event.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 required
               >
                 <option value="" disabled>Выберите категорию</option>
@@ -338,7 +342,7 @@ export default function PasswordVault() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input
               label="Логин"
               value={form.login}
@@ -369,11 +373,11 @@ export default function PasswordVault() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Комментарий</label>
+            <label className="mb-1.5 block text-sm font-medium text-text">Комментарий</label>
             <textarea
               value={form.notes}
               onChange={event => setForm(prev => ({ ...prev, notes: event.target.value }))}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-text transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               rows="4"
             />
           </div>

@@ -52,31 +52,39 @@ export default function Finance() {
       {report && (
         <>
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Card className="flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-green-500 text-white">
-                <CreditCard size={24} />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-text">{report.total_paid.toLocaleString('ru-RU')} ₽</div>
-                <div className="text-sm text-text-muted">Оплачено за период</div>
-              </div>
-            </Card>
-            <Card className="flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500 text-white">
-                <Calendar size={24} />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-text">{report.unpaid.length}</div>
-                <div className="text-sm text-text-muted">Неоплаченных записей</div>
+            <Card className="animate-fade-in" bodyClassName="p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-br from-emerald-500 to-green-500 text-white shadow-[0_14px_34px_rgba(16,185,129,0.22)]">
+                  <CreditCard size={24} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-3xl font-semibold text-text">{report.total_paid.toLocaleString('ru-RU')} ₽</div>
+                  <div className="mt-1 text-sm text-text-muted">Оплачено за период</div>
+                </div>
               </div>
             </Card>
-            <Card className="flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
-                <Users size={24} />
+
+            <Card className="animate-fade-in" bodyClassName="p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-br from-rose-500 to-red-500 text-white shadow-[0_14px_34px_rgba(239,68,68,0.22)]">
+                  <Calendar size={24} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-3xl font-semibold text-text">{report.unpaid.length}</div>
+                  <div className="mt-1 text-sm text-text-muted">Неоплаченных записей</div>
+                </div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-text">{unpaidTotal.toLocaleString('ru-RU')} ₽</div>
-                <div className="text-sm text-text-muted">Сумма к оплате</div>
+            </Card>
+
+            <Card className="animate-fade-in" bodyClassName="p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-[0_14px_34px_rgba(249,115,22,0.22)]">
+                  <Users size={24} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-3xl font-semibold text-text">{unpaidTotal.toLocaleString('ru-RU')} ₽</div>
+                  <div className="mt-1 text-sm text-text-muted">Сумма к оплате</div>
+                </div>
               </div>
             </Card>
           </div>
@@ -94,6 +102,7 @@ export default function Finance() {
                 </ResponsiveContainer>
               </div>
             </Card>
+
             <Card title="По услугам">
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">

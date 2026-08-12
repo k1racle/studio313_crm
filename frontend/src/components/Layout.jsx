@@ -29,6 +29,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePageHeader } from '../contexts/PageHeaderContext'
 import { formatFullName } from '../utils/format'
 import FloatingChatButton from './FloatingChatButton'
+import NotificationBell from './NotificationBell'
 import ThemeToggle from './ThemeToggle'
 
 const menuItems = [
@@ -55,6 +56,12 @@ const headerItems = [
   { path: '/chat', label: 'Чаты', icon: MessageSquare },
 ]
 
+const birthdayKindLabels = {
+  employee: 'Сотрудник',
+  client: 'Клиент',
+  contact: 'Контакт',
+}
+
 function UserAvatar({ user, size = 'md' }) {
   const sizes = {
     sm: 'h-10 w-10 text-sm',
@@ -72,6 +79,14 @@ function UserAvatar({ user, size = 'md' }) {
   )
 }
 
+function formatBirthdayDate(item) {
+  if (item.is_today) return 'Сегодня'
+  return new Date(item.next_birthday).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+  })
+}
+
 export default function Layout() {
   const { user, logout } = useAuth()
   const { headerContent } = usePageHeader()
@@ -79,6 +94,7 @@ export default function Layout() {
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [birthdays, setBirthdays] = useState([])
+  const [birthdayOpen, setBirthdayOpen] = useState(false)
 
   const currentItem = useMemo(
     () => headerItems.find(item => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)) || menuItems[0],
@@ -94,6 +110,14 @@ export default function Layout() {
     []
   )
 
+  const hasBirthdays = birthdays.length > 0
+
+  const birthdaySummary = useMemo(() => {
+    if (!hasBirthdays) return 'В ближайшие 7 дней дней рождений нет'
+    if (birthdays.some(item => item.is_today)) return 'Есть именинники сегодня'
+    return `${birthdays.length} в ближайшие 7 дней`
+  }, [birthdays, hasBirthdays])
+
   const handleLogout = () => {
     logout()
     navigate('/login')
@@ -104,6 +128,18 @@ export default function Layout() {
       .then(res => setBirthdays(res.data || []))
       .catch(() => setBirthdays([]))
   }, [location.pathname])
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setBirthdayOpen(false)
+    }
+
+    if (birthdayOpen) {
+      document.addEventListener('keydown', onKeyDown)
+    }
+
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [birthdayOpen])
 
   const navLinks = (
     <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 pb-4 pt-3">
@@ -133,20 +169,43 @@ export default function Layout() {
     </nav>
   )
 
-  const birthdayBlock = birthdays.length > 0 && (
-    <div className="mx-4 mb-4 rounded-[24px] border border-white/12 bg-white/7 p-4 text-white/88">
-      <div className="mb-2 flex items-center gap-2">
-        <Cake size={16} className="text-blue-300" />
-        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
-          {birthdays.some(item => item.is_today) ? 'Сегодня' : 'Ближайшие даты'}
-        </div>
-      </div>
-      <div className="text-sm font-medium">
-        {birthdays.some(item => item.is_today) ? 'День рождения сегодня' : 'Дни рождения'}
-      </div>
-      <div className="mt-1 text-sm text-white/64">
-        {birthdays.map(item => item.badge_name || item.full_name).join(', ')}
-      </div>
+  const birthdayButton = (
+    <div className="mx-4 mb-4">
+      <button
+        type="button"
+        onClick={() => setBirthdayOpen(true)}
+        className="flex w-full items-center gap-3 rounded-[24px] border border-white/12 bg-white/7 px-4 py-4 text-left text-white/88 transition-all hover:bg-white/10"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-blue-200">
+          <Cake size={20} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Дни рождения</span>
+          <span className="mt-0.5 block text-xs text-white/55">{birthdaySummary}</span>
+        </span>
+      </button>
+    </div>
+  )
+
+  const sidebarControls = (
+    <div className="mt-4 flex items-center gap-2">
+      <ThemeToggle
+        iconOnly
+        className="!h-12 !w-12 !border-white/10 !bg-white/8 !text-white/72 hover:!bg-white/12 hover:!text-white"
+      />
+      <NotificationBell
+        size={18}
+        title="Уведомления"
+        buttonClassName="!h-12 !w-12 !border-white/10 !bg-white/8 !p-0 !text-white/72 !shadow-none hover:!bg-white/12 hover:!text-white"
+      />
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/78 transition-colors hover:bg-white/12 hover:text-white"
+        title="Выйти"
+      >
+        <LogOut size={16} />
+      </button>
     </div>
   )
 
@@ -166,7 +225,7 @@ export default function Layout() {
             </div>
             {navLinks}
 
-            {birthdayBlock}
+            {birthdayButton}
 
             <div className="mx-4 mb-4 rounded-[26px] border border-white/10 bg-white/6 p-4">
               <Link
@@ -182,16 +241,7 @@ export default function Layout() {
                   </div>
                 </div>
               </Link>
-              <div className="mt-4 flex items-center gap-2">
-                <ThemeToggle iconOnly className="!w-12 !border-white/10 !bg-white/8 !text-white/72 hover:!bg-white/12 hover:!text-white" />
-                <button
-                  onClick={handleLogout}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white/78 hover:bg-white/12 hover:text-white"
-                >
-                  <LogOut size={16} />
-                  Выйти
-                </button>
-              </div>
+              {sidebarControls}
             </div>
           </div>
         </aside>
@@ -203,6 +253,7 @@ export default function Layout() {
               <div className="brand-display text-xl text-text">{currentItem.label}</div>
             </div>
             <button
+              type="button"
               onClick={() => setMobileOpen(true)}
               className="rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)]"
             >
@@ -219,11 +270,12 @@ export default function Layout() {
                   <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Навигация</div>
                   <div className="brand-display text-2xl">Studio 313</div>
                 </div>
-                <button onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
+                <button type="button" onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
                   <X size={18} />
                 </button>
               </div>
               <div className="px-2 pt-2">{navLinks}</div>
+              {birthdayButton}
               <div className="border-t border-white/10 px-5 py-4">
                 <div className="mb-4 flex items-center gap-3">
                   <UserAvatar user={user} size="sm" />
@@ -232,16 +284,7 @@ export default function Layout() {
                     <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">{user?.role || user?.username || 'Профиль'}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <ThemeToggle iconOnly className="!w-12 !border-white/10 !bg-white/8 !text-white/72 hover:!bg-white/12 hover:!text-white" />
-                  <button
-                    onClick={handleLogout}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white/78"
-                  >
-                    <LogOut size={16} />
-                    Выйти
-                  </button>
-                </div>
+                {sidebarControls}
               </div>
             </div>
             <div className="flex-1 bg-[rgba(7,11,18,0.54)] backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
@@ -271,6 +314,69 @@ export default function Layout() {
           </div>
         </main>
       </div>
+
+      <div
+        onClick={() => setBirthdayOpen(false)}
+        className={`fixed inset-0 z-[59] bg-[rgba(7,11,18,0.46)] backdrop-blur-sm transition-opacity duration-200 ${
+          birthdayOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        aria-hidden="true"
+      />
+
+      <div
+        className={`fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 transition-all duration-200 ${
+          birthdayOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        <div className="soft-panel overflow-hidden rounded-[30px]">
+          <div className="flex items-center justify-between border-b border-border/70 px-6 py-5">
+            <div>
+              <div className="kicker text-primary">Ближайшие 7 дней</div>
+              <h2 className="mt-1 text-2xl font-semibold text-text">Дни рождения</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBirthdayOpen(false)}
+              className="rounded-full border border-border/70 bg-surface/70 p-2.5 text-text-muted hover:bg-subtle hover:text-text"
+              title="Закрыть"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="max-h-[70vh] overflow-y-auto px-5 py-5">
+            {birthdays.length === 0 ? (
+              <div className="flex h-48 flex-col items-center justify-center rounded-[24px] border border-dashed border-border bg-surface/40 text-center text-sm text-text-muted">
+                <Cake size={40} className="mb-3 opacity-35" />
+                В ближайшие 7 дней дней рождений нет
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {birthdays.map(item => (
+                  <div
+                    key={`${item.kind}-${item.entity_id}`}
+                    className="rounded-[24px] border border-border/70 bg-surface/72 px-4 py-4 shadow-[0_10px_24px_rgba(15,23,40,0.06)]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-text">{item.full_name}</div>
+                        <div className="mt-1 text-sm text-text-muted">{birthdayKindLabels[item.kind] || item.badge_name}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-semibold text-text">{formatBirthdayDate(item)}</div>
+                        <div className="mt-1 text-xs text-text-muted">
+                          {item.is_today ? 'Сегодня' : `Через ${item.days_until} дн.`}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <FloatingChatButton />
     </div>
   )

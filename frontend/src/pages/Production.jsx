@@ -215,24 +215,24 @@ export default function Production() {
   return (
     <div>
       <Card className="mb-6" bodyClassName="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex shrink-0 gap-2 bg-subtle p-1 rounded-lg">
+        <div className="flex flex-wrap gap-2">
+          <div className="contents">
             {[
-              { key: 'kanban', label: 'Kanban', icon: LayoutGrid },
-              { key: 'gantt', label: 'Gantt', icon: BarChart3 },
+              { key: 'kanban', label: 'Kanban' },
+              { key: 'gantt', label: 'Gantt' },
               { key: 'calendar', label: 'Календарь', icon: CalendarIcon },
               { key: 'list', label: 'Список', icon: List },
             ].map(v => {
-              const Icon = v.icon
               return (
                 <button
                   key={v.key}
                   onClick={() => setView(v.key)}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                    view === v.key ? 'bg-surface text-primary shadow-sm' : 'text-text-muted hover:text-text'
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all whitespace-nowrap ${
+                    view === v.key
+                      ? 'bg-primary text-white shadow-[0_12px_24px_rgba(34,80,255,0.22)]'
+                      : 'bg-subtle/80 text-text-muted hover:bg-subtle hover:text-text'
                   }`}
                 >
-                  <Icon size={14} />
                   {v.label}
                 </button>
               )

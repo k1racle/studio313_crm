@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Bell, Check, X } from 'lucide-react'
+
 import api from '../api/axios'
 
-export default function NotificationBell({ size = 20 }) {
+export default function NotificationBell({
+  size = 20,
+  buttonClassName = '',
+  title = 'Уведомления',
+}) {
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -14,7 +19,7 @@ export default function NotificationBell({ size = 20 }) {
         api.get('/notifications/unread-count/'),
       ])
       setNotifications(listRes.data.results || listRes.data)
-      setUnreadCount(countRes.data.unread_count)
+      setUnreadCount(countRes.data.unread_count || 0)
     } catch {
       // Фоновая загрузка не должна ломать интерфейс
     }
@@ -27,14 +32,16 @@ export default function NotificationBell({ size = 20 }) {
   }, [])
 
   useEffect(() => {
-    const onKey = (event) => {
+    const onKeyDown = (event) => {
       if (event.key === 'Escape') setOpen(false)
     }
+
     if (open) {
-      document.addEventListener('keydown', onKey)
+      document.addEventListener('keydown', onKeyDown)
       load()
     }
-    return () => document.removeEventListener('keydown', onKey)
+
+    return () => document.removeEventListener('keydown', onKeyDown)
   }, [open])
 
   const markRead = async (id) => {
@@ -50,9 +57,10 @@ export default function NotificationBell({ size = 20 }) {
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="relative inline-flex items-center justify-center rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)] hover:-translate-y-0.5 hover:text-primary hover:shadow-[0_12px_30px_rgba(15,23,40,0.12)]"
-        title="Уведомления"
+        className={`relative inline-flex items-center justify-center rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)] transition-all hover:-translate-y-0.5 hover:text-primary hover:shadow-[0_12px_30px_rgba(15,23,40,0.12)] ${buttonClassName}`}
+        title={title}
       >
         <Bell size={size} />
         {unreadCount > 0 && (
@@ -72,7 +80,7 @@ export default function NotificationBell({ size = 20 }) {
 
       <aside
         className={`fixed inset-y-0 right-0 z-50 w-full max-w-lg transform border-l border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
-          open ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
+          open ? 'pointer-events-auto translate-x-0' : 'pointer-events-none translate-x-full'
         }`}
       >
         <div className="flex items-center justify-between border-b border-border/70 px-6 py-5">
@@ -83,6 +91,7 @@ export default function NotificationBell({ size = 20 }) {
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <button
+                type="button"
                 onClick={markAllRead}
                 className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-surface/70 px-4 py-2 text-xs font-semibold text-primary hover:bg-subtle"
               >
@@ -91,6 +100,7 @@ export default function NotificationBell({ size = 20 }) {
               </button>
             )}
             <button
+              type="button"
               onClick={() => setOpen(false)}
               className="rounded-full border border-border/70 bg-surface/70 p-2.5 text-text-muted hover:bg-subtle hover:text-text"
               title="Закрыть"
@@ -127,6 +137,7 @@ export default function NotificationBell({ size = 20 }) {
                     </div>
                     {!notification.is_read && (
                       <button
+                        type="button"
                         onClick={() => markRead(notification.id)}
                         className="shrink-0 rounded-full border border-border/70 bg-surface/70 p-2 text-text-muted hover:text-primary"
                         title="Отметить прочитанным"
