@@ -101,6 +101,7 @@ class DashboardStatsView(APIView):
             total=Sum('amount')
         )['total'] or 0
         total_debt = sum(d['remaining_amount'] for d in debtors)
+        total_clients = Client.objects.filter(is_archived=False).count()
 
         return Response({
             'tasks_by_status': tasks_by_status,
@@ -113,6 +114,7 @@ class DashboardStatsView(APIView):
                 'paid': float(total_paid),
                 'pending': float(total_pending),
                 'debt': float(total_debt),
+                'clients': total_clients,
             },
         })
 
