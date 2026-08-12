@@ -8,7 +8,8 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
-import { Plus, Pencil, Trash2, Users, ArrowRight, CheckCircle2, XCircle, Archive, RotateCcw } from 'lucide-react'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
+import { Plus, Pencil, Trash2, Users, ArrowRight, CheckCircle2, XCircle, Archive, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { formatShortName } from '../utils/format'
 
 const emptyForm = { name: '', description: '', member_ids: [], is_archived: false }
@@ -18,6 +19,7 @@ export default function Projects() {
   const [projects, setProjects] = useState([])
   const [users, setUsers] = useState([])
   const [showArchived, setShowArchived] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [form, setForm] = useState(emptyForm)
@@ -91,9 +93,21 @@ export default function Projects() {
     if (!q) return users
     return users.filter(u => formatShortName(u).toLowerCase().includes(q))
   }, [users, memberSearch])
+
   const headerActions = useMemo(() => (
     <div className="flex flex-wrap items-center justify-end gap-3">
-      <label className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/78 px-4 py-2 text-sm text-text-muted">
+      <Button
+        type="button"
+        onClick={() => setMobileFiltersOpen(true)}
+        variant="secondary"
+        className="md:hidden"
+        title="Фильтры"
+        aria-label="Фильтры"
+      >
+        <SlidersHorizontal size={16} />
+        {showArchived ? '1' : ''}
+      </Button>
+      <label className="hidden md:inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/78 px-4 py-2 text-sm text-text-muted">
         <input
           type="checkbox"
           checked={showArchived}
@@ -115,6 +129,32 @@ export default function Projects() {
 
   return (
     <div>
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Фильтры проектов"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowArchived(false)}>
+              Сбросить
+            </Button>
+            <Button type="button" className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+              Применить
+            </Button>
+          </div>
+        )}
+      >
+        <label className="flex items-center gap-3 rounded-[20px] border border-border/70 bg-surface/72 px-4 py-3 text-sm text-text">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={e => setShowArchived(e.target.checked)}
+            className="h-4 w-4 rounded border-border text-primary"
+          />
+          <span>Показать архив</span>
+        </label>
+      </MobileFiltersSheet>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {projects.map(p => (
           <Card key={p.id} className={`hover:shadow-md transition-shadow ${p.is_archived ? 'opacity-60' : ''}`}>
