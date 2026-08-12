@@ -319,18 +319,8 @@ export default function Layout() {
 
         <div className="fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.9)] px-4 py-2.5 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.88)] lg:hidden">
           <div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="brand-display truncate text-[1.75rem] leading-none text-text">{currentItem.label}</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMobileOpen(true)}
-                className="shrink-0 rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)]"
-                aria-label="Открыть меню"
-              >
-                <Menu size={20} />
-              </button>
+            <div className="min-w-0">
+              <div className="brand-display truncate text-[1.75rem] leading-none text-text">{currentItem.label}</div>
             </div>
             {hasHeaderActions ? (
               <div className="mt-2 overflow-x-auto pb-1">
@@ -344,7 +334,7 @@ export default function Layout() {
 
         {mobileOpen && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
-            <div className="h-[100dvh] w-[82%] max-w-[320px] animate-rise-in overflow-hidden rounded-r-[30px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
+            <div className="h-[100dvh] w-full animate-rise-in overflow-hidden bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
               <div className="flex h-full flex-col overflow-hidden">
                 <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
                   <div>
@@ -418,7 +408,6 @@ export default function Layout() {
                 </div>
               </div>
             </div>
-            <div className="flex-1 bg-[rgba(7,11,18,0.54)] backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           </div>
         )}
 
