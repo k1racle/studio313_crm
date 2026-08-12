@@ -32,6 +32,8 @@ import FloatingChatButton from './FloatingChatButton'
 import NotificationBell from './NotificationBell'
 import ThemeToggle from './ThemeToggle'
 
+const brandLogoSrc = '/logo-white.svg'
+
 const menuItems = [
   { path: '/', label: 'Главная', icon: LayoutDashboard },
   { path: '/tasks', label: 'Задачи', icon: CheckSquare },
@@ -286,8 +288,8 @@ export default function Layout() {
         <aside className="sticky top-0 hidden h-screen w-[290px] shrink-0 p-4 lg:flex">
           <div className="flex h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-[34px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
             <div className="border-b border-white/10 px-6 py-6">
-              <Link to="/" className="brand-display block text-[2.5rem] font-semibold leading-none text-white">
-                Studio 313
+              <Link to="/" className="block">
+                <img src={brandLogoSrc} alt="Studio 313" className="h-auto w-full max-w-[208px]" />
               </Link>
             </div>
 
@@ -335,11 +337,11 @@ export default function Layout() {
         {mobileOpen && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
             <div className="h-[100dvh] w-full animate-rise-in overflow-hidden bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
-              <div className="flex h-full flex-col overflow-hidden">
+                <div className="flex h-full flex-col overflow-hidden">
                 <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
                   <div>
                     <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Меню</div>
-                    <div className="text-sm text-white/62">{currentItem.label}</div>
+                    <img src={brandLogoSrc} alt="Studio 313" className="mt-2 h-auto w-full max-w-[148px]" />
                   </div>
                   <button type="button" onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
                     <X size={18} />
