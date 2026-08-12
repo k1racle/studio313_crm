@@ -40,9 +40,13 @@ export default function NotificationBell({
     if (open) {
       document.addEventListener('keydown', onKeyDown)
       load()
+      document.body.style.overflow = 'hidden'
     }
 
-    return () => document.removeEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = ''
+    }
   }, [open])
 
   const markRead = async (id) => {
@@ -59,14 +63,14 @@ export default function NotificationBell({
     <>
       <div
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-[80] bg-[rgba(7,11,18,0.44)] backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[140] bg-[rgba(7,11,18,0.44)] backdrop-blur-sm transition-opacity duration-300 ${
           open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
         aria-hidden="true"
       />
 
       <aside
-        className={`fixed inset-y-0 right-0 z-[81] w-full max-w-lg transform border-l border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
+        className={`fixed inset-y-0 right-0 z-[141] w-full max-w-lg transform border-l border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
           open ? 'pointer-events-auto translate-x-0' : 'pointer-events-none translate-x-full'
         }`}
       >

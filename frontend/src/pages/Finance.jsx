@@ -1,14 +1,22 @@
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
-import { Calendar, CreditCard, Users } from 'lucide-react'
+import { Calendar, CreditCard, SlidersHorizontal, Users } from 'lucide-react'
 
 import api from '../api/axios'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+
+const statusLabels = {
+  pending: 'Ожидает',
+  confirmed: 'Подтверждена',
+  completed: 'Завершена',
+  cancelled: 'Отменена',
+}
 
 export default function Finance() {
   const today = new Date().toISOString().slice(0, 10)
@@ -16,6 +24,7 @@ export default function Finance() {
   const [from, setFrom] = useState(thirtyDaysAgo)
   const [to, setTo] = useState(today)
   const [report, setReport] = useState(null)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const load = async () => {
     const params = {}
@@ -33,8 +42,16 @@ export default function Finance() {
 
   return (
     <div>
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[220px_220px_auto]">
+      <Card className="mb-6" bodyClassName="space-y-3">
+        <div className="space-y-3 md:hidden">
+          <Button type="button" variant="secondary" className="w-full" onClick={() => setMobileFiltersOpen(true)}>
+            <SlidersHorizontal size={16} />
+            Период отчета
+          </Button>
+          <Button onClick={load} className="w-full">Обновить</Button>
+        </div>
+
+        <div className="hidden grid-cols-1 gap-3 md:grid xl:grid-cols-[220px_220px_auto]">
           <div className="flex items-center gap-2">
             <span className="whitespace-nowrap text-sm text-text-muted">С</span>
             <Input type="date" value={from} onChange={event => setFrom(event.target.value)} />
@@ -48,6 +65,46 @@ export default function Finance() {
           </div>
         </div>
       </Card>
+
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Период отчета"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => {
+                setFrom(thirtyDaysAgo)
+                setTo(today)
+              }}
+            >
+              30 дней
+            </Button>
+            <Button
+              type="button"
+              className="flex-1"
+              onClick={() => {
+                setMobileFiltersOpen(false)
+                load()
+              }}
+            >
+              Применить
+            </Button>
+          </div>
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <span className="whitespace-nowrap text-sm text-text-muted">С</span>
+          <Input type="date" value={from} onChange={event => setFrom(event.target.value)} />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="whitespace-nowrap text-sm text-text-muted">По</span>
+          <Input type="date" value={to} onChange={event => setTo(event.target.value)} />
+        </div>
+      </MobileFiltersSheet>
 
       {report && (
         <>
@@ -120,8 +177,47 @@ export default function Finance() {
             </Card>
           </div>
 
-          <Card title="Задолженности" className="overflow-hidden">
-            <div className="-mx-6 overflow-x-auto px-6">
+          <Card title="Задолженности" className="overflow-hidden" bodyClassName="space-y-4">
+            <div className="space-y-3 md:hidden">
+              {report.unpaid.length === 0 ? (
+                <div className="rounded-[24px] border border-dashed border-border bg-surface/40 px-4 py-6 text-center text-sm text-text-muted">
+                  Нет задолженностей
+                </div>
+              ) : report.unpaid.map(item => (
+                <div key={item.id} className="rounded-[24px] border border-border/70 bg-surface/72 px-4 py-4 shadow-[0_10px_24px_rgba(15,23,40,0.06)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-text">{item.client__name}</div>
+                      <div className="mt-1 text-sm text-text-muted">{item.service__name}</div>
+                    </div>
+                    <Badge variant={item.status === 'pending' ? 'yellow' : item.status === 'confirmed' ? 'blue' : 'gray'}>
+                      {statusLabels[item.status] || item.status}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-text-muted">Дата</div>
+                      <div className="mt-1 text-text">{new Date(item.start_time).toLocaleString('ru-RU')}</div>
+                    </div>
+                    <div>
+                      <div className="text-text-muted">Стоимость</div>
+                      <div className="mt-1 text-text">{item.service__price.toLocaleString('ru-RU')} ₽</div>
+                    </div>
+                    <div>
+                      <div className="text-text-muted">Оплачено</div>
+                      <div className="mt-1 font-medium text-success">{item.paid_amount.toLocaleString('ru-RU')} ₽</div>
+                    </div>
+                    <div>
+                      <div className="text-text-muted">Остаток</div>
+                      <div className="mt-1 font-semibold text-danger">{item.remaining_amount.toLocaleString('ru-RU')} ₽</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden -mx-6 overflow-x-auto px-6 md:block">
               <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="border-b border-border text-left text-sm text-text-muted">
@@ -142,7 +238,7 @@ export default function Finance() {
                       <td className="py-3 text-text-muted">{new Date(item.start_time).toLocaleString('ru-RU')}</td>
                       <td className="py-3">
                         <Badge variant={item.status === 'pending' ? 'yellow' : item.status === 'confirmed' ? 'blue' : 'gray'}>
-                          {item.status}
+                          {statusLabels[item.status] || item.status}
                         </Badge>
                       </td>
                       <td className="py-3 text-text">{item.service__price.toLocaleString('ru-RU')} ₽</td>
@@ -153,7 +249,10 @@ export default function Finance() {
                 </tbody>
               </table>
             </div>
-            {report.unpaid.length === 0 && <div className="p-4 text-center text-text-muted">Нет задолженностей</div>}
+
+            {report.unpaid.length === 0 && (
+              <div className="hidden p-4 text-center text-text-muted md:block">Нет задолженностей</div>
+            )}
           </Card>
         </>
       )}

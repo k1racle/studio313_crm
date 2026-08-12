@@ -4,12 +4,13 @@ import { useAuth } from '../contexts/AuthContext'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
 import Modal from '../components/ui/Modal'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import {
   Folder, FileText, Image as ImageIcon, Film, Headphones, File as FileIcon,
   Upload, Plus, Pencil, Trash2, ChevronDown, ChevronRight, X, Search, FolderOpen,
-  Link as LinkIcon, GripVertical
+  Link as LinkIcon, GripVertical, SlidersHorizontal
 } from 'lucide-react'
 
 function formatBytes(bytes) {
@@ -288,6 +289,7 @@ export default function Files() {
   const [selectedProject, setSelectedProject] = useState('')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const [previewFile, setPreviewFile] = useState(null)
   const [folderModal, setFolderModal] = useState({ open: false, projectId: '', parentId: null })
@@ -574,6 +576,7 @@ export default function Files() {
   }
 
   const projectOptions = [{ value: '', label: 'Все проекты' }, ...allProjects.map(p => ({ value: p.id, label: p.name }))]
+  const activeFilterCount = selectedProject ? 1 : 0
 
   return (
     <div>
@@ -584,8 +587,26 @@ export default function Files() {
         onChange={handleFileSelected}
       />
 
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[260px_minmax(0,1fr)]">
+      <Card className="mb-6" bodyClassName="space-y-3">
+        <div className="md:hidden space-y-3">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск по файлам и папкам..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <Button type="button" variant="secondary" className="w-full" onClick={() => setMobileFiltersOpen(true)}>
+            <SlidersHorizontal size={16} />
+            Фильтры
+            {activeFilterCount > 0 ? (
+              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </Button>
+        </div>
+
+        <div className="hidden grid-cols-1 gap-3 md:grid xl:grid-cols-[260px_minmax(0,1fr)]">
           <div>
             <SearchableSelect
               value={selectedProject}
@@ -603,6 +624,28 @@ export default function Files() {
           </div>
         </div>
       </Card>
+
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Фильтры файлов"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setSelectedProject('')}>
+              Сбросить
+            </Button>
+            <Button type="button" className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+              Применить
+            </Button>
+          </div>
+        )}
+      >
+        <SearchableSelect
+          value={selectedProject}
+          onChange={val => setSelectedProject(val)}
+          options={projectOptions}
+        />
+      </MobileFiltersSheet>
 
       {loading && <div className="text-text-muted">Загрузка...</div>}
 

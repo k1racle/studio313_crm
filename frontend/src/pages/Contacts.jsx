@@ -4,11 +4,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
 import Select from '../components/ui/Select'
 import Modal from '../components/ui/Modal'
 import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
-import { Plus, Pencil, Trash2, Search, Phone, Mail, MessageCircle, Building2, User, Download, Share2, Cake, MapPin, Zap, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Phone, Mail, MessageCircle, Building2, User, Download, Share2, Cake, MapPin, Zap, X, SlidersHorizontal } from 'lucide-react'
 
 const messengerOptions = ['Telegram', 'WhatsApp', 'Viber', 'MAX', 'VK']
 
@@ -141,6 +142,7 @@ export default function Contacts() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const sentinelRef = useRef(null)
 
   const loadContacts = useCallback(async (pageNum = 1, append = false) => {
@@ -285,10 +287,30 @@ export default function Contacts() {
     </div>
   )
 
+  const activeFilterCount = orgFilter ? 1 : 0
+
   return (
     <div>
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_260px]">
+      <Card className="mb-6" bodyClassName="space-y-3">
+        <div className="space-y-3 md:hidden">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск по ФИО или организации..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <Button type="button" variant="secondary" className="w-full" onClick={() => setMobileFiltersOpen(true)}>
+            <SlidersHorizontal size={16} />
+            Фильтры
+            {activeFilterCount > 0 ? (
+              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </Button>
+        </div>
+
+        <div className="hidden grid-cols-1 gap-3 md:grid xl:grid-cols-[minmax(0,1fr)_260px]">
           <div>
             <Input
               icon={<Search size={16} />}
@@ -307,7 +329,79 @@ export default function Contacts() {
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Фильтры контактов"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setOrgFilter('')}>
+              Сбросить
+            </Button>
+            <Button type="button" className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+              Применить
+            </Button>
+          </div>
+        )}
+      >
+        <SearchableSelect
+          value={orgFilter}
+          onChange={val => setOrgFilter(val)}
+          options={orgOptions}
+        />
+      </MobileFiltersSheet>
+
+      <div className="space-y-3 md:hidden">
+        {contacts.map(contact => (
+          <Card key={contact.id} bodyClassName="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-2xl bg-primary/10 p-2.5 text-primary">
+                <User size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-base font-semibold text-text">{contact.full_name}</div>
+                <div className="mt-1 text-sm text-text-muted">{contact.organization || 'Без организации'}</div>
+                {contact.position ? <div className="mt-1 text-sm text-text-muted">{contact.position}</div> : null}
+              </div>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              {contact.phone ? <div className="text-text">{contact.phone}</div> : null}
+              {contact.email ? <div className="text-text">{contact.email}</div> : null}
+              {contact.city ? <div className="text-text-muted">{contact.city}</div> : null}
+              {contact.birth_date ? <div className="text-text-muted">{new Date(contact.birth_date + 'T00:00:00').toLocaleDateString('ru-RU')}</div> : null}
+            </div>
+
+            {(parseLinks(contact.messengers).length > 0 || parseLinks(contact.social_networks).length > 0) ? (
+              <div className="space-y-2 text-sm">
+                <LinksCell icon={MessageCircle} raw={contact.messengers} />
+                <LinksCell icon={Share2} raw={contact.social_networks} />
+              </div>
+            ) : null}
+
+            {user?.is_manager && (
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={() => openEdit(contact)}>
+                  <Pencil size={14} />
+                  Изменить
+                </Button>
+                <button
+                  onClick={() => handleDelete(contact)}
+                  className="rounded-full border border-border/70 bg-surface/75 p-2.5 text-text-muted transition-colors hover:bg-subtle hover:text-danger"
+                  title="Удалить"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )}
+          </Card>
+        ))}
+        {contacts.length === 0 && (
+          <Card bodyClassName="py-8 text-center text-text-muted">Контакты не найдены</Card>
+        )}
+      </div>
+
+      <Card className="hidden overflow-hidden md:block">
         <div className="overflow-x-auto -mx-6 px-6">
           <table className="w-full min-w-[1600px]">
             <thead>

@@ -9,6 +9,7 @@ import {
   Plus,
   RotateCcw,
   Search,
+  SlidersHorizontal,
   Trash2,
 } from 'lucide-react'
 
@@ -20,6 +21,7 @@ import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
 import Modal from '../components/ui/Modal'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import SearchableSelect from '../components/ui/SearchableSelect'
@@ -139,6 +141,7 @@ export default function Tasks() {
   const [detailTask, setDetailTask] = useState(null)
   const [pendingDetailId, setPendingDetailId] = useState(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -315,6 +318,13 @@ export default function Tasks() {
   const totalTasks = tasks.length
   const activeTasks = tasks.filter(task => !['done', 'canceled'].includes(normalizeTaskStatus(task.status))).length
   const overdueTasks = tasks.filter(task => task.due_date && new Date(task.due_date) < new Date() && !['done', 'canceled'].includes(normalizeTaskStatus(task.status))).length
+  const activeFilterCount = [
+    filters.project,
+    filters.status,
+    filters.priority,
+    filters.assignees,
+    showArchived ? 'archived' : '',
+  ].filter(Boolean).length
   const headerActions = useMemo(() => (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <div className="hidden xl:flex items-center gap-2">
@@ -345,29 +355,55 @@ export default function Tasks() {
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden" bodyClassName="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {[
-            { key: 'kanban', label: 'Kanban' },
-            { key: 'gantt', label: 'Gantt' },
-            { key: 'calendar', label: 'Календарь' },
-            { key: 'list', label: 'Список' },
-          ].map(item => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setView(item.key)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                view === item.key
-                  ? 'bg-primary text-white shadow-[0_12px_24px_rgba(34,80,255,0.22)]'
-                  : 'bg-subtle/80 text-text-muted hover:bg-subtle hover:text-text'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <div className="flex w-max gap-2">
+            {[
+              { key: 'kanban', label: 'Kanban' },
+              { key: 'gantt', label: 'Gantt' },
+              { key: 'calendar', label: 'Календарь' },
+              { key: 'list', label: 'Список' },
+            ].map(item => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setView(item.key)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                  view === item.key
+                    ? 'bg-primary text-white shadow-[0_12px_24px_rgba(34,80,255,0.22)]'
+                    : 'bg-subtle/80 text-text-muted hover:bg-subtle hover:text-text'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className={`grid grid-cols-1 gap-3 ${
+        <div className="space-y-3 md:hidden">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск по названию, описанию или тегам..."
+            value={filters.search}
+            onChange={event => setFilters({ ...filters, search: event.target.value })}
+          />
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setMobileFiltersOpen(true)}>
+              <SlidersHorizontal size={16} />
+              Фильтры
+              {activeFilterCount > 0 ? (
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {activeFilterCount}
+                </span>
+              ) : null}
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleExport}>
+              <Download size={14} />
+              Excel
+            </Button>
+          </div>
+        </div>
+
+        <div className={`hidden gap-3 md:grid ${
           view === 'kanban'
             ? 'xl:grid-cols-[minmax(0,1.2fr)_200px_200px_220px_auto_auto]'
             : '2xl:grid-cols-[minmax(0,1.15fr)_180px_180px_180px_220px_auto_auto] xl:grid-cols-[minmax(0,1fr)_180px_180px_180px_220px]'
@@ -402,6 +438,46 @@ export default function Tasks() {
           </Button>
         </div>
       </Card>
+
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Фильтры задач"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => {
+                setFilters(prev => ({ ...prev, status: '', priority: '', assignees: '', project: '' }))
+                setShowArchived(false)
+              }}
+            >
+              Сбросить
+            </Button>
+            <Button type="button" className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+              Применить
+            </Button>
+          </div>
+        )}
+      >
+        <Select value={filters.project} onChange={event => setFilters({ ...filters, project: event.target.value })} options={projectOptions} />
+        {view !== 'kanban' ? (
+          <Select value={filters.status} onChange={event => setFilters({ ...filters, status: event.target.value })} options={statusOptions} />
+        ) : null}
+        <Select value={filters.priority} onChange={event => setFilters({ ...filters, priority: event.target.value })} options={priorityOptions} />
+        <SearchableSelect value={filters.assignees} onChange={value => setFilters({ ...filters, assignees: value })} options={userOptions} />
+        <label className="flex items-center gap-3 rounded-[22px] border border-border/70 bg-surface/70 px-4 py-3 text-sm text-text">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={event => setShowArchived(event.target.checked)}
+            className="h-4 w-4 rounded border-border text-primary"
+          />
+          Показать архив
+        </label>
+      </MobileFiltersSheet>
 
       {view === 'kanban' && <KanbanBoard tasks={tasks} onTaskMoved={loadTasks} onTaskClick={openDetail} />}
 

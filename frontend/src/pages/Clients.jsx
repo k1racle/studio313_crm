@@ -5,9 +5,10 @@ import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
-import { Plus, Pencil, Trash2, Search, Mail, Send, Phone, FileText, Eye, Archive, RotateCcw, Copy, ExternalLink, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Mail, Send, Phone, FileText, Eye, Archive, RotateCcw, Copy, ExternalLink, Download, SlidersHorizontal } from 'lucide-react'
 
 const emptyForm = { name: '', phone: '', email: '', telegram: '', notes: '', is_archived: false }
 
@@ -57,6 +58,7 @@ export default function Clients() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const sentinelRef = useRef(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingClient, setEditingClient] = useState(null)
@@ -221,10 +223,30 @@ export default function Clients() {
     </div>
   )
 
+  const activeFilterCount = showArchived ? 1 : 0
+
   return (
     <div>
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
+      <Card className="mb-6" bodyClassName="space-y-3">
+        <div className="space-y-3 md:hidden">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск по имени, телефону, email, Telegram..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <Button type="button" variant="secondary" className="w-full" onClick={() => setMobileFiltersOpen(true)}>
+            <SlidersHorizontal size={16} />
+            Фильтры
+            {activeFilterCount > 0 ? (
+              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </Button>
+        </div>
+
+        <div className="hidden grid-cols-1 gap-3 md:grid xl:grid-cols-[minmax(0,1fr)_auto]">
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск по имени, телефону, email, Telegram..."
@@ -243,7 +265,72 @@ export default function Clients() {
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Фильтры клиентов"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowArchived(false)}>
+              Сбросить
+            </Button>
+            <Button type="button" className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+              Применить
+            </Button>
+          </div>
+        )}
+      >
+        <label className="flex items-center gap-3 rounded-[22px] border border-border/70 bg-surface/70 px-4 py-3 text-sm text-text">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={e => setShowArchived(e.target.checked)}
+            className="h-4 w-4 rounded border-border text-primary"
+          />
+          Показывать архивных клиентов
+        </label>
+      </MobileFiltersSheet>
+
+      <div className="space-y-3 md:hidden">
+        {clients.map(c => (
+          <Card key={c.id} bodyClassName="space-y-4">
+            <button type="button" onClick={() => openDetail(c)} className="block w-full text-left">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-base font-semibold text-white">
+                  {c.name[0].toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="text-base font-semibold text-text">{c.name}</div>
+                    {c.is_archived ? <Badge variant="gray">Архив</Badge> : null}
+                  </div>
+                  <div className="mt-2 space-y-1 text-sm text-text-muted">
+                    <div>{c.phone || '—'}</div>
+                    <div>{c.email || '—'}</div>
+                    <div>{c.telegram ? `@${c.telegram}` : '—'}</div>
+                  </div>
+                </div>
+              </div>
+            </button>
+            {user?.is_manager && (
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={(e) => openEdit(c, e)}>
+                  <Pencil size={14} />
+                  Изменить
+                </Button>
+                <button onClick={(e) => toggleArchive(c, e)} className="rounded-full border border-border/70 bg-surface/75 p-2.5 text-text-muted transition-colors hover:bg-subtle hover:text-primary" title={c.is_archived ? 'Восстановить' : 'В архив'}>
+                  {c.is_archived ? <RotateCcw size={16} /> : <Archive size={16} />}
+                </button>
+                <button onClick={(e) => handleDelete(c, e)} className="rounded-full border border-border/70 bg-surface/75 p-2.5 text-text-muted transition-colors hover:bg-subtle hover:text-danger" title="Удалить">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+
+      <Card className="hidden overflow-hidden md:block">
         <div className="overflow-x-auto -mx-6 px-6">
           <table className="w-full min-w-[800px] text-sm">
             <thead>

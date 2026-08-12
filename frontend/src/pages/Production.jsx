@@ -6,6 +6,7 @@ import ProductionCalendar from '../components/ProductionCalendar'
 import GanttChart from '../components/GanttChart'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
 import Select from '../components/ui/Select'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
@@ -16,7 +17,7 @@ import Subtasks from '../components/Subtasks'
 import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import ProductionDetail from '../pages/ProductionDetail'
 import Avatar from '../components/ui/Avatar'
-import { Plus, Pencil, Trash2, Search, List, LayoutGrid, Calendar as CalendarIcon, BarChart3, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Download, SlidersHorizontal } from 'lucide-react'
 import { formatShortName } from '../utils/format'
 import { downloadExport } from '../utils/export'
 
@@ -68,6 +69,7 @@ export default function Production() {
   const [detailItemId, setDetailItemId] = useState(null)
   const [detailItem, setDetailItem] = useState(null)
   const [pendingDetailId, setPendingDetailId] = useState(null)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const loadItems = async () => {
     const params = {}
@@ -201,6 +203,7 @@ export default function Production() {
   const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(p => ({ value: p.id, label: p.name }))]
   const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
   const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
+  const activeFilterCount = [filters.project, filters.status, filters.assignees].filter(Boolean).length
   const headerActions = useMemo(() => (
     user?.is_manager ? (
       <Button onClick={openCreate}>
@@ -215,13 +218,13 @@ export default function Production() {
   return (
     <div>
       <Card className="mb-6" bodyClassName="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="contents">
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <div className="flex w-max gap-2">
             {[
               { key: 'kanban', label: 'Kanban' },
               { key: 'gantt', label: 'Gantt' },
-              { key: 'calendar', label: 'Календарь', icon: CalendarIcon },
-              { key: 'list', label: 'Список', icon: List },
+              { key: 'calendar', label: 'Календарь' },
+              { key: 'list', label: 'Список' },
             ].map(v => {
               return (
                 <button
@@ -239,7 +242,32 @@ export default function Production() {
             })}
           </div>
         </div>
-        <div className={`grid grid-cols-1 gap-3 ${
+
+        <div className="space-y-3 md:hidden">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск..."
+            value={filters.search}
+            onChange={e => setFilters({ ...filters, search: e.target.value })}
+          />
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setMobileFiltersOpen(true)}>
+              <SlidersHorizontal size={16} />
+              Фильтры
+              {activeFilterCount > 0 ? (
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {activeFilterCount}
+                </span>
+              ) : null}
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleExport}>
+              <Download size={14} />
+              Excel
+            </Button>
+          </div>
+        </div>
+
+        <div className={`hidden gap-3 md:grid ${
           view === 'kanban'
             ? 'xl:grid-cols-[minmax(0,1.2fr)_200px_220px_auto]'
             : '2xl:grid-cols-[minmax(0,1.1fr)_180px_180px_220px_auto] xl:grid-cols-[minmax(0,1fr)_180px_180px_220px]'
@@ -269,6 +297,33 @@ export default function Production() {
           </div>
         </div>
       </Card>
+
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Фильтры производства"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setFilters(prev => ({ ...prev, status: '', assignees: '', project: '' }))}
+            >
+              Сбросить
+            </Button>
+            <Button type="button" className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+              Применить
+            </Button>
+          </div>
+        )}
+      >
+        <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
+        {view !== 'kanban' && (
+          <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />
+        )}
+        <SearchableSelect value={filters.assignees} onChange={val => setFilters({ ...filters, assignees: val })} options={userOptions} />
+      </MobileFiltersSheet>
 
       {view === 'kanban' && (
         <ProductionKanbanBoard items={items} onItemMoved={loadItems} onItemClick={(item) => openDetail(item.id)} />

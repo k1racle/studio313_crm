@@ -69,21 +69,21 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
 
   return (
     <div className="space-y-3">
-      <div ref={topScrollRef} className="h-4 overflow-x-auto">
-        <div className="grid grid-flow-col auto-cols-[320px] gap-5">
+      <div ref={topScrollRef} className="hidden h-4 overflow-x-auto md:block">
+        <div className="grid grid-flow-col auto-cols-[320px] gap-4 md:gap-5">
           {columns.map(column => (
             <div key={column.key} className="h-px" />
           ))}
         </div>
       </div>
 
-      <div ref={boardRef} className="grid grid-flow-col auto-cols-[320px] gap-5 overflow-x-auto pb-4">
+      <div ref={boardRef} className="grid grid-flow-col auto-cols-[84vw] gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:auto-cols-[320px] md:gap-5">
         {columns.map(column => {
           const columnTasks = tasks.filter(task => normalizeTaskStatus(task.status) === column.key)
           return (
             <section
               key={column.key}
-              className="soft-panel min-h-[540px] rounded-[30px] p-4"
+              className="soft-panel min-h-[540px] snap-start rounded-[30px] p-4"
               onDragOver={(event) => event.preventDefault()}
               onDrop={() => handleDrop(column.key)}
             >

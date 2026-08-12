@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Copy, Eye, EyeOff, Key, Link as LinkIcon, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Copy, Eye, EyeOff, Key, Link as LinkIcon, Pencil, Plus, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
 
 import api from '../api/axios'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
 import Modal from '../components/ui/Modal'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import { usePageHeaderContent } from '../contexts/PageHeaderContext'
@@ -37,6 +38,7 @@ export default function PasswordVault() {
   const [editingEntry, setEditingEntry] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [visiblePasswords, setVisiblePasswords] = useState({})
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
   const categories = meta?.categories || []
   const currentPermissions = meta?.current_permissions || {}
@@ -165,11 +167,30 @@ export default function PasswordVault() {
   ), [canCreate])
 
   usePageHeaderContent(headerActions)
+  const activeFilterCount = categoryFilter ? 1 : 0
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_260px]">
+      <Card bodyClassName="space-y-3">
+        <div className="space-y-3 md:hidden">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск по названию, логину, ссылке или комментарию..."
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+          />
+          <Button type="button" variant="secondary" className="w-full" onClick={() => setMobileFiltersOpen(true)}>
+            <SlidersHorizontal size={16} />
+            Фильтры
+            {activeFilterCount > 0 ? (
+              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </Button>
+        </div>
+
+        <div className="hidden grid-cols-1 gap-3 md:grid xl:grid-cols-[minmax(0,1fr)_260px]">
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск по названию, логину, ссылке или комментарию..."
@@ -191,7 +212,108 @@ export default function PasswordVault() {
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Фильтры доступов"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setCategoryFilter('')}>
+              Сбросить
+            </Button>
+            <Button type="button" className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+              Применить
+            </Button>
+          </div>
+        )}
+      >
+        <div>
+          <select
+            value={categoryFilter}
+            onChange={event => setCategoryFilter(event.target.value)}
+            className="w-full rounded-2xl border border-border/80 bg-surface/86 px-4 py-3 text-text shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition-all focus:border-primary/70 focus:bg-surface focus:shadow-[0_0_0_4px_rgba(34,80,255,0.12)]"
+          >
+            <option value="">Все категории</option>
+            {categories.map(category => (
+              <option key={category.value} value={category.value}>{category.label}</option>
+            ))}
+          </select>
+        </div>
+      </MobileFiltersSheet>
+
+      <div className="space-y-3 md:hidden">
+        {entries.map(entry => (
+          <Card key={entry.id} bodyClassName="space-y-4">
+            <div className="min-w-0">
+              <Badge variant={categoryBadgeVariant[entry.category] || 'gray'}>
+                {entry.category_label}
+              </Badge>
+              <div className="mt-2 text-base font-semibold text-text">{entry.title}</div>
+              {entry.url ? (
+                <a href={entry.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                  <LinkIcon size={13} />
+                  {entry.url}
+                </a>
+              ) : null}
+              {entry.notes ? <div className="mt-2 text-sm text-text-muted">{entry.notes}</div> : null}
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-text">{entry.login || '—'}</span>
+                {entry.login ? (
+                  <button type="button" onClick={() => copyText(entry.login, 'логин')} className="rounded p-1 text-text-muted transition-colors hover:bg-surface hover:text-primary" title="Скопировать логин">
+                    <Copy size={14} />
+                  </button>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-text">{visiblePasswords[entry.id] ? entry.password : '••••••••••'}</span>
+                <button type="button" onClick={() => togglePasswordVisibility(entry.id)} className="rounded p-1 text-text-muted transition-colors hover:bg-surface hover:text-primary" title={visiblePasswords[entry.id] ? 'Скрыть пароль' : 'Показать пароль'}>
+                  {visiblePasswords[entry.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+                <button type="button" onClick={() => copyText(entry.password, 'пароль')} className="rounded p-1 text-text-muted transition-colors hover:bg-surface hover:text-primary" title="Скопировать пароль">
+                  <Copy size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-sm text-text-muted">
+              <div>{entry.shared_users?.length ? entry.shared_users.map(user => user.short_name).join(', ') : 'Только автор'}</div>
+              <div>{new Date(entry.updated_at).toLocaleDateString('ru-RU')}</div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              {entry.can_edit && (
+                <Button type="button" variant="secondary" size="sm" onClick={() => openEdit(entry)}>
+                  <Pencil size={14} />
+                  Изменить
+                </Button>
+              )}
+              {entry.can_delete && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(entry)}
+                  className="rounded-full border border-border/70 bg-surface/75 p-2.5 text-text-muted transition-colors hover:bg-subtle hover:text-danger"
+                  title="Удалить"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
+          </Card>
+        ))}
+
+        {!loading && entries.length === 0 && (
+          <Card bodyClassName="py-8 text-center text-text-muted">Доступных записей пока нет.</Card>
+        )}
+
+        {loading && (
+          <Card bodyClassName="py-8 text-center text-text-muted">Загрузка...</Card>
+        )}
+      </div>
+
+      <Card className="hidden overflow-hidden md:block">
         <div className="overflow-x-auto -mx-6 px-6">
           <table className="w-full min-w-[980px] text-sm">
             <thead>

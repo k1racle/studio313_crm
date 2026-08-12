@@ -56,6 +56,13 @@ const headerItems = [
   { path: '/chat', label: 'Чаты', icon: MessageSquare },
 ]
 
+const mobileQuickNav = [
+  { path: '/', label: 'Главная', icon: LayoutDashboard },
+  { path: '/tasks', label: 'Задачи', icon: CheckSquare },
+  { path: '/production', label: 'Производство', icon: Clapperboard },
+  { path: '/clients', label: 'Клиенты', icon: Users },
+]
+
 const birthdayKindLabels = {
   employee: 'Сотрудник',
   client: 'Клиент',
@@ -95,6 +102,7 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [birthdays, setBirthdays] = useState([])
   const [birthdayOpen, setBirthdayOpen] = useState(false)
+  const hasHeaderActions = Boolean(headerContent)
 
   const currentItem = useMemo(
     () => headerItems.find(item => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)) || menuItems[0],
@@ -140,6 +148,26 @@ export default function Layout() {
 
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [birthdayOpen])
+
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    const shouldLock = mobileOpen || birthdayOpen
+    const previousOverflow = document.body.style.overflow
+    const previousTouchAction = document.body.style.touchAction
+
+    if (shouldLock) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.body.style.touchAction = previousTouchAction
+    }
+  }, [birthdayOpen, mobileOpen])
 
   const navLinks = (
     <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 pb-4 pt-3">
@@ -246,52 +274,70 @@ export default function Layout() {
           </div>
         </aside>
 
-        <div className="fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.88)] px-4 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.84)] lg:hidden">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Studio 313</div>
-              <div className="brand-display text-xl text-text">{currentItem.label}</div>
+        <div className="fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.9)] px-4 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.88)] lg:hidden">
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Studio 313</div>
+                <div className="brand-display truncate text-xl text-text">{currentItem.label}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="shrink-0 rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)]"
+              >
+                <Menu size={20} />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              className="rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)]"
-            >
-              <Menu size={20} />
-            </button>
+            {hasHeaderActions ? (
+              <div className="mt-3 overflow-x-auto pb-1">
+                <div className="w-max min-w-full">
+                  {headerContent}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
 
         {mobileOpen && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
-            <div className="w-[84%] max-w-[320px] animate-rise-in overflow-hidden rounded-r-[28px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
-              <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Навигация</div>
-                  <div className="brand-display text-2xl">Studio 313</div>
-                </div>
-                <button type="button" onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="px-2 pt-2">{navLinks}</div>
-              {birthdayButton}
-              <div className="border-t border-white/10 px-5 py-4">
-                <div className="mb-4 flex items-center gap-3">
-                  <UserAvatar user={user} size="sm" />
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold">{formatFullName(user)}</div>
-                    <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">{user?.role || user?.username || 'Профиль'}</div>
+            <div className="h-[100dvh] w-[88%] max-w-[340px] animate-rise-in overflow-hidden rounded-r-[30px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
+              <div className="flex h-full flex-col overflow-hidden">
+                <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Навигация</div>
+                    <div className="brand-display text-2xl">Studio 313</div>
                   </div>
+                  <button type="button" onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
+                    <X size={18} />
+                  </button>
                 </div>
-                {sidebarControls}
+                <div className="px-5 pt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/34">
+                  Навигация
+                </div>
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  {navLinks}
+                </div>
+                <div className="shrink-0">
+                  {birthdayButton}
+                </div>
+                <div className="safe-bottom shrink-0 border-t border-white/10 px-5 py-4">
+                  <div className="mb-4 flex items-center gap-3">
+                    <UserAvatar user={user} size="sm" />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{formatFullName(user)}</div>
+                      <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">{user?.role || user?.username || 'Профиль'}</div>
+                    </div>
+                  </div>
+                  {sidebarControls}
+                </div>
               </div>
             </div>
             <div className="flex-1 bg-[rgba(7,11,18,0.54)] backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           </div>
         )}
 
-        <main className="min-w-0 flex-1 pt-[84px] lg:pt-4">
+        <main className={`min-w-0 flex-1 ${hasHeaderActions ? 'pt-[132px]' : 'pt-[84px]'} pb-24 lg:pt-4 lg:pb-0`}>
           <div className="w-full px-4 pb-8 md:px-6 lg:px-8">
             <div className="soft-panel animate-fade-in sticky top-4 z-30 mb-6 hidden rounded-[28px] lg:block">
               <div className="flex items-center justify-between gap-4 px-6 py-4">
@@ -314,6 +360,41 @@ export default function Layout() {
           </div>
         </main>
       </div>
+
+      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-[rgba(255,255,255,0.92)] px-3 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.92)] lg:hidden">
+        <div className="grid grid-cols-5 gap-2">
+          {mobileQuickNav.map(item => {
+            const Icon = item.icon
+            const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-[20px] px-2 py-2 text-[11px] font-semibold transition-all ${
+                  isActive
+                    ? 'bg-primary text-white shadow-[0_14px_28px_rgba(34,80,255,0.22)]'
+                    : 'text-text-muted hover:bg-surface/82 hover:text-text'
+                }`}
+              >
+                <Icon size={18} />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            )
+          })}
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-[20px] px-2 py-2 text-[11px] font-semibold transition-all ${
+              mobileOpen
+                ? 'bg-primary text-white shadow-[0_14px_28px_rgba(34,80,255,0.22)]'
+                : 'text-text-muted hover:bg-surface/82 hover:text-text'
+            }`}
+          >
+            <Menu size={18} />
+            <span className="truncate">Еще</span>
+          </button>
+        </div>
+      </nav>
 
       <div
         onClick={() => setBirthdayOpen(false)}
