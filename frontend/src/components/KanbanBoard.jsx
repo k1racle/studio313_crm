@@ -5,19 +5,19 @@ import { formatShortName } from '../utils/format'
 import Avatar from './ui/Avatar'
 
 const columns = [
-  { key: 'new', title: 'Новые', color: 'border-blue-400' },
-  { key: 'in_progress', title: 'В работе', color: 'border-yellow-400' },
-  { key: 'approval', title: 'На согласовании', color: 'border-pink-400' },
-  { key: 'review', title: 'На проверке', color: 'border-purple-400' },
-  { key: 'content_placement', title: 'Выкладка контента', color: 'border-indigo-400' },
-  { key: 'done', title: 'Выполнены', color: 'border-green-400' },
+  { key: 'new', title: 'Новые', accent: 'from-blue-500 to-blue-400' },
+  { key: 'in_progress', title: 'В работе', accent: 'from-amber-400 to-yellow-300' },
+  { key: 'approval', title: 'На согласовании', accent: 'from-pink-500 to-fuchsia-400' },
+  { key: 'review', title: 'На проверке', accent: 'from-violet-500 to-purple-400' },
+  { key: 'content_placement', title: 'Выкладка контента', accent: 'from-indigo-500 to-blue-500' },
+  { key: 'done', title: 'Выполнены', accent: 'from-emerald-500 to-teal-400' },
 ]
 
-const priorityColors = {
-  low: 'bg-subtle text-text-muted',
-  medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
-  high: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200',
-  critical: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
+const priorityStyles = {
+  low: 'bg-[rgba(15,23,40,0.06)] text-text-muted',
+  medium: 'bg-[rgba(34,80,255,0.12)] text-[color:#2449c7]',
+  high: 'bg-[rgba(184,134,11,0.12)] text-[color:#916f12]',
+  critical: 'bg-[rgba(195,65,76,0.12)] text-[color:#9c3340]',
 }
 
 const priorityLabels = {
@@ -68,51 +68,77 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
   }
 
   return (
-    <div>
-      <div ref={topScrollRef} className="overflow-x-auto h-4 mb-2">
-        <div className="grid grid-flow-col auto-cols-[280px] gap-4">
-          {columns.map(col => (
-            <div key={col.key} className="h-px" />
+    <div className="space-y-3">
+      <div ref={topScrollRef} className="h-4 overflow-x-auto">
+        <div className="grid grid-flow-col auto-cols-[320px] gap-5">
+          {columns.map(column => (
+            <div key={column.key} className="h-px" />
           ))}
         </div>
       </div>
-      <div ref={boardRef} className="grid grid-flow-col auto-cols-[280px] gap-4 overflow-x-auto pb-4">
-        {columns.map(col => {
-          const colTasks = tasks.filter(task => normalizeTaskStatus(task.status) === col.key)
+
+      <div ref={boardRef} className="grid grid-flow-col auto-cols-[320px] gap-5 overflow-x-auto pb-4">
+        {columns.map(column => {
+          const columnTasks = tasks.filter(task => normalizeTaskStatus(task.status) === column.key)
           return (
-            <div
-              key={col.key}
-              className="bg-subtle rounded-xl p-3 min-h-[400px]"
+            <section
+              key={column.key}
+              className="soft-panel min-h-[540px] rounded-[30px] p-4"
               onDragOver={(event) => event.preventDefault()}
-              onDrop={() => handleDrop(col.key)}
+              onDrop={() => handleDrop(column.key)}
             >
-              <div className={`flex items-center justify-between mb-3 pb-2 border-b-2 ${col.color}`}>
-                <h3 className="font-semibold text-text">{col.title}</h3>
-                <span className="text-xs text-text-muted bg-surface px-2 py-0.5 rounded-full">{colTasks.length}</span>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className={`mb-3 h-1.5 w-20 rounded-full bg-gradient-to-r ${column.accent}`} />
+                  <h3 className="text-base font-semibold text-text">{column.title}</h3>
+                </div>
+                <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-surface/80 px-2 text-xs font-semibold text-text-muted shadow-[0_8px_18px_rgba(15,23,40,0.08)]">
+                  {columnTasks.length}
+                </span>
               </div>
+
               <div className="space-y-3">
-                {colTasks.map(task => (
-                  <div
+                {columnTasks.map(task => (
+                  <article
                     key={task.id}
                     draggable
                     onDragStart={() => handleDragStart(task)}
-                    className={`bg-surface p-4 rounded-lg shadow-sm border border-border cursor-move hover:shadow-md transition-shadow ${dragging?.id === task.id ? 'opacity-50' : ''}`}
+                    className={`rounded-[24px] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(246,249,255,0.98))] p-4 shadow-[0_12px_24px_rgba(15,23,40,0.06)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(15,23,40,0.1)] dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.94),rgba(14,21,31,0.98))] ${
+                      dragging?.id === task.id ? 'opacity-55' : ''
+                    }`}
                   >
-                    <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="mb-3 flex items-start justify-between gap-3">
                       <button
                         onClick={() => onTaskClick?.(task.id)}
-                        className="font-medium text-text hover:text-primary text-left line-clamp-2"
+                        className="text-left text-[15px] font-semibold leading-6 text-text hover:text-primary"
                       >
                         {task.title}
                       </button>
                     </div>
+
                     {task.project && (
-                      <div className="text-xs text-primary mb-2">{task.project.name}</div>
+                      <div className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-primary">
+                        {task.project.name}
+                      </div>
                     )}
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${priorityColors[task.priority]}`}>
+
+                    <div className="mb-3 flex flex-wrap gap-1.5">
+                      {task.tags?.slice(0, 3).map(tag => (
+                        <span
+                          key={tag.id}
+                          className="rounded-full px-2.5 py-1 text-[11px] font-medium text-white"
+                          style={{ backgroundColor: tag.color }}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${priorityStyles[task.priority]}`}>
                         {priorityLabels[task.priority]}
                       </span>
+
                       {task.assignees?.length > 0 && (
                         <div className="flex items-center gap-1">
                           {task.assignees.slice(0, 2).map(user => (
@@ -124,10 +150,16 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </article>
                 ))}
+
+                {columnTasks.length === 0 && (
+                  <div className="rounded-[24px] border border-dashed border-border/80 bg-surface/40 px-4 py-8 text-center text-sm text-text-muted">
+                    В этой колонке пока нет задач
+                  </div>
+                )}
               </div>
-            </div>
+            </section>
           )
         })}
       </div>

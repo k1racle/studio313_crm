@@ -27,7 +27,6 @@ import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
 import { formatFullName } from '../utils/format'
 import FloatingChatButton from './FloatingChatButton'
-import NotificationBell from './NotificationBell'
 import ThemeToggle from './ThemeToggle'
 
 const menuItems = [
@@ -144,133 +143,124 @@ export default function Layout() {
   )
 
   return (
-    <div className="app-canvas flex min-h-screen bg-bg">
-      <aside className="hidden w-[290px] shrink-0 p-4 lg:flex">
-        <div className="flex h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-[34px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
-          <div className="border-b border-white/10 px-6 py-6">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/42">Studio workspace</div>
-            <Link to="/" className="brand-display mt-3 block text-[2.5rem] leading-none text-white">
-              Studio 313
-            </Link>
-            <p className="mt-3 max-w-[14rem] text-sm leading-6 text-white/62">
-              CRM для задач, проектов, доступов и всей операционной работы студии.
-            </p>
-          </div>
+    <div className="app-canvas min-h-screen bg-bg">
+      <div className="flex items-start">
+        <aside className="sticky top-0 hidden h-screen w-[290px] shrink-0 p-4 lg:flex">
+          <div className="flex h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-[34px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
+            <div className="border-b border-white/10 px-6 py-6">
+              <Link to="/" className="brand-display block text-[2.5rem] font-semibold leading-none text-white">
+                Studio 313
+              </Link>
+            </div>
 
-          <div className="px-6 pt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/34">
-            Навигация
-          </div>
-          {navLinks}
+            <div className="px-6 pt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/34">
+              Навигация
+            </div>
+            {navLinks}
 
-          {birthdayBlock}
+            {birthdayBlock}
 
-          <div className="mx-4 mb-4 rounded-[26px] border border-white/10 bg-white/6 p-4">
-            <Link
-              to="/profile"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3 rounded-2xl"
-            >
-              <UserAvatar user={user} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-white">{formatFullName(user)}</div>
-                <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">
-                  {user?.role || user?.username || 'Профиль'}
+            <div className="mx-4 mb-4 rounded-[26px] border border-white/10 bg-white/6 p-4">
+              <Link
+                to="/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 rounded-2xl"
+              >
+                <UserAvatar user={user} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-white">{formatFullName(user)}</div>
+                  <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">
+                    {user?.role || user?.username || 'Профиль'}
+                  </div>
                 </div>
+              </Link>
+              <div className="mt-4 flex items-center gap-2">
+                <ThemeToggle iconOnly className="!w-12 !border-white/10 !bg-white/8 !text-white/72 hover:!bg-white/12 hover:!text-white" />
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white/78 hover:bg-white/12 hover:text-white"
+                >
+                  <LogOut size={16} />
+                  Выйти
+                </button>
               </div>
-            </Link>
+            </div>
+          </div>
+        </aside>
+
+        <div className="lg:hidden fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.88)] px-4 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.84)]">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Studio 313</div>
+              <div className="brand-display text-xl text-text">{currentItem.label}</div>
+            </div>
             <button
-              onClick={handleLogout}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white/78 hover:bg-white/12 hover:text-white"
+              onClick={() => setMobileOpen(true)}
+              className="rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)]"
             >
-              <LogOut size={16} />
-              Выйти
+              <Menu size={20} />
             </button>
           </div>
         </div>
-      </aside>
 
-      <div className="lg:hidden fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.88)] px-4 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.84)]">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Studio 313</div>
-            <div className="brand-display text-xl text-text">{currentItem.label}</div>
-          </div>
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)]"
-          >
-            <Menu size={20} />
-          </button>
-        </div>
-      </div>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div className="w-[84%] max-w-[320px] animate-rise-in overflow-hidden rounded-r-[28px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Навигация</div>
-                <div className="brand-display text-2xl">Studio 313</div>
-              </div>
-              <button onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="px-2 pt-2">{navLinks}</div>
-            <div className="border-t border-white/10 px-5 py-4">
-              <div className="mb-4 flex items-center gap-3">
-                <UserAvatar user={user} size="sm" />
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">{formatFullName(user)}</div>
-                  <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">{user?.role || user?.username || 'Профиль'}</div>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 flex lg:hidden">
+            <div className="w-[84%] max-w-[320px] animate-rise-in overflow-hidden rounded-r-[28px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
+              <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Навигация</div>
+                  <div className="brand-display text-2xl">Studio 313</div>
                 </div>
+                <button onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
+                  <X size={18} />
+                </button>
               </div>
-              <button
-                onClick={handleLogout}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white/78"
-              >
-                <LogOut size={16} />
-                Выйти
-              </button>
-            </div>
-          </div>
-          <div className="flex-1 bg-[rgba(7,11,18,0.54)] backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-        </div>
-      )}
-
-      <main className="flex-1 overflow-auto pt-[84px] lg:pt-4">
-        <div className="mx-auto max-w-7xl px-4 pb-8 md:px-6 lg:px-8">
-          <div className="soft-panel animate-fade-in sticky top-4 z-30 mb-6 hidden rounded-[28px] lg:block">
-            <div className="flex items-center justify-between px-6 py-4">
-              <div>
-                <div className="kicker text-primary">Текущий раздел</div>
-                <div className="mt-1 flex items-end gap-3">
-                  <h2 className="brand-display text-3xl text-text">{currentItem.label}</h2>
-                  <span className="pb-1 text-sm capitalize text-text-muted">{currentDate}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <NotificationBell />
-                <ThemeToggle />
-                <Link
-                  to="/profile"
-                  className="inline-flex items-center gap-3 rounded-full border border-border/80 bg-surface/84 px-3 py-2 shadow-[0_8px_24px_rgba(15,23,40,0.08)] hover:-translate-y-0.5"
-                >
+              <div className="px-2 pt-2">{navLinks}</div>
+              <div className="border-t border-white/10 px-5 py-4">
+                <div className="mb-4 flex items-center gap-3">
                   <UserAvatar user={user} size="sm" />
-                  <div className="hidden text-left xl:block">
-                    <div className="max-w-[150px] truncate text-sm font-semibold text-text">{formatFullName(user)}</div>
-                    <div className="text-[11px] uppercase tracking-[0.12em] text-text-muted">{user?.role || 'Профиль'}</div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold">{formatFullName(user)}</div>
+                    <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">{user?.role || user?.username || 'Профиль'}</div>
                   </div>
-                </Link>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle iconOnly className="!w-12 !border-white/10 !bg-white/8 !text-white/72 hover:!bg-white/12 hover:!text-white" />
+                  <button
+                    onClick={handleLogout}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white/78"
+                  >
+                    <LogOut size={16} />
+                    Выйти
+                  </button>
+                </div>
               </div>
             </div>
+            <div className="flex-1 bg-[rgba(7,11,18,0.54)] backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
           </div>
+        )}
 
-          <div className="animate-rise-in">
-            <Outlet />
+        <main className="min-w-0 flex-1 pt-[84px] lg:pt-4">
+          <div className="w-full px-4 pb-8 md:px-6 lg:px-8">
+            <div className="soft-panel animate-fade-in sticky top-4 z-30 mb-6 hidden rounded-[28px] lg:block">
+              <div className="flex items-center justify-between gap-4 px-6 py-4">
+                <div>
+                  <div className="kicker text-primary">Текущий раздел</div>
+                  <div className="mt-1 flex flex-wrap items-end gap-3">
+                    <h2 className="brand-display text-3xl text-text">{currentItem.label}</h2>
+                    <span className="pb-1 text-sm capitalize text-text-muted">{currentDate}</span>
+                  </div>
+                </div>
+                <ThemeToggle />
+              </div>
+            </div>
+
+            <div className="animate-rise-in">
+              <Outlet />
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
       <FloatingChatButton />
     </div>
   )

@@ -1,22 +1,33 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import {
+  Archive,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+} from 'lucide-react'
+
 import api from '../api/axios'
-import { useAuth } from '../contexts/AuthContext'
 import KanbanBoard from '../components/KanbanBoard'
 import GanttChart from '../components/GanttChart'
-import TaskDetail from '../pages/TaskDetail'
-import Button from '../components/ui/Button'
-import Input from '../components/ui/Input'
-import Select from '../components/ui/Select'
-import SearchableSelect from '../components/ui/SearchableSelect'
-import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
-import Modal from '../components/ui/Modal'
-import Badge from '../components/ui/Badge'
-import Card from '../components/ui/Card'
-import { Plus, Pencil, Trash2, Search, Archive, RotateCcw, ChevronLeft, ChevronRight, Download } from 'lucide-react'
-import { formatShortName } from '../utils/format'
-import { downloadExport } from '../utils/export'
 import Avatar from '../components/ui/Avatar'
+import Badge from '../components/ui/Badge'
+import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
+import Input from '../components/ui/Input'
+import Modal from '../components/ui/Modal'
+import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
+import SearchableSelect from '../components/ui/SearchableSelect'
+import Select from '../components/ui/Select'
+import { useAuth } from '../contexts/AuthContext'
+import TaskDetail from '../pages/TaskDetail'
+import { downloadExport } from '../utils/export'
+import { formatShortName } from '../utils/format'
 
 const statusLabels = {
   new: 'Новая',
@@ -40,12 +51,12 @@ const statusBadgeVariant = {
 
 const statusBorderColor = {
   new: 'border-blue-500',
-  in_progress: 'border-yellow-500',
+  in_progress: 'border-amber-400',
   approval: 'border-pink-500',
-  review: 'border-purple-500',
+  review: 'border-violet-500',
   content_placement: 'border-indigo-500',
-  done: 'border-green-500',
-  canceled: 'border-gray-500',
+  done: 'border-emerald-500',
+  canceled: 'border-slate-400',
 }
 
 const priorityLabels = {
@@ -79,17 +90,17 @@ function getCalendarDays(date) {
   const days = []
   const prevEnd = new Date(year, month, 0)
 
-  for (let i = startDay - 1; i >= 0; i--) {
+  for (let i = startDay - 1; i >= 0; i -= 1) {
     days.push(new Date(year, month - 1, prevEnd.getDate() - i))
   }
 
   const monthEnd = new Date(year, month + 1, 0)
-  for (let i = 1; i <= monthEnd.getDate(); i++) {
+  for (let i = 1; i <= monthEnd.getDate(); i += 1) {
     days.push(new Date(year, month, i))
   }
 
   const tail = (7 - (days.length % 7)) % 7
-  for (let i = 1; i <= tail; i++) {
+  for (let i = 1; i <= tail; i += 1) {
     days.push(new Date(year, month + 1, i))
   }
 
@@ -228,8 +239,8 @@ export default function Tasks() {
     setIsModalOpen(true)
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
     const payload = {
       ...form,
       assignee_ids: form.assignee_ids,
@@ -288,9 +299,9 @@ export default function Tasks() {
     }
   }
 
-  const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(user => ({ value: user.id, label: formatShortName(user) }))]
-  const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(project => ({ value: project.id, label: project.name }))]
-  const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(client => ({ value: client.id, label: client.name }))]
+  const userOptions = [{ value: '', label: 'Все исполнители' }, ...users.map(item => ({ value: item.id, label: formatShortName(item) }))]
+  const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(item => ({ value: item.id, label: item.name }))]
+  const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(item => ({ value: item.id, label: item.name }))]
   const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([value, label]) => ({ value, label }))]
   const priorityOptions = [
     { value: '', label: 'Все приоритеты' },
@@ -300,72 +311,100 @@ export default function Tasks() {
     { value: 'critical', label: 'Критический' },
   ]
 
-  return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Задачи</h1>
-          <p className="text-text-muted">Kanban, Gantt, календарь и список задач</p>
-        </div>
-        {user?.is_manager && (
-          <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1.5" />
-            Новая задача
-          </Button>
-        )}
-      </div>
+  const totalTasks = tasks.length
+  const activeTasks = tasks.filter(task => !['done', 'canceled'].includes(normalizeTaskStatus(task.status))).length
+  const overdueTasks = tasks.filter(task => task.due_date && new Date(task.due_date) < new Date() && !['done', 'canceled'].includes(normalizeTaskStatus(task.status))).length
 
-      <Card className="mb-6">
-        <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
-          <div className="flex shrink-0 gap-2 bg-subtle p-1 rounded-lg">
-            {['kanban', 'gantt', 'calendar', 'list'].map(currentView => (
-              <button
-                key={currentView}
-                onClick={() => setView(currentView)}
-                className={`px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                  view === currentView ? 'bg-surface text-primary shadow-sm' : 'text-text-muted hover:text-text'
-                }`}
-              >
-                {currentView === 'kanban' ? 'Kanban' : currentView === 'gantt' ? 'Gantt' : currentView === 'calendar' ? 'Календарь' : 'Список'}
-              </button>
-            ))}
+  return (
+    <div className="space-y-6">
+      <section className="soft-panel overflow-hidden rounded-[34px]">
+        <div className="flex flex-col gap-6 px-6 py-7 md:px-8 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="kicker text-primary">Task board</div>
+            <h1 className="page-title mt-3 text-text">Задачи</h1>
+            <p className="page-subtitle mt-4">
+              Kanban, Gantt, календарь и список задач в одном рабочем контуре.
+            </p>
           </div>
-          <div className="shrink-0 w-40">
-            <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
-          </div>
-          {view !== 'kanban' && (
-            <div className="shrink-0 w-36">
-              <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />
+
+          <div className="flex flex-wrap gap-3">
+            <div className="rounded-[24px] border border-border/70 bg-surface/70 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,40,0.05)]">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Всего</div>
+              <div className="mt-1 text-2xl font-semibold text-text">{totalTasks}</div>
             </div>
+            <div className="rounded-[24px] border border-border/70 bg-surface/70 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,40,0.05)]">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Активные</div>
+              <div className="mt-1 text-2xl font-semibold text-text">{activeTasks}</div>
+            </div>
+            <div className="rounded-[24px] border border-border/70 bg-surface/70 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,40,0.05)]">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Просрочены</div>
+              <div className="mt-1 text-2xl font-semibold text-danger">{overdueTasks}</div>
+            </div>
+            {user?.is_manager && (
+              <Button onClick={openCreate} className="self-start">
+                <Plus size={16} />
+                Новая задача
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <Card className="overflow-hidden" bodyClassName="space-y-5">
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { key: 'kanban', label: 'Kanban' },
+            { key: 'gantt', label: 'Gantt' },
+            { key: 'calendar', label: 'Календарь' },
+            { key: 'list', label: 'Список' },
+          ].map(item => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setView(item.key)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                view === item.key
+                  ? 'bg-primary text-white shadow-[0_12px_24px_rgba(34,80,255,0.22)]'
+                  : 'bg-subtle/80 text-text-muted hover:bg-subtle hover:text-text'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.2fr_repeat(4,minmax(0,0.8fr))]">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск по названию, описанию или тегам..."
+            value={filters.search}
+            onChange={event => setFilters({ ...filters, search: event.target.value })}
+          />
+          <Select value={filters.project} onChange={event => setFilters({ ...filters, project: event.target.value })} options={projectOptions} />
+          {view !== 'kanban' ? (
+            <Select value={filters.status} onChange={event => setFilters({ ...filters, status: event.target.value })} options={statusOptions} />
+          ) : (
+            <div className="hidden xl:block" />
           )}
-          <div className="shrink-0 w-40">
-            <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityOptions} />
-          </div>
-          <div className="shrink-0 w-44">
-            <SearchableSelect value={filters.assignees} onChange={value => setFilters({ ...filters, assignees: value })} options={userOptions} />
-          </div>
-          <div className="flex shrink-0 items-center gap-3 w-auto">
-            <Input
-              icon={<Search size={16} />}
-              placeholder="Поиск..."
-              value={filters.search}
-              onChange={e => setFilters({ ...filters, search: e.target.value })}
-              className="w-48 sm:w-64"
+          <Select value={filters.priority} onChange={event => setFilters({ ...filters, priority: event.target.value })} options={priorityOptions} />
+          <SearchableSelect value={filters.assignees} onChange={value => setFilters({ ...filters, assignees: value })} options={userOptions} />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/70 px-4 py-2 text-sm text-text-muted">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={event => setShowArchived(event.target.checked)}
+              className="h-4 w-4 rounded border-border text-primary"
             />
-            <label className="flex items-center gap-2 text-sm text-text-muted cursor-pointer whitespace-nowrap">
-              <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={e => setShowArchived(e.target.checked)}
-                className="w-4 h-4 text-primary rounded"
-              />
-              Показать архив
-            </label>
-            <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
-              <Download size={14} className="mr-1" />
-              Excel
-            </Button>
-          </div>
+            Показать архив
+          </label>
+
+          <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
+            <Download size={14} />
+            Excel
+          </Button>
         </div>
       </Card>
 
@@ -375,87 +414,83 @@ export default function Tasks() {
 
       {view === 'list' && (
         <Card className="overflow-hidden">
-          <div className="overflow-x-auto -mx-6 px-6">
-            <table className="w-full min-w-[1150px] table-fixed">
+          <div className="overflow-x-auto">
+            <table className="min-w-[1180px] w-full table-fixed">
               <thead>
-                <tr className="border-b border-border text-left text-sm text-text-muted">
-                  <th className="pb-3 font-medium w-12">ID</th>
-                  <th className="pb-3 font-medium w-36">Проект</th>
-                  <th className="pb-3 font-medium w-36">Клиент</th>
-                  <th className="pb-3 font-medium w-56">Название</th>
-                  <th className="pb-3 font-medium w-24">Статус</th>
-                  <th className="pb-3 font-medium w-24">Приоритет</th>
-                  <th className="pb-3 font-medium w-44">Исполнитель</th>
-                  <th className="pb-3 font-medium w-28">Срок</th>
-                  <th className="pb-3 font-medium w-24"></th>
+                <tr className="border-b border-border/70 text-left text-xs uppercase tracking-[0.14em] text-text-muted">
+                  <th className="pb-4 font-semibold w-14">ID</th>
+                  <th className="pb-4 font-semibold w-40">Проект</th>
+                  <th className="pb-4 font-semibold w-40">Клиент</th>
+                  <th className="pb-4 font-semibold w-72">Название</th>
+                  <th className="pb-4 font-semibold w-28">Статус</th>
+                  <th className="pb-4 font-semibold w-24">Приоритет</th>
+                  <th className="pb-4 font-semibold w-48">Исполнители</th>
+                  <th className="pb-4 font-semibold w-28">Срок</th>
+                  <th className="pb-4 font-semibold w-28" />
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {tasks.map(task => {
                   const normalizedStatus = normalizeTaskStatus(task.status)
                   return (
-                    <tr key={task.id} className={`border-b border-border hover:bg-subtle ${task.is_archived ? 'opacity-60' : ''}`}>
-                      <td className="py-3 text-text-muted">#{task.id}</td>
-                      <td className="py-3 truncate">{task.project?.name || '—'}</td>
-                      <td className="py-3 truncate">{task.client?.name || '—'}</td>
-                      <td className="py-3 align-top">
+                    <tr key={task.id} className={`border-b border-border/60 align-top transition-colors hover:bg-subtle/35 ${task.is_archived ? 'opacity-60' : ''}`}>
+                      <td className="py-4 text-text-muted">#{task.id}</td>
+                      <td className="py-4">{task.project?.name || '—'}</td>
+                      <td className="py-4">{task.client?.name || '—'}</td>
+                      <td className="py-4">
                         <button
                           onClick={() => openDetail(task.id)}
-                          className="font-medium text-text hover:text-primary text-left block whitespace-normal break-words leading-snug"
+                          className="text-left font-semibold leading-6 text-text hover:text-primary"
                         >
                           {task.title}
                         </button>
                         {task.tags?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
+                          <div className="mt-2 flex flex-wrap gap-1.5">
                             {task.tags.map(tag => (
-                              <span key={tag.id} className="px-1.5 py-0.5 rounded-full text-[10px] text-white" style={{ backgroundColor: tag.color }}>
+                              <span key={tag.id} className="rounded-full px-2 py-1 text-[11px] font-medium text-white" style={{ backgroundColor: tag.color }}>
                                 {tag.name}
                               </span>
                             ))}
                           </div>
                         )}
                       </td>
-                      <td className="py-3"><Badge variant={statusBadgeVariant[normalizedStatus]}>{statusLabels[normalizedStatus]}</Badge></td>
-                      <td className="py-3">{priorityLabels[task.priority]}</td>
-                      <td className="py-3">
+                      <td className="py-4"><Badge variant={statusBadgeVariant[normalizedStatus]}>{statusLabels[normalizedStatus]}</Badge></td>
+                      <td className="py-4">{priorityLabels[task.priority]}</td>
+                      <td className="py-4">
                         {task.assignees?.length ? (
-                          <div className="flex flex-wrap items-center gap-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             {task.assignees.slice(0, 2).map(assignee => (
-                              <span key={assignee.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-subtle rounded text-xs" title={formatShortName(assignee)}>
-                                <Avatar user={assignee} size={16} />
-                                <span className="truncate max-w-[80px]">{formatShortName(assignee)}</span>
+                              <span key={assignee.id} className="inline-flex items-center gap-1.5 rounded-full bg-subtle/90 px-2 py-1 text-xs" title={formatShortName(assignee)}>
+                                <Avatar user={assignee} size={18} />
+                                <span className="truncate max-w-[90px]">{formatShortName(assignee)}</span>
                               </span>
                             ))}
-                            {task.assignees.length > 2 && (
-                              <span className="text-xs text-text-muted">+{task.assignees.length - 2}</span>
-                            )}
+                            {task.assignees.length > 2 && <span className="text-xs text-text-muted">+{task.assignees.length - 2}</span>}
                           </div>
-                        ) : (
-                          '—'
-                        )}
+                        ) : '—'}
                       </td>
-                      <td className="py-3 text-text-muted">{task.due_date ? new Date(task.due_date).toLocaleDateString('ru') : '—'}</td>
-                      <td className="py-3">
+                      <td className="py-4 text-text-muted">{task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</td>
+                      <td className="py-4">
                         <div className="flex items-center gap-1">
                           {user?.is_manager && (
                             <>
                               <button
                                 onClick={() => openEdit(task)}
-                                className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors"
+                                className="rounded-full p-2 text-text-muted hover:bg-subtle hover:text-primary"
                                 title="Изменить"
                               >
                                 <Pencil size={16} />
                               </button>
                               <button
                                 onClick={() => toggleArchive(task)}
-                                className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors"
+                                className="rounded-full p-2 text-text-muted hover:bg-subtle hover:text-primary"
                                 title={task.is_archived ? 'Восстановить' : 'В архив'}
                               >
                                 {task.is_archived ? <RotateCcw size={16} /> : <Archive size={16} />}
                               </button>
                               <button
                                 onClick={() => handleDelete(task)}
-                                className="p-1.5 text-text-muted hover:text-danger hover:bg-subtle rounded-lg transition-colors"
+                                className="rounded-full p-2 text-text-muted hover:bg-subtle hover:text-danger"
                                 title="Удалить"
                               >
                                 <Trash2 size={16} />
@@ -475,23 +510,23 @@ export default function Tasks() {
 
       {view === 'calendar' && (
         <Card className="overflow-x-auto">
-          <div className="min-w-[800px]">
-            <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="min-w-[860px]">
+            <div className="flex items-center justify-between border-b border-border/70 px-2 pb-4">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setCurrentMonth(date => new Date(date.getFullYear(), date.getMonth() - 1, 1))}
-                  className="p-1.5 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+                  className="rounded-full border border-border/70 bg-surface/70 p-2 text-text-muted hover:bg-subtle hover:text-text"
                 >
                   <ChevronLeft size={18} />
                 </button>
-                <h3 className="text-lg font-semibold text-text min-w-[170px] text-center capitalize">
-                  {currentMonth.toLocaleString('ru', { month: 'long', year: 'numeric' })}
+                <h3 className="brand-display min-w-[190px] text-center text-2xl capitalize text-text">
+                  {currentMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' })}
                 </h3>
                 <button
                   type="button"
                   onClick={() => setCurrentMonth(date => new Date(date.getFullYear(), date.getMonth() + 1, 1))}
-                  className="p-1.5 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+                  className="rounded-full border border-border/70 bg-surface/70 p-2 text-text-muted hover:bg-subtle hover:text-text"
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -499,17 +534,19 @@ export default function Tasks() {
               <button
                 type="button"
                 onClick={() => setCurrentMonth(new Date())}
-                className="text-sm text-primary hover:underline"
+                className="text-sm font-semibold text-primary hover:underline"
               >
                 Сегодня
               </button>
             </div>
-            <div className="grid grid-cols-7 border-b border-border bg-subtle">
+
+            <div className="mt-4 grid grid-cols-7 overflow-hidden rounded-[24px] border border-border/70">
               {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
-                <div key={day} className="px-2 py-2 text-xs font-medium text-text-muted text-center">{day}</div>
+                <div key={day} className="border-b border-border/60 bg-subtle/60 px-2 py-3 text-center text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                  {day}
+                </div>
               ))}
-            </div>
-            <div className="grid grid-cols-7">
+
               {getCalendarDays(currentMonth).map((date, idx) => {
                 const ymd = formatYMD(date)
                 const isCurrentMonth = date.getMonth() === currentMonth.getMonth()
@@ -519,17 +556,17 @@ export default function Tasks() {
                 return (
                   <div
                     key={idx}
-                    onDragOver={e => {
-                      e.preventDefault()
-                      e.currentTarget.classList.add('bg-primary/5')
+                    onDragOver={event => {
+                      event.preventDefault()
+                      event.currentTarget.classList.add('bg-primary/5')
                     }}
-                    onDragLeave={e => {
-                      e.currentTarget.classList.remove('bg-primary/5')
+                    onDragLeave={event => {
+                      event.currentTarget.classList.remove('bg-primary/5')
                     }}
-                    onDrop={async (e) => {
-                      e.preventDefault()
-                      e.currentTarget.classList.remove('bg-primary/5')
-                      const taskId = e.dataTransfer.getData('task/id')
+                    onDrop={async (event) => {
+                      event.preventDefault()
+                      event.currentTarget.classList.remove('bg-primary/5')
+                      const taskId = event.dataTransfer.getData('task/id')
                       if (!taskId) return
 
                       const task = tasks.find(item => String(item.id) === taskId)
@@ -544,14 +581,14 @@ export default function Tasks() {
                         alert('Не удалось перенести задачу')
                       }
                     }}
-                    className={`min-h-[140px] p-2 border-b border-r border-border flex flex-col gap-1 transition-colors ${
-                      isCurrentMonth ? 'bg-surface' : 'bg-subtle/50'
+                    className={`min-h-[164px] border-b border-r border-border/60 p-3 transition-colors ${
+                      isCurrentMonth ? 'bg-surface/88' : 'bg-subtle/30'
                     } ${isToday ? 'ring-1 ring-inset ring-primary bg-primary/5' : ''}`}
                   >
-                    <div className={`text-xs font-medium text-right ${isToday ? 'text-primary' : isCurrentMonth ? 'text-text' : 'text-text-muted'}`}>
+                    <div className={`mb-2 text-right text-xs font-semibold ${isToday ? 'text-primary' : isCurrentMonth ? 'text-text' : 'text-text-muted'}`}>
                       {date.getDate()}
                     </div>
-                    <div className="flex-1 flex flex-col gap-1 overflow-y-auto">
+                    <div className="space-y-2">
                       {dayTasks.map(task => {
                         const normalizedStatus = normalizeTaskStatus(task.status)
                         return (
@@ -560,13 +597,13 @@ export default function Tasks() {
                             type="button"
                             draggable
                             onClick={() => openDetail(task.id)}
-                            onDragStart={e => e.dataTransfer.setData('task/id', String(task.id))}
-                            className={`text-left text-xs px-2 py-1 rounded bg-subtle border-l-2 ${statusBorderColor[normalizedStatus] || 'border-gray-500'} hover:bg-hover cursor-grab active:cursor-grabbing`}
+                            onDragStart={event => event.dataTransfer.setData('task/id', String(task.id))}
+                            className={`w-full rounded-[18px] border-l-2 bg-subtle/80 px-3 py-2 text-left text-xs shadow-[0_8px_18px_rgba(15,23,40,0.05)] hover:bg-hover ${statusBorderColor[normalizedStatus] || 'border-slate-400'}`}
                             title={task.title}
                           >
-                            <span className="line-clamp-2 leading-tight">{task.title}</span>
+                            <span className="line-clamp-2 leading-5 text-text">{task.title}</span>
                             {task.assignees?.length > 0 && (
-                              <span className="mt-1 flex items-center gap-1 text-[10px] text-text-muted">
+                              <span className="mt-2 flex items-center gap-1 text-[10px] text-text-muted">
                                 {task.assignees.slice(0, 2).map(assignee => (
                                   <Avatar key={assignee.id} user={assignee} size={14} title={formatShortName(assignee)} />
                                 ))}
@@ -590,8 +627,8 @@ export default function Tasks() {
           <Select
             label="Проект"
             value={form.project_id}
-            onChange={e => setForm({ ...form, project_id: e.target.value })}
-            options={[{ value: '', label: 'Без проекта' }, ...projects.map(project => ({ value: project.id, label: project.name }))]}
+            onChange={event => setForm({ ...form, project_id: event.target.value })}
+            options={[{ value: '', label: 'Без проекта' }, ...projects.map(item => ({ value: item.id, label: item.name }))]}
           />
           <SearchableSelect
             label="Клиент"
@@ -599,30 +636,30 @@ export default function Tasks() {
             onChange={value => setForm({ ...form, client_id: value })}
             options={clientOptions}
           />
-          <Input label="Название" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
+          <Input label="Название" value={form.title} onChange={event => setForm({ ...form, title: event.target.value })} required />
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Описание</label>
+            <label className="mb-2 block text-sm font-semibold text-text">Описание</label>
             <textarea
               value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              rows="3"
+              onChange={event => setForm({ ...form, description: event.target.value })}
+              className="w-full rounded-2xl border border-border/80 bg-surface/86 px-4 py-3 text-text outline-none transition-all focus:border-primary/70 focus:bg-surface focus:shadow-[0_0_0_4px_rgba(34,80,255,0.12)]"
+              rows="4"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select
               label="Приоритет"
               value={form.priority}
-              onChange={e => setForm({ ...form, priority: e.target.value })}
+              onChange={event => setForm({ ...form, priority: event.target.value })}
               options={priorityOptions.filter(option => option.value !== '')}
             />
-            <Input label="Срок выполнения" type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />
+            <Input label="Срок выполнения" type="date" value={form.due_date} onChange={event => setForm({ ...form, due_date: event.target.value })} />
           </div>
           <SearchableMultiSelect
             label="Исполнители"
             value={form.assignee_ids}
             onChange={value => setForm({ ...form, assignee_ids: value })}
-            options={users.map(user => ({ value: user.id, label: formatShortName(user) }))}
+            options={users.map(item => ({ value: item.id, label: formatShortName(item) }))}
           />
           <SearchableMultiSelect
             label="Теги"
@@ -634,7 +671,7 @@ export default function Tasks() {
             label="Участники"
             value={form.member_ids}
             onChange={value => setForm({ ...form, member_ids: value })}
-            options={users.map(user => ({ value: user.id, label: formatShortName(user) }))}
+            options={users.map(item => ({ value: item.id, label: formatShortName(item) }))}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={handleCloseEdit}>Отмена</Button>
@@ -650,17 +687,17 @@ export default function Tasks() {
         size="xl"
         headerActions={
           detailTask && user?.is_manager ? (
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={handleEditDetail} title="Редактировать">
-                <Pencil size={16} className="sm:mr-1.5" />
+                <Pencil size={16} />
                 <span className="hidden sm:inline">Редактировать</span>
               </Button>
               <Button variant="secondary" size="sm" onClick={handleArchiveDetail} title={detailTask.is_archived ? 'Восстановить' : 'В архив'}>
-                {detailTask.is_archived ? <RotateCcw size={16} className="sm:mr-1.5" /> : <Archive size={16} className="sm:mr-1.5" />}
+                {detailTask.is_archived ? <RotateCcw size={16} /> : <Archive size={16} />}
                 <span className="hidden sm:inline">{detailTask.is_archived ? 'Восстановить' : 'В архив'}</span>
               </Button>
               <Button variant="danger" size="sm" onClick={handleDeleteDetail} title="Удалить">
-                <Trash2 size={16} className="sm:mr-1.5" />
+                <Trash2 size={16} />
                 <span className="hidden sm:inline">Удалить</span>
               </Button>
             </div>

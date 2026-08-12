@@ -11,20 +11,15 @@ import {
   Users,
 } from 'lucide-react'
 import {
-  Bar,
-  BarChart,
   Cell,
   Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from 'recharts'
 
 import api from '../api/axios'
-import Badge from '../components/ui/Badge'
 import Card from '../components/ui/Card'
 
 const taskStatusLabels = {
@@ -35,16 +30,6 @@ const taskStatusLabels = {
   content_placement: 'Выкладка контента',
   done: 'Выполнена',
   canceled: 'Отменена',
-}
-
-const taskStatusVariant = {
-  new: 'blue',
-  in_progress: 'yellow',
-  approval: 'cyan',
-  review: 'purple',
-  content_placement: 'indigo',
-  done: 'green',
-  canceled: 'gray',
 }
 
 const chartColors = ['#2250ff', '#5b7cff', '#0f1728', '#4d6edb', '#7c93ff', '#9bb0ff']
@@ -98,21 +83,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <section className="soft-panel overflow-hidden rounded-[34px]">
-        <div className="grid gap-6 px-6 py-7 md:px-8 lg:grid-cols-[1.2fr_0.8fr] lg:py-8">
-          <div>
-            <div className="kicker text-primary">Обзор студии</div>
-            <h1 className="page-title mt-3 text-text">CRM, которая выглядит как продукт, а не как шаблонная админка.</h1>
-            <p className="page-subtitle mt-4 text-base leading-7">
-              Здесь быстрый доступ к операционке студии: задачи, запись клиентов, проекты, долги, доступы и внутренняя работа команды.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Badge variant="blue">Studio 313</Badge>
-              <Badge variant="indigo">Синий / Белый / Черный</Badge>
-              <Badge variant="gray">Рабочая CRM</Badge>
-            </div>
-          </div>
-
+        <div className="px-6 py-7 md:px-8 lg:py-8">
           <div className="rounded-[30px] bg-[linear-gradient(160deg,#0b1322,#112241_55%,#1e4cff)] p-6 text-white shadow-[0_24px_70px_rgba(15,23,40,0.26)]">
             <div className="mb-3 flex items-center gap-2 text-blue-100/84">
               <Sparkles size={16} />
@@ -165,20 +136,7 @@ export default function Dashboard() {
       </section>
 
       {stats && (
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-          <Card title="Выручка по месяцам" eyebrow="Финансы">
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.revenue_by_month}>
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#5f6b85' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: '#5f6b85' }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={value => [`${value} ₽`, 'Выручка']} />
-                  <Bar dataKey="total" fill="#2250ff" radius={[10, 10, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
+        <section className="grid grid-cols-1 gap-6">
           <Card title="Статусы задач" eyebrow="Нагрузка">
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -203,81 +161,7 @@ export default function Dashboard() {
         </section>
       )}
 
-      {stats && (
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <Card title="Горящие дедлайны" eyebrow="Приоритет">
-            <div className="space-y-3">
-              {stats.upcoming_deadlines.length ? stats.upcoming_deadlines.map(task => (
-                <Link
-                  key={task.id}
-                  to={`/tasks?task=${task.id}`}
-                  className="flex items-center justify-between gap-4 rounded-[24px] border border-border/70 bg-surface/60 px-4 py-4 shadow-[0_10px_24px_rgba(15,23,40,0.05)] transition-all hover:-translate-y-0.5 hover:border-primary/20"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate font-semibold text-text">{task.title}</div>
-                    <div className="mt-1 text-sm text-text-muted">
-                      {task.assignees?.length ? task.assignees.map(user => user.first_name || user.username).join(', ') : 'Исполнитель не назначен'}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-danger">{new Date(task.due_date).toLocaleString('ru-RU')}</div>
-                    <div className="mt-2">
-                      <Badge variant={taskStatusVariant[task.status] || 'gray'}>{taskStatusLabels[task.status] || task.status}</Badge>
-                    </div>
-                  </div>
-                </Link>
-              )) : <div className="text-sm text-text-muted">Срочных дедлайнов нет</div>}
-            </div>
-          </Card>
-
-          <Card title="Должники" eyebrow="Финансы">
-            <div className="space-y-3">
-              {stats.debtors.length ? stats.debtors.map(item => (
-                <Link
-                  key={item.id}
-                  to="/finance"
-                  className="flex items-center justify-between gap-4 rounded-[24px] border border-border/70 bg-surface/60 px-4 py-4 shadow-[0_10px_24px_rgba(15,23,40,0.05)] transition-all hover:-translate-y-0.5 hover:border-primary/20"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate font-semibold text-text">{item.client__name}</div>
-                    <div className="mt-1 text-sm text-text-muted">{item.service__name}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-danger">{item.remaining_amount.toLocaleString('ru-RU')} ₽</div>
-                    <div className="mt-1 text-xs text-text-muted">из {item.service__price.toLocaleString('ru-RU')} ₽</div>
-                  </div>
-                </Link>
-              )) : <div className="text-sm text-text-muted">Задолженностей нет</div>}
-            </div>
-          </Card>
-        </section>
-      )}
-
-      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card title="Быстрые ссылки" eyebrow="Навигация">
-          <div className="grid gap-3 md:grid-cols-2">
-            {quickLinks.map(item => {
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className="group rounded-[24px] border border-border/70 bg-surface/60 p-4 shadow-[0_10px_24px_rgba(15,23,40,0.05)] transition-all hover:-translate-y-0.5 hover:border-primary/20"
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-[18px] bg-primary/10 text-primary">
-                      <Icon size={20} />
-                    </span>
-                    <ArrowRight size={15} className="text-text-muted transition-colors group-hover:text-primary" />
-                  </div>
-                  <div className="font-semibold text-text">{item.label}</div>
-                  <div className="mt-1 text-sm text-text-muted">{item.desc}</div>
-                </Link>
-              )
-            })}
-          </div>
-        </Card>
-
+      <section className="grid grid-cols-1 gap-6">
         <Card title="Виджеты для сайта" eyebrow="Интеграции">
           <div className="space-y-4">
             <div className="rounded-[24px] border border-border/70 bg-slate-950 px-4 py-4 font-mono text-xs leading-6 text-blue-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">

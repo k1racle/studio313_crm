@@ -68,7 +68,7 @@ html {
 
 body {
   margin: 0;
-  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background:
     radial-gradient(circle at top left, rgba(34, 80, 255, 0.12), transparent 28%),
     radial-gradient(circle at 88% 8%, rgba(15, 23, 40, 0.08), transparent 22%),
@@ -96,16 +96,13 @@ body {
 
 h1,
 h2,
-.brand-display {
-  font-family: Georgia, "Times New Roman", serif;
-  letter-spacing: -0.03em;
-}
-
 h3,
 h4,
 h5,
-h6 {
-  letter-spacing: -0.02em;
+h6,
+.brand-display {
+  font-family: inherit;
+  letter-spacing: -0.03em;
 }
 
 a,
