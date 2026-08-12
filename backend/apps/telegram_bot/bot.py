@@ -1,6 +1,7 @@
 import logging
 import random
 import re
+import asyncio
 from config import socks5_ipv4_patch  # noqa: F401
 from asgiref.sync import sync_to_async
 from telegram import Update
@@ -441,6 +442,17 @@ def build_httpx_request(proxy_url=None) -> HTTPXRequest:
     )
 
 
+def build_polling_client(proxy_url=None) -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        proxy=proxy_url,
+        http1=True,
+        http2=False,
+        headers={'Connection': 'close'},
+        limits=httpx.Limits(max_connections=20, max_keepalive_connections=0),
+        timeout=httpx.Timeout(connect=30, read=30, write=30, pool=30),
+    )
+
+
 def build_application():
     if not settings.TELEGRAM_BOT_TOKEN:
         raise ValueError('TELEGRAM_BOT_TOKEN не настроен')
@@ -472,14 +484,45 @@ def build_application():
     return application
 
 
+async def run_bot_once():
+    proxy_url = getattr(settings, 'TELEGRAM_PROXY_URL', None)
+    token = settings.TELEGRAM_BOT_TOKEN
+    application = get_application()
+    offset = None
+
+    await application.initialize()
+    await application.start()
+
+    try:
+        async with build_polling_client(proxy_url=proxy_url) as client:
+            while True:
+                response = await client.get(
+                    f'https://api.telegram.org/bot{token}/getUpdates',
+                    params={'timeout': 10, 'offset': offset},
+                )
+                response.raise_for_status()
+                payload = response.json()
+                if not payload.get('ok'):
+                    raise NetworkError(f'Bot API getUpdates failed: {payload}')
+
+                for item in payload.get('result', []):
+                    update = Update.de_json(item, application.bot)
+                    offset = update.update_id + 1
+                    await application.process_update(update)
+    finally:
+        try:
+            await application.stop()
+        finally:
+            await application.shutdown()
+
+
 def run_bot():
     global _application
     logger.info('Запуск Telegram-бота...')
     while True:
         try:
             _application = None
-            application = get_application()
-            application.run_polling(timeout=10, poll_interval=1, close_loop=False)
+            asyncio.run(run_bot_once())
         except (NetworkError, httpx.ConnectError, httpx.ConnectTimeout, httpx.TimeoutException) as e:
             logger.error('Ошибка сети Telegram-бота: %s. Повтор через 30 секунд...', e)
         except Exception as e:
