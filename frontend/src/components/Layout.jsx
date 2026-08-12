@@ -318,13 +318,13 @@ export default function Layout() {
         </aside>
 
         <div className="fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.9)] px-4 py-2.5 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.88)] lg:hidden">
-          <div>
-            <div className="min-w-0">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <div className="brand-display truncate text-[1.75rem] leading-none text-text">{currentItem.label}</div>
             </div>
             {hasHeaderActions ? (
-              <div className="mt-2 overflow-x-auto pb-1">
-                <div className="w-max min-w-full">
+              <div className="min-w-0 max-w-[62%] overflow-x-auto pb-1">
+                <div className="flex w-max min-w-full justify-end">
                   {headerContent}
                 </div>
               </div>
@@ -411,7 +411,7 @@ export default function Layout() {
           </div>
         )}
 
-        <main className={`min-w-0 flex-1 ${hasHeaderActions ? 'pt-[118px]' : 'pt-[76px]'} pb-24 lg:pt-4 lg:pb-0`}>
+        <main className={`min-w-0 flex-1 ${hasHeaderActions ? 'pt-[84px]' : 'pt-[76px]'} pb-24 lg:pt-4 lg:pb-0`}>
           <div className="w-full px-4 pb-8 md:px-6 lg:px-8">
             <div className="soft-panel animate-fade-in sticky top-4 z-30 mb-6 hidden rounded-[28px] lg:block">
               <div className="flex items-center justify-between gap-4 px-6 py-4">
@@ -444,6 +444,7 @@ export default function Layout() {
               <Link
                 key={item.path}
                 to={item.path}
+                aria-label={item.label}
                 className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-[20px] px-2 py-2 text-[11px] font-semibold transition-all ${
                   isActive
                     ? 'bg-primary text-white shadow-[0_14px_28px_rgba(34,80,255,0.22)]'
@@ -451,13 +452,13 @@ export default function Layout() {
                 }`}
               >
                 <Icon size={18} />
-                <span className="truncate">{item.label}</span>
               </Link>
             )
           })}
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
+            aria-label="Еще"
             className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-[20px] px-2 py-2 text-[11px] font-semibold transition-all ${
               mobileOpen
                 ? 'bg-primary text-white shadow-[0_14px_28px_rgba(34,80,255,0.22)]'
@@ -465,7 +466,6 @@ export default function Layout() {
             }`}
           >
             <Menu size={18} />
-            <span className="truncate">Еще</span>
           </button>
         </div>
       </nav>

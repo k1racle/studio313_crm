@@ -39,7 +39,7 @@ export default function MobileFiltersSheet({ open, onClose, title = 'Фильт�
 
       <section
         className={`mobile-filters-shell safe-bottom fixed inset-x-0 bottom-0 z-[83] flex max-h-[85dvh] flex-col rounded-t-[28px] border border-border/70 border-b-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
-          open ? 'pointer-events-auto translate-y-0' : 'pointer-events-none translate-y-full'
+          open ? 'visible pointer-events-auto translate-y-0' : 'invisible pointer-events-none translate-y-[110%]'
         }`}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3.5 md:px-5 md:py-4">

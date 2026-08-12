@@ -41,7 +41,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', h
 
       <aside
         className={`fixed inset-x-0 bottom-0 top-auto z-[91] flex max-h-[92dvh] w-full transform flex-col rounded-t-[28px] border border-border/70 border-b-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:rounded-none md:rounded-l-[32px] md:border-b md:border-l md:border-r-0 ${sizeClasses[size]} ${
-          isOpen ? 'pointer-events-auto translate-y-0 md:translate-x-0' : 'pointer-events-none translate-y-full md:translate-x-full'
+          isOpen ? 'visible pointer-events-auto translate-y-0 md:translate-x-0' : 'invisible pointer-events-none translate-y-[110%] md:translate-x-full'
         }`}
       >
         {(title || onClose) && (

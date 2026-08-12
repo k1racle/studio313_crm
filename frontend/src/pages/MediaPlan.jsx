@@ -10,8 +10,9 @@ import Badge from '../components/ui/Badge'
 import Select from '../components/ui/Select'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
+import MobileFiltersSheet from '../components/ui/MobileFiltersSheet'
 import Avatar from '../components/ui/Avatar'
-import { Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight, Calendar, Briefcase, ExternalLink, Search, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight, Calendar, Briefcase, ExternalLink, Search, Download, SlidersHorizontal } from 'lucide-react'
 import { formatShortName } from '../utils/format'
 import { downloadExport } from '../utils/export'
 import { Link } from 'react-router-dom'
@@ -117,6 +118,7 @@ export default function MediaPlan() {
   const [form, setForm] = useState(emptyForm)
   const [pendingFiles, setPendingFiles] = useState([])
   const [saving, setSaving] = useState(false)
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [filters, setFilters] = useState({
     status: '',
     priority: '',
@@ -347,6 +349,8 @@ export default function MediaPlan() {
   const priorityFilterOptions = [{ value: '', label: 'Все приоритеты' }, ...Object.entries(priorityLabels).map(([k, v]) => ({ value: k, label: v }))]
   const statusFilterOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
 
+  const activeFilterCount = [filters.project, filters.responsible, filters.priority, filters.status].filter(Boolean).length
+
   usePageHeaderContent(
     <Button onClick={openCreate}>
       <Plus size={16} />
@@ -356,8 +360,32 @@ export default function MediaPlan() {
 
   return (
     <div>
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 gap-3 2xl:grid-cols-[minmax(0,1.1fr)_180px_220px_180px_180px_auto] xl:grid-cols-[minmax(0,1fr)_180px_220px_180px_180px]">
+      <Card className="mb-6" bodyClassName="space-y-3">
+        <div className="space-y-3 md:hidden">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="РџРѕРёСЃРє..."
+            value={filters.search}
+            onChange={e => setFilters({ ...filters, search: e.target.value })}
+          />
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+            <Button type="button" variant="secondary" onClick={() => setMobileFiltersOpen(true)}>
+              <SlidersHorizontal size={16} />
+              Р¤РёР»СЊС‚СЂС‹
+              {activeFilterCount > 0 ? (
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {activeFilterCount}
+                </span>
+              ) : null}
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
+              <Download size={14} />
+              Excel
+            </Button>
+          </div>
+        </div>
+
+        <div className="hidden grid-cols-1 gap-3 md:grid 2xl:grid-cols-[minmax(0,1.1fr)_180px_220px_180px_180px_auto] xl:grid-cols-[minmax(0,1fr)_180px_220px_180px_180px]">
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск..."
@@ -384,6 +412,32 @@ export default function MediaPlan() {
           </div>
         </div>
       </Card>
+
+      <MobileFiltersSheet
+        open={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        title="Р¤РёР»СЊС‚СЂС‹ РјРµРґРёР°-РїР»Р°РЅР°"
+        footer={(
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setFilters(prev => ({ ...prev, status: '', priority: '', responsible: '', project: '' }))}
+            >
+              РЎР±СЂРѕСЃРёС‚СЊ
+            </Button>
+            <Button type="button" className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+              РџСЂРёРјРµРЅРёС‚СЊ
+            </Button>
+          </div>
+        )}
+      >
+        <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
+        <SearchableSelect value={filters.responsible} onChange={val => setFilters({ ...filters, responsible: val })} options={responsibleFilterOptions} />
+        <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityFilterOptions} />
+        <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusFilterOptions} />
+      </MobileFiltersSheet>
 
       <Card className="mb-6">
         <div className="flex items-center justify-between gap-3">
