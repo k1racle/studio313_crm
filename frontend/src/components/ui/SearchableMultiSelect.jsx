@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Search, ChevronDown, X } from 'lucide-react'
+import { ChevronDown, Search, X } from 'lucide-react'
 
 export default function SearchableMultiSelect({ label, options = [], value = [], onChange, placeholder = 'Выберите...' }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -7,15 +7,15 @@ export default function SearchableMultiSelect({ label, options = [], value = [],
   const containerRef = useRef(null)
 
   const selectedSet = new Set(value.map(String))
-  const selectedOptions = options.filter(o => selectedSet.has(String(o.value)))
+  const selectedOptions = options.filter(option => selectedSet.has(String(option.value)))
 
   const normalizedSearch = search.trim().toLowerCase()
   const filtered = normalizedSearch
-    ? options.filter(o => String(o.label).toLowerCase().includes(normalizedSearch))
+    ? options.filter(option => String(option.label).toLowerCase().includes(normalizedSearch))
     : options
 
   useEffect(() => {
-    function handleClickOutside(event) {
+    const handleClickOutside = (event) => {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
         setIsOpen(false)
       }
@@ -26,37 +26,37 @@ export default function SearchableMultiSelect({ label, options = [], value = [],
     }
   }, [isOpen])
 
-  const toggleValue = (val) => {
-    const strVal = String(val)
-    if (selectedSet.has(strVal)) {
-      onChange(value.filter(v => String(v) !== strVal))
+  const toggleValue = (nextValue) => {
+    const stringValue = String(nextValue)
+    if (selectedSet.has(stringValue)) {
+      onChange(value.filter(item => String(item) !== stringValue))
     } else {
-      onChange([...value, val])
+      onChange([...value, nextValue])
     }
   }
 
-  const removeValue = (e, val) => {
-    e.stopPropagation()
-    const strVal = String(val)
-    onChange(value.filter(v => String(v) !== strVal))
+  const removeValue = (event, nextValue) => {
+    event.stopPropagation()
+    const stringValue = String(nextValue)
+    onChange(value.filter(item => String(item) !== stringValue))
   }
 
   return (
     <div ref={containerRef} className="relative">
-      {label && <label className="block text-sm font-medium text-text mb-1.5">{label}</label>}
+      {label && <label className="mb-2 block text-sm font-semibold text-text">{label}</label>}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text text-left focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors flex items-center justify-between min-h-[2.5rem]"
+        className="flex min-h-12 w-full items-center justify-between rounded-2xl border border-border/80 bg-surface/86 px-4 py-3 text-left text-text shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-all hover:bg-surface focus-visible:border-primary/70 focus-visible:shadow-[0_0_0_4px_rgba(34,80,255,0.12)]"
       >
-        <div className="flex flex-wrap items-center gap-1 min-w-0">
-          {selectedOptions.length ? selectedOptions.map(opt => (
-            <span key={String(opt.value)} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-subtle rounded text-xs">
-              {opt.label}
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          {selectedOptions.length ? selectedOptions.map(option => (
+            <span key={String(option.value)} className="inline-flex items-center gap-1 rounded-full bg-primary/8 px-2.5 py-1 text-xs font-medium text-primary">
+              {option.label}
               <button
                 type="button"
-                onClick={e => removeValue(e, opt.value)}
-                className="text-text-muted hover:text-danger"
+                onClick={event => removeValue(event, option.value)}
+                className="text-primary/70 hover:text-danger"
               >
                 <X size={12} />
               </button>
@@ -65,46 +65,46 @@ export default function SearchableMultiSelect({ label, options = [], value = [],
             <span className="text-text-muted">{placeholder}</span>
           )}
         </div>
-        <ChevronDown size={16} className="text-text-muted shrink-0 ml-2" />
+        <ChevronDown size={16} className="ml-2 shrink-0 text-text-muted" />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-surface border border-border rounded-lg shadow-lg max-h-72 overflow-hidden flex flex-col">
-          <div className="sticky top-0 bg-surface border-b border-border px-3 py-2 flex items-center gap-2">
+        <div className="absolute z-50 mt-2 flex max-h-80 w-full flex-col overflow-hidden rounded-[24px] border border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,248,255,0.98))] shadow-[0_24px_60px_rgba(15,23,40,0.16)] dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(12,18,28,0.98))]">
+          <div className="sticky top-0 flex items-center gap-2 border-b border-border/70 bg-transparent px-4 py-3">
             <Search size={14} className="text-text-muted" />
             <input
               type="text"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={event => setSearch(event.target.value)}
               placeholder="Поиск..."
-              className="w-full bg-transparent text-sm text-text focus:outline-none"
+              className="w-full bg-transparent text-sm text-text outline-none placeholder:text-text-muted"
               autoFocus
             />
           </div>
-          <div className="overflow-y-auto max-h-56">
-            {filtered.map(opt => {
-              const isSelected = selectedSet.has(String(opt.value))
+          <div className="max-h-60 overflow-y-auto p-2">
+            {filtered.map(option => {
+              const isSelected = selectedSet.has(String(option.value))
               return (
                 <button
-                  key={String(opt.value)}
+                  key={String(option.value)}
                   type="button"
-                  onClick={() => toggleValue(opt.value)}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-subtle transition-colors flex items-center gap-2 ${
-                    isSelected ? 'bg-primary/10 text-primary' : 'text-text'
+                  onClick={() => toggleValue(option.value)}
+                  className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm transition-colors ${
+                    isSelected ? 'bg-primary/10 text-primary' : 'text-text hover:bg-subtle'
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => {}}
-                    className="w-4 h-4 text-primary rounded border-border"
+                    className="h-4 w-4 rounded border-border text-primary"
                   />
-                  {opt.label}
+                  <span>{option.label}</span>
                 </button>
               )
             })}
             {filtered.length === 0 && (
-              <div className="px-3 py-2 text-text-muted text-sm">Ничего не найдено</div>
+              <div className="px-3 py-3 text-sm text-text-muted">Ничего не найдено</div>
             )}
           </div>
         </div>

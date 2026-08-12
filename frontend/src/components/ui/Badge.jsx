@@ -1,18 +1,19 @@
-export default function Badge({ children, variant = 'gray' }) {
+export default function Badge({ children, variant = 'gray', className = '' }) {
   const variants = {
-    gray: 'bg-subtle text-text',
-    blue: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200',
-    green: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200',
-    yellow: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200',
-    orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200',
-    red: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
-    purple: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200',
-    pink: 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-200',
-    cyan: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-200',
-    indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200',
+    gray: 'bg-[rgba(15,23,40,0.06)] text-text border-[rgba(15,23,40,0.1)]',
+    blue: 'bg-[rgba(34,80,255,0.12)] text-[color:#2449c7] border-[rgba(34,80,255,0.18)]',
+    green: 'bg-[rgba(21,143,104,0.12)] text-[color:#137153] border-[rgba(21,143,104,0.18)]',
+    yellow: 'bg-[rgba(184,134,11,0.12)] text-[color:#916f12] border-[rgba(184,134,11,0.18)]',
+    orange: 'bg-[rgba(29,42,65,0.12)] text-[color:#33517f] border-[rgba(29,42,65,0.16)]',
+    red: 'bg-[rgba(195,65,76,0.12)] text-[color:#9c3340] border-[rgba(195,65,76,0.18)]',
+    purple: 'bg-[rgba(74,95,184,0.12)] text-[color:#475ab0] border-[rgba(74,95,184,0.18)]',
+    pink: 'bg-[rgba(63,123,242,0.12)] text-[color:#3159bc] border-[rgba(63,123,242,0.18)]',
+    cyan: 'bg-[rgba(49,113,214,0.12)] text-[color:#2f63bf] border-[rgba(49,113,214,0.18)]',
+    indigo: 'bg-[rgba(17,35,87,0.12)] text-[color:#23397d] border-[rgba(17,35,87,0.16)]',
   }
+
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[variant]}`}>
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${variants[variant]} ${className}`}>
       {children}
     </span>
   )

@@ -1,14 +1,36 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  ArrowRight,
+  Calendar,
+  CheckSquare,
+  CreditCard,
+  HeadphonesIcon,
+  Layers3,
+  Sparkles,
+  Users,
+} from 'lucide-react'
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+
 import api from '../api/axios'
-import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
-import { CheckSquare, Users, Calendar, HeadphonesIcon, ArrowRight, Code, CreditCard, AlertCircle, Clock } from 'lucide-react'
+import Card from '../components/ui/Card'
 
 const taskStatusLabels = {
   new: 'Новая',
   in_progress: 'В работе',
+  approval: 'На согласовании',
   review: 'На проверке',
   content_placement: 'Выкладка контента',
   done: 'Выполнена',
@@ -18,20 +40,21 @@ const taskStatusLabels = {
 const taskStatusVariant = {
   new: 'blue',
   in_progress: 'yellow',
+  approval: 'cyan',
   review: 'purple',
   content_placement: 'indigo',
   done: 'green',
   canceled: 'gray',
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+const chartColors = ['#2250ff', '#5b7cff', '#0f1728', '#4d6edb', '#7c93ff', '#9bb0ff']
 
 const quickLinks = [
-  { path: '/tasks', label: 'Задачи', desc: 'Kanban и список', icon: CheckSquare },
-  { path: '/bookings', label: 'Запись', desc: 'Календарь и оплата', icon: Calendar },
-  { path: '/projects', label: 'Проекты', desc: 'Управление проектами', icon: Code },
-  { path: '/finance', label: 'Финансы', desc: 'Отчёты и долги', icon: CreditCard },
-  { path: '/helpdesk', label: 'Хелпдеск', desc: 'Обращения клиентов', icon: HeadphonesIcon },
+  { path: '/tasks', label: 'Задачи', desc: 'Kanban, календарь и список задач', icon: CheckSquare },
+  { path: '/bookings', label: 'Запись', desc: 'Календарь и клиентские слоты', icon: Calendar },
+  { path: '/projects', label: 'Проекты', desc: 'Управление студийными проектами', icon: Layers3 },
+  { path: '/finance', label: 'Финансы', desc: 'Платежи, долги и отчеты', icon: CreditCard },
+  { path: '/helpdesk', label: 'Хелпдеск', desc: 'Запросы и клиентская поддержка', icon: HeadphonesIcon },
 ]
 
 export default function Dashboard() {
@@ -41,141 +64,231 @@ export default function Dashboard() {
     api.get('/analytics/dashboard/').then(res => setStats(res.data)).catch(console.error)
   }, [])
 
-  const statItems = [
-    { key: 'active_tasks', label: 'Активные задачи', icon: CheckSquare, color: 'bg-blue-500', value: stats ? stats.tasks_by_status.reduce((s, i) => s + (['done', 'canceled'].includes(i.status) ? 0 : i.count), 0) : 0 },
-    { key: 'clients', label: 'Клиенты', icon: Users, color: 'bg-green-500', value: stats ? '—' : 0 },
-    { key: 'bookings', label: 'Записи', icon: Calendar, color: 'bg-purple-500', value: stats ? stats.bookings_by_status.reduce((s, i) => s + i.count, 0) : 0 },
-    { key: 'paid', label: 'Оплачено', icon: CreditCard, color: 'bg-orange-500', value: stats ? `${Math.round(stats.totals.paid).toLocaleString('ru')} ₽` : '0 ₽' },
-  ]
+  const statItems = useMemo(() => ([
+    {
+      key: 'active_tasks',
+      label: 'Активные задачи',
+      value: stats ? stats.tasks_by_status.reduce((sum, item) => sum + (['done', 'canceled'].includes(item.status) ? 0 : item.count), 0) : '—',
+      icon: CheckSquare,
+      tone: 'from-blue-600 to-blue-500',
+    },
+    {
+      key: 'clients',
+      label: 'Клиенты',
+      value: stats?.totals?.clients ?? stats?.clients_count ?? '—',
+      icon: Users,
+      tone: 'from-slate-900 to-slate-700',
+    },
+    {
+      key: 'bookings',
+      label: 'Записи',
+      value: stats ? stats.bookings_by_status.reduce((sum, item) => sum + item.count, 0) : '—',
+      icon: Calendar,
+      tone: 'from-indigo-600 to-blue-500',
+    },
+    {
+      key: 'paid',
+      label: 'Оплачено',
+      value: stats ? `${Math.round(stats.totals.paid).toLocaleString('ru-RU')} ₽` : '—',
+      icon: CreditCard,
+      tone: 'from-blue-700 to-slate-900',
+    },
+  ]), [stats])
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text">Главная</h1>
-        <p className="text-text-muted">Обзор активности студии</p>
-      </div>
+    <div className="space-y-6">
+      <section className="soft-panel overflow-hidden rounded-[34px]">
+        <div className="grid gap-6 px-6 py-7 md:px-8 lg:grid-cols-[1.2fr_0.8fr] lg:py-8">
+          <div>
+            <div className="kicker text-primary">Обзор студии</div>
+            <h1 className="page-title mt-3 text-text">CRM, которая выглядит как продукт, а не как шаблонная админка.</h1>
+            <p className="page-subtitle mt-4 text-base leading-7">
+              Здесь быстрый доступ к операционке студии: задачи, запись клиентов, проекты, долги, доступы и внутренняя работа команды.
+            </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Badge variant="blue">Studio 313</Badge>
+              <Badge variant="indigo">Синий / Белый / Черный</Badge>
+              <Badge variant="gray">Рабочая CRM</Badge>
+            </div>
+          </div>
+
+          <div className="rounded-[30px] bg-[linear-gradient(160deg,#0b1322,#112241_55%,#1e4cff)] p-6 text-white shadow-[0_24px_70px_rgba(15,23,40,0.26)]">
+            <div className="mb-3 flex items-center gap-2 text-blue-100/84">
+              <Sparkles size={16} />
+              <span className="text-xs font-semibold uppercase tracking-[0.22em]">Быстрый старт</span>
+            </div>
+            <div className="text-2xl font-semibold leading-tight">Основные действия команды доступны в один клик.</div>
+            <div className="mt-4 text-sm leading-6 text-white/70">
+              Сделали упор на аккуратную навигацию, более статусный визуал и комфортную повседневную работу без визуального шума.
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {quickLinks.slice(0, 4).map(item => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className="rounded-[22px] border border-white/10 bg-white/8 p-4 transition-all hover:-translate-y-0.5 hover:bg-white/12"
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <Icon size={18} className="text-blue-200" />
+                      <ArrowRight size={15} className="text-white/54" />
+                    </div>
+                    <div className="font-semibold">{item.label}</div>
+                    <div className="mt-1 text-sm text-white/62">{item.desc}</div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statItems.map(item => {
           const Icon = item.icon
           return (
-            <Card key={item.key} className="flex items-center gap-4">
-              <div className={`w-12 h-12 ${item.color} rounded-xl flex items-center justify-center text-white shrink-0`}>
-                <Icon size={24} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-2xl font-bold text-text">{stats ? item.value : '—'}</div>
-                <div className="text-sm text-text-muted truncate">{item.label}</div>
+            <Card key={item.key} className="animate-fade-in" bodyClassName="p-5">
+              <div className="flex items-center gap-4">
+                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-gradient-to-br ${item.tone} text-white shadow-[0_14px_34px_rgba(15,23,40,0.18)]`}>
+                  <Icon size={24} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-3xl font-semibold text-text">{item.value}</div>
+                  <div className="mt-1 text-sm text-text-muted">{item.label}</div>
+                </div>
               </div>
             </Card>
           )
         })}
-      </div>
+      </section>
 
       {stats && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-          <Card title="Выручка по месяцам" className="lg:col-span-2">
-            <div className="h-64">
+        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+          <Card title="Выручка по месяцам" eyebrow="Финансы">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.revenue_by_month}>
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#5f6b85' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: '#5f6b85' }} axisLine={false} tickLine={false} />
                   <Tooltip formatter={value => [`${value} ₽`, 'Выручка']} />
-                  <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="total" fill="#2250ff" radius={[10, 10, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </Card>
-          <Card title="Задачи по статусам">
-            <div className="h-64">
+
+          <Card title="Статусы задач" eyebrow="Нагрузка">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={stats.tasks_by_status} dataKey="count" nameKey="status" cx="40%" cy="50%" outerRadius={70} label>
-                    {stats.tasks_by_status.map((_, i) => (
-                      <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+                  <Pie data={stats.tasks_by_status} dataKey="count" nameKey="status" cx="40%" cy="50%" outerRadius={78} innerRadius={42}>
+                    {stats.tasks_by_status.map((item, index) => (
+                      <Cell key={item.status} fill={chartColors[index % chartColors.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={value => [value, 'Кол-во']} />
-                  <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: 12 }} formatter={value => taskStatusLabels[value] || value} />
+                  <Tooltip formatter={value => [value, 'Количество']} />
+                  <Legend
+                    layout="vertical"
+                    verticalAlign="middle"
+                    align="right"
+                    wrapperStyle={{ fontSize: 12 }}
+                    formatter={value => taskStatusLabels[value] || value}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </Card>
-        </div>
+        </section>
       )}
 
       {stats && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-          <Card title="Горящие дедлайны">
+        <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <Card title="Горящие дедлайны" eyebrow="Приоритет">
             <div className="space-y-3">
-              {stats.upcoming_deadlines.length ? stats.upcoming_deadlines.map(t => (
-                <Link key={t.id} to={`/tasks?task=${t.id}`} className="flex items-center justify-between p-3 bg-subtle rounded-lg hover:bg-primary/10 transition-colors">
-                  <div>
-                    <div className="font-medium text-text">{t.title}</div>
-                    <div className="text-xs text-text-muted">
-                      {t.assignees?.length ? t.assignees.map(u => u.first_name || u.username).join(', ') : 'Не назначен'}
+              {stats.upcoming_deadlines.length ? stats.upcoming_deadlines.map(task => (
+                <Link
+                  key={task.id}
+                  to={`/tasks?task=${task.id}`}
+                  className="flex items-center justify-between gap-4 rounded-[24px] border border-border/70 bg-surface/60 px-4 py-4 shadow-[0_10px_24px_rgba(15,23,40,0.05)] transition-all hover:-translate-y-0.5 hover:border-primary/20"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold text-text">{task.title}</div>
+                    <div className="mt-1 text-sm text-text-muted">
+                      {task.assignees?.length ? task.assignees.map(user => user.first_name || user.username).join(', ') : 'Исполнитель не назначен'}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-medium text-danger">{new Date(t.due_date).toLocaleString('ru')}</div>
-                    <Badge variant={taskStatusVariant[t.status]}>{taskStatusLabels[t.status]}</Badge>
+                    <div className="text-sm font-semibold text-danger">{new Date(task.due_date).toLocaleString('ru-RU')}</div>
+                    <div className="mt-2">
+                      <Badge variant={taskStatusVariant[task.status] || 'gray'}>{taskStatusLabels[task.status] || task.status}</Badge>
+                    </div>
                   </div>
                 </Link>
-              )) : <div className="text-text-muted text-sm">Нет горящих дедлайнов</div>}
+              )) : <div className="text-sm text-text-muted">Срочных дедлайнов нет</div>}
             </div>
           </Card>
-          <Card title="Должники">
+
+          <Card title="Должники" eyebrow="Финансы">
             <div className="space-y-3">
-              {stats.debtors.length ? stats.debtors.map(d => (
-                <Link key={d.id} to="/finance" className="flex items-center justify-between p-3 bg-subtle rounded-lg hover:bg-primary/10 transition-colors">
-                  <div>
-                    <div className="font-medium text-text">{d.client__name}</div>
-                    <div className="text-xs text-text-muted">{d.service__name}</div>
+              {stats.debtors.length ? stats.debtors.map(item => (
+                <Link
+                  key={item.id}
+                  to="/finance"
+                  className="flex items-center justify-between gap-4 rounded-[24px] border border-border/70 bg-surface/60 px-4 py-4 shadow-[0_10px_24px_rgba(15,23,40,0.05)] transition-all hover:-translate-y-0.5 hover:border-primary/20"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold text-text">{item.client__name}</div>
+                    <div className="mt-1 text-sm text-text-muted">{item.service__name}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-medium text-danger">{d.remaining_amount.toLocaleString('ru')} ₽</div>
-                    <div className="text-xs text-text-muted">из {d.service__price.toLocaleString('ru')} ₽</div>
+                    <div className="text-sm font-semibold text-danger">{item.remaining_amount.toLocaleString('ru-RU')} ₽</div>
+                    <div className="mt-1 text-xs text-text-muted">из {item.service__price.toLocaleString('ru-RU')} ₽</div>
                   </div>
                 </Link>
-              )) : <div className="text-text-muted text-sm">Нет задолженностей</div>}
+              )) : <div className="text-sm text-text-muted">Задолженностей нет</div>}
             </div>
           </Card>
-        </div>
+        </section>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <Card title="Быстрые ссылки">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card title="Быстрые ссылки" eyebrow="Навигация">
+          <div className="grid gap-3 md:grid-cols-2">
             {quickLinks.map(item => {
               const Icon = item.icon
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className="group p-4 border border-border rounded-lg hover:border-primary hover:shadow-sm transition-all bg-surface"
+                  className="group rounded-[24px] border border-border/70 bg-surface/60 p-4 shadow-[0_10px_24px_rgba(15,23,40,0.05)] transition-all hover:-translate-y-0.5 hover:border-primary/20"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <Icon size={20} className="text-primary" />
-                    <ArrowRight size={16} className="text-text-muted group-hover:text-primary transition-colors" />
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-[18px] bg-primary/10 text-primary">
+                      <Icon size={20} />
+                    </span>
+                    <ArrowRight size={15} className="text-text-muted transition-colors group-hover:text-primary" />
                   </div>
-                  <div className="font-medium text-text">{item.label}</div>
-                  <div className="text-sm text-text-muted">{item.desc}</div>
+                  <div className="font-semibold text-text">{item.label}</div>
+                  <div className="mt-1 text-sm text-text-muted">{item.desc}</div>
                 </Link>
               )
             })}
           </div>
         </Card>
-        <Card title="Виджеты для сайта">
-          <div className="space-y-3 text-sm">
-            <div className="p-3 bg-subtle rounded-lg font-mono break-all text-xs text-text-muted">
-              &lt;iframe src=&quot;{window.location.origin}/api/booking/widget/&quot; width=&quot;400&quot; height=&quot;500&quot;&gt;&lt;/iframe&gt;
+
+        <Card title="Виджеты для сайта" eyebrow="Интеграции">
+          <div className="space-y-4">
+            <div className="rounded-[24px] border border-border/70 bg-slate-950 px-4 py-4 font-mono text-xs leading-6 text-blue-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              {`<iframe src="${window.location.origin}/api/booking/widget/" width="400" height="500"></iframe>`}
             </div>
-            <div className="p-3 bg-subtle rounded-lg font-mono break-all text-xs text-text-muted">
-              &lt;iframe src=&quot;{window.location.origin}/api/helpdesk/widget/&quot; width=&quot;400&quot; height=&quot;500&quot;&gt;&lt;/iframe&gt;
+            <div className="rounded-[24px] border border-border/70 bg-slate-950 px-4 py-4 font-mono text-xs leading-6 text-blue-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              {`<iframe src="${window.location.origin}/api/helpdesk/widget/" width="400" height="500"></iframe>`}
             </div>
           </div>
         </Card>
-      </div>
+      </section>
     </div>
   )
 }

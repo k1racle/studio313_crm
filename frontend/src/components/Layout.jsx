@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
@@ -8,6 +8,7 @@ import {
   Cake,
   CheckSquare,
   Clapperboard,
+  Clock,
   Contact,
   CreditCard,
   Folder,
@@ -20,7 +21,6 @@ import {
   Newspaper,
   Users,
   X,
-  Clock,
 } from 'lucide-react'
 
 import api from '../api/axios'
@@ -49,12 +49,43 @@ const menuItems = [
   { path: '/knowledge', label: 'База знаний', icon: BookOpen },
 ]
 
+function UserAvatar({ user, size = 'md' }) {
+  const sizes = {
+    sm: 'h-10 w-10 text-sm',
+    md: 'h-12 w-12 text-base',
+  }
+
+  if (user?.avatar) {
+    return <img src={user.avatar} alt="" className={`${sizes[size]} rounded-2xl object-cover`} />
+  }
+
+  return (
+    <div className={`${sizes[size]} flex items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--primary),#6b84ff)] font-semibold text-white shadow-[0_10px_24px_rgba(34,80,255,0.28)]`}>
+      {(user?.last_name?.[0] || user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
+    </div>
+  )
+}
+
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [birthdays, setBirthdays] = useState([])
+
+  const currentItem = useMemo(
+    () => menuItems.find(item => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)) || menuItems[0],
+    [location.pathname]
+  )
+
+  const currentDate = useMemo(
+    () => new Intl.DateTimeFormat('ru-RU', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }).format(new Date()),
+    []
+  )
 
   const handleLogout = () => {
     logout()
@@ -68,7 +99,7 @@ export default function Layout() {
   }, [location.pathname])
 
   const navLinks = (
-    <nav className="flex-1 p-3 md:p-4 space-y-1 overflow-y-auto">
+    <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 pb-4 pt-3">
       {menuItems.map(item => {
         const Icon = item.icon
         const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
@@ -77,14 +108,18 @@ export default function Layout() {
             key={item.path}
             to={item.path}
             onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+            className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all ${
               isActive
-                ? 'bg-primary/10 text-primary font-medium'
-                : 'text-text-muted hover:bg-subtle hover:text-text'
+                ? 'bg-white text-[#0f1728] shadow-[0_12px_28px_rgba(0,0,0,0.16)]'
+                : 'text-white/72 hover:bg-white/8 hover:text-white'
             }`}
           >
-            <Icon size={18} />
-            {item.label}
+            <span className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all ${
+              isActive ? 'bg-[rgba(34,80,255,0.12)] text-primary' : 'bg-white/6 text-white/75 group-hover:bg-white/10'
+            }`}>
+              <Icon size={17} />
+            </span>
+            <span className="truncate">{item.label}</span>
           </Link>
         )
       })}
@@ -92,98 +127,148 @@ export default function Layout() {
   )
 
   const birthdayBlock = birthdays.length > 0 && (
-    <div className="px-4 py-3 mx-3 md:mx-4 mb-2 bg-primary/5 border border-primary/10 rounded-lg">
-      <div className="flex items-start gap-2">
-        <Cake size={16} className="text-primary mt-0.5 shrink-0" />
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-text">
-            {birthdays.some(item => item.is_today) ? 'Сегодня день рождения' : 'Ближайшие дни рождения'}
-          </div>
-          <div className="text-xs text-text-muted truncate">
-            {birthdays.map(item => item.badge_name || item.full_name).join(', ')}
-          </div>
+    <div className="mx-4 mb-4 rounded-[24px] border border-white/12 bg-white/7 p-4 text-white/88">
+      <div className="mb-2 flex items-center gap-2">
+        <Cake size={16} className="text-blue-300" />
+        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
+          {birthdays.some(item => item.is_today) ? 'Сегодня' : 'Ближайшие даты'}
         </div>
       </div>
-    </div>
-  )
-
-  const userBlock = (
-    <div className="p-4 border-t border-border">
-      {birthdayBlock}
-      <Link
-        to="/profile"
-        onClick={() => setMobileOpen(false)}
-        className="flex items-center gap-3 mb-3 p-2 -m-2 rounded-lg hover:bg-subtle transition-colors cursor-pointer"
-      >
-        {user?.avatar ? (
-          <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
-            {(user?.last_name?.[0] || user?.first_name?.[0] || user?.username?.[0] || '?').toUpperCase()}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{formatFullName(user)}</div>
-        </div>
-      </Link>
-      <div className="flex items-center justify-between gap-2 bg-subtle rounded-lg p-2">
-        <NotificationBell />
-        <ThemeToggle iconOnly size={22} />
-        <button
-          onClick={handleLogout}
-          className="p-2 text-text-muted hover:text-danger hover:bg-surface rounded-lg transition-colors"
-          title="Выйти"
-        >
-          <LogOut size={22} />
-        </button>
+      <div className="text-sm font-medium">
+        {birthdays.some(item => item.is_today) ? 'День рождения сегодня' : 'Дни рождения'}
       </div>
-    </div>
-  )
-
-  const sidebarHeader = (
-    <div className="p-4 md:p-6 border-b border-border">
-      <div className="text-xl md:text-2xl font-bold text-primary">Studio 313</div>
-      <div className="text-xs text-text-muted mt-1">Управление студией</div>
+      <div className="mt-1 text-sm text-white/64">
+        {birthdays.map(item => item.badge_name || item.full_name).join(', ')}
+      </div>
     </div>
   )
 
   return (
-    <div className="flex h-screen h-dvh bg-bg">
-      <aside className="hidden md:flex w-64 bg-surface border-r border-border flex-col">
-        {sidebarHeader}
-        {navLinks}
-        {userBlock}
+    <div className="app-canvas flex min-h-screen bg-bg">
+      <aside className="hidden w-[290px] shrink-0 p-4 lg:flex">
+        <div className="flex h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-[34px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
+          <div className="border-b border-white/10 px-6 py-6">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/42">Studio workspace</div>
+            <Link to="/" className="brand-display mt-3 block text-[2.5rem] leading-none text-white">
+              Studio 313
+            </Link>
+            <p className="mt-3 max-w-[14rem] text-sm leading-6 text-white/62">
+              CRM для задач, проектов, доступов и всей операционной работы студии.
+            </p>
+          </div>
+
+          <div className="px-6 pt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/34">
+            Навигация
+          </div>
+          {navLinks}
+
+          {birthdayBlock}
+
+          <div className="mx-4 mb-4 rounded-[26px] border border-white/10 bg-white/6 p-4">
+            <Link
+              to="/profile"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 rounded-2xl"
+            >
+              <UserAvatar user={user} size="sm" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold text-white">{formatFullName(user)}</div>
+                <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">
+                  {user?.role || user?.username || 'Профиль'}
+                </div>
+              </div>
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white/78 hover:bg-white/12 hover:text-white"
+            >
+              <LogOut size={16} />
+              Выйти
+            </button>
+          </div>
+        </div>
       </aside>
 
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-surface border-b border-border px-4 h-14 flex items-center justify-between">
-        <div className="font-bold text-primary text-lg">Studio 313</div>
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="p-2 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
-        >
-          <Menu size={24} />
-        </button>
+      <div className="lg:hidden fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.88)] px-4 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.84)]">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Studio 313</div>
+            <div className="brand-display text-xl text-text">{currentItem.label}</div>
+          </div>
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)]"
+          >
+            <Menu size={20} />
+          </button>
+        </div>
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="w-64 bg-surface border-r border-border flex flex-col shadow-xl">
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <span className="font-bold text-primary text-lg">Меню</span>
-              <button onClick={() => setMobileOpen(false)} className="p-2 text-text-muted hover:text-text hover:bg-subtle rounded-lg">
-                <X size={20} />
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          <div className="w-[84%] max-w-[320px] animate-rise-in overflow-hidden rounded-r-[28px] bg-[linear-gradient(180deg,#091120,#0e1a30_52%,#0d1527_100%)] text-white shadow-[0_30px_90px_rgba(4,8,15,0.38)]">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">Навигация</div>
+                <div className="brand-display text-2xl">Studio 313</div>
+              </div>
+              <button onClick={() => setMobileOpen(false)} className="rounded-full bg-white/8 p-2 text-white/74">
+                <X size={18} />
               </button>
             </div>
-            {navLinks}
-            {userBlock}
+            <div className="px-2 pt-2">{navLinks}</div>
+            <div className="border-t border-white/10 px-5 py-4">
+              <div className="mb-4 flex items-center gap-3">
+                <UserAvatar user={user} size="sm" />
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{formatFullName(user)}</div>
+                  <div className="truncate text-xs uppercase tracking-[0.14em] text-white/45">{user?.role || user?.username || 'Профиль'}</div>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-3 text-sm font-semibold text-white/78"
+              >
+                <LogOut size={16} />
+                Выйти
+              </button>
+            </div>
           </div>
-          <div className="flex-1 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <div className="flex-1 bg-[rgba(7,11,18,0.54)] backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
         </div>
       )}
 
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">
-        <div className="relative p-4 md:p-6 lg:p-8 max-w-7xl mx-auto min-h-full">
-          <Outlet />
+      <main className="flex-1 overflow-auto pt-[84px] lg:pt-4">
+        <div className="mx-auto max-w-7xl px-4 pb-8 md:px-6 lg:px-8">
+          <div className="soft-panel animate-fade-in sticky top-4 z-30 mb-6 hidden rounded-[28px] lg:block">
+            <div className="flex items-center justify-between px-6 py-4">
+              <div>
+                <div className="kicker text-primary">Текущий раздел</div>
+                <div className="mt-1 flex items-end gap-3">
+                  <h2 className="brand-display text-3xl text-text">{currentItem.label}</h2>
+                  <span className="pb-1 text-sm capitalize text-text-muted">{currentDate}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <ThemeToggle />
+                <Link
+                  to="/profile"
+                  className="inline-flex items-center gap-3 rounded-full border border-border/80 bg-surface/84 px-3 py-2 shadow-[0_8px_24px_rgba(15,23,40,0.08)] hover:-translate-y-0.5"
+                >
+                  <UserAvatar user={user} size="sm" />
+                  <div className="hidden text-left xl:block">
+                    <div className="max-w-[150px] truncate text-sm font-semibold text-text">{formatFullName(user)}</div>
+                    <div className="text-[11px] uppercase tracking-[0.12em] text-text-muted">{user?.role || 'Профиль'}</div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="animate-rise-in">
+            <Outlet />
+          </div>
         </div>
       </main>
       <FloatingChatButton />

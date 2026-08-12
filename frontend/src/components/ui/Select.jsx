@@ -1,13 +1,13 @@
-export default function Select({ label, options = [], className = '', ...props }) {
+export default function Select({ label, options = [], className = '', selectClassName = '', ...props }) {
   return (
     <div className={className}>
-      {label && <label className="block text-sm font-medium text-text mb-1.5">{label}</label>}
+      {label && <label className="mb-2 block text-sm font-semibold text-text">{label}</label>}
       <select
-        className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+        className={`w-full rounded-2xl border border-border/80 bg-surface/86 px-4 py-3 text-text shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition-all focus:border-primary/70 focus:bg-surface focus:shadow-[0_0_0_4px_rgba(180,76,45,0.12)] ${selectClassName}`}
         {...props}
       >
-        {options.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        {options.map(option => (
+          <option key={option.value} value={option.value}>{option.label}</option>
         ))}
       </select>
     </div>

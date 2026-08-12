@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Bell, Check, X } from 'lucide-react'
 import api from '../api/axios'
 
-export default function NotificationBell({ size = 22 }) {
+export default function NotificationBell({ size = 20 }) {
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -16,7 +16,7 @@ export default function NotificationBell({ size = 22 }) {
       setNotifications(listRes.data.results || listRes.data)
       setUnreadCount(countRes.data.unread_count)
     } catch {
-      // игнорируем ошибки фоновой загрузки
+      // Фоновая загрузка не должна ломать интерфейс
     }
   }
 
@@ -27,8 +27,8 @@ export default function NotificationBell({ size = 22 }) {
   }, [])
 
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') setOpen(false)
+    const onKey = (event) => {
+      if (event.key === 'Escape') setOpen(false)
     }
     if (open) {
       document.addEventListener('keydown', onKey)
@@ -51,84 +51,87 @@ export default function NotificationBell({ size = 22 }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="relative p-2 text-text-muted hover:text-primary hover:bg-surface rounded-lg transition-colors"
+        className="relative inline-flex items-center justify-center rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)] hover:-translate-y-0.5 hover:text-primary hover:shadow-[0_12px_30px_rgba(15,23,40,0.12)]"
         title="Уведомления"
       >
         <Bell size={size} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-danger text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Backdrop */}
       <div
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 bg-black/30 z-40 transition-opacity duration-300 ${
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 z-40 bg-[rgba(7,11,18,0.44)] backdrop-blur-sm transition-opacity duration-300 ${
+          open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
         aria-hidden="true"
       />
 
-      {/* Right sidebar */}
       <aside
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-surface border-l border-border shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-lg transform border-l border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
           open ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
         }`}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-text">Уведомления</h2>
+        <div className="flex items-center justify-between border-b border-border/70 px-6 py-5">
+          <div>
+            <div className="kicker text-primary">Inbox</div>
+            <h2 className="text-2xl font-semibold text-text">Уведомления</h2>
+          </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-surface/70 px-4 py-2 text-xs font-semibold text-primary hover:bg-subtle"
               >
                 <Check size={14} />
-                Все прочитаны
+                Прочитать все
               </button>
             )}
             <button
               onClick={() => setOpen(false)}
-              className="p-2 text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+              className="rounded-full border border-border/70 bg-surface/70 p-2.5 text-text-muted hover:bg-subtle hover:text-text"
               title="Закрыть"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        <div className="overflow-y-auto" style={{ height: 'calc(100vh - 65px)' }}>
+        <div className="overflow-y-auto px-5 py-5" style={{ height: 'calc(100vh - 92px)' }}>
           {notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-text-muted text-sm">
-              <Bell size={40} className="mb-3 opacity-30" />
-              Нет уведомлений
+            <div className="flex h-64 flex-col items-center justify-center rounded-[28px] border border-dashed border-border bg-surface/40 text-center text-sm text-text-muted">
+              <Bell size={42} className="mb-3 opacity-30" />
+              Новых уведомлений нет
             </div>
           ) : (
-            <div className="divide-y divide-border">
-              {notifications.map((n) => (
+            <div className="space-y-3">
+              {notifications.map(notification => (
                 <div
-                  key={n.id}
-                  className={`px-5 py-4 hover:bg-subtle transition-colors ${
-                    n.is_read ? 'opacity-60' : 'bg-primary/5'
+                  key={notification.id}
+                  className={`rounded-[24px] border px-4 py-4 shadow-[0_10px_24px_rgba(15,23,40,0.06)] ${
+                    notification.is_read
+                      ? 'border-border/70 bg-surface/66'
+                      : 'border-primary/12 bg-primary/5'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-text">{n.title}</div>
-                      <div className="text-xs text-text-muted line-clamp-2 mt-0.5">{n.message}</div>
-                      <div className="text-[10px] text-text-muted mt-1.5">
-                        {new Date(n.created_at).toLocaleString('ru')}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-text">{notification.title}</div>
+                      <div className="mt-1 text-sm text-text-muted">{notification.message}</div>
+                      <div className="mt-2 text-[11px] uppercase tracking-[0.12em] text-text-muted">
+                        {new Date(notification.created_at).toLocaleString('ru-RU')}
                       </div>
                     </div>
-                    {!n.is_read && (
+                    {!notification.is_read && (
                       <button
-                        onClick={() => markRead(n.id)}
-                        className="p-1.5 text-text-muted hover:text-primary hover:bg-surface rounded transition-colors shrink-0"
+                        onClick={() => markRead(notification.id)}
+                        className="shrink-0 rounded-full border border-border/70 bg-surface/70 p-2 text-text-muted hover:text-primary"
                         title="Отметить прочитанным"
                       >
-                        <Check size={16} />
+                        <Check size={14} />
                       </button>
                     )}
                   </div>
