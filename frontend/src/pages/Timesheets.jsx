@@ -7,6 +7,7 @@ import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Modal from '../components/ui/Modal'
 import { Plus, Pencil, Trash2, Clock } from 'lucide-react'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 
 const emptyForm = { task_id: '', start_time: '', end_time: '', note: '' }
 
@@ -72,19 +73,15 @@ export default function Timesheets() {
     load()
   }
 
+  usePageHeaderContent(
+    <Button onClick={openCreate}>
+      <Plus size={16} />
+      Добавить запись
+    </Button>
+  )
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Таймшиты</h1>
-          <p className="text-text-muted">Учёт затраченного времени</p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus size={16} className="mr-1.5" />
-          Добавить запись
-        </Button>
-      </div>
-
       <Card className="mb-6">
         <div className="flex items-center gap-3">
           <Clock size={20} className="text-primary" />

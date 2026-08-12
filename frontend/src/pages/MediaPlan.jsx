@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -346,19 +347,15 @@ export default function MediaPlan() {
   const priorityFilterOptions = [{ value: '', label: 'Все приоритеты' }, ...Object.entries(priorityLabels).map(([k, v]) => ({ value: k, label: v }))]
   const statusFilterOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
 
+  usePageHeaderContent(
+    <Button onClick={openCreate}>
+      <Plus size={16} />
+      Новая публикация
+    </Button>
+  )
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Медиа-план</h1>
-          <p className="text-text-muted">Календарь публикаций на неделю</p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus size={16} className="mr-1.5" />
-          Новая публикация
-        </Button>
-      </div>
-
       <Card className="mb-6">
         <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
           <div className="shrink-0 w-40">

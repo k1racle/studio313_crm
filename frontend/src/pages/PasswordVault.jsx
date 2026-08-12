@@ -8,6 +8,7 @@ import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 
 const emptyForm = {
   category: '',
@@ -151,22 +152,19 @@ export default function PasswordVault() {
   const editCategories = editingEntry
     ? categories.filter(category => category.value === editingEntry.category || currentPermissions[category.value]?.add)
     : createCategories
+  const headerActions = useMemo(() => (
+    canCreate ? (
+      <Button onClick={openCreate}>
+        <Plus size={16} />
+        Новая запись
+      </Button>
+    ) : null
+  ), [canCreate])
+
+  usePageHeaderContent(headerActions)
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Доступы и пароли</h1>
-          <p className="text-text-muted">Выдача доступов по записям выполняется здесь, а права по категориям настраиваются в админке.</p>
-        </div>
-        {canCreate && (
-          <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1.5" />
-            Новая запись
-          </Button>
-        )}
-      </div>
-
       <Card>
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
           <Input

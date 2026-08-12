@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Archive,
@@ -25,6 +25,7 @@ import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import Select from '../components/ui/Select'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import TaskDetail from '../pages/TaskDetail'
 import { downloadExport } from '../utils/export'
 import { formatShortName } from '../utils/format'
@@ -314,42 +315,35 @@ export default function Tasks() {
   const totalTasks = tasks.length
   const activeTasks = tasks.filter(task => !['done', 'canceled'].includes(normalizeTaskStatus(task.status))).length
   const overdueTasks = tasks.filter(task => task.due_date && new Date(task.due_date) < new Date() && !['done', 'canceled'].includes(normalizeTaskStatus(task.status))).length
+  const headerActions = useMemo(() => (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="hidden xl:flex items-center gap-2">
+        <div className="rounded-[20px] border border-border/70 bg-surface/78 px-3 py-2 shadow-[0_8px_20px_rgba(15,23,40,0.05)]">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Всего</div>
+          <div className="mt-1 text-lg font-semibold text-text">{totalTasks}</div>
+        </div>
+        <div className="rounded-[20px] border border-border/70 bg-surface/78 px-3 py-2 shadow-[0_8px_20px_rgba(15,23,40,0.05)]">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Активные</div>
+          <div className="mt-1 text-lg font-semibold text-text">{activeTasks}</div>
+        </div>
+        <div className="rounded-[20px] border border-border/70 bg-surface/78 px-3 py-2 shadow-[0_8px_20px_rgba(15,23,40,0.05)]">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">Просрочены</div>
+          <div className="mt-1 text-lg font-semibold text-danger">{overdueTasks}</div>
+        </div>
+      </div>
+      {user?.is_manager && (
+        <Button onClick={openCreate}>
+          <Plus size={16} />
+          Новая задача
+        </Button>
+      )}
+    </div>
+  ), [activeTasks, overdueTasks, totalTasks, user?.is_manager])
+
+  usePageHeaderContent(headerActions)
 
   return (
     <div className="space-y-6">
-      <section className="soft-panel overflow-hidden rounded-[34px]">
-        <div className="flex flex-col gap-6 px-6 py-7 md:px-8 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="kicker text-primary">Task board</div>
-            <h1 className="page-title mt-3 text-text">Задачи</h1>
-            <p className="page-subtitle mt-4">
-              Kanban, Gantt, календарь и список задач в одном рабочем контуре.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <div className="rounded-[24px] border border-border/70 bg-surface/70 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,40,0.05)]">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Всего</div>
-              <div className="mt-1 text-2xl font-semibold text-text">{totalTasks}</div>
-            </div>
-            <div className="rounded-[24px] border border-border/70 bg-surface/70 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,40,0.05)]">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Активные</div>
-              <div className="mt-1 text-2xl font-semibold text-text">{activeTasks}</div>
-            </div>
-            <div className="rounded-[24px] border border-border/70 bg-surface/70 px-4 py-3 shadow-[0_10px_24px_rgba(15,23,40,0.05)]">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Просрочены</div>
-              <div className="mt-1 text-2xl font-semibold text-danger">{overdueTasks}</div>
-            </div>
-            {user?.is_manager && (
-              <Button onClick={openCreate} className="self-start">
-                <Plus size={16} />
-                Новая задача
-              </Button>
-            )}
-          </div>
-        </div>
-      </section>
-
       <Card className="overflow-hidden" bodyClassName="space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           {[

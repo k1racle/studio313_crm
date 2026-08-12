@@ -5,7 +5,6 @@ import {
   Calendar,
   CheckSquare,
   CreditCard,
-  HeadphonesIcon,
   Layers3,
   Sparkles,
   Users,
@@ -39,7 +38,6 @@ const quickLinks = [
   { path: '/bookings', label: 'Запись', desc: 'Календарь и клиентские слоты', icon: Calendar },
   { path: '/projects', label: 'Проекты', desc: 'Управление студийными проектами', icon: Layers3 },
   { path: '/finance', label: 'Финансы', desc: 'Платежи, долги и отчеты', icon: CreditCard },
-  { path: '/helpdesk', label: 'Хелпдеск', desc: 'Запросы и клиентская поддержка', icon: HeadphonesIcon },
 ]
 
 export default function Dashboard() {
@@ -90,11 +88,8 @@ export default function Dashboard() {
               <span className="text-xs font-semibold uppercase tracking-[0.22em]">Быстрый старт</span>
             </div>
             <div className="text-2xl font-semibold leading-tight">Основные действия команды доступны в один клик.</div>
-            <div className="mt-4 text-sm leading-6 text-white/70">
-              Сделали упор на аккуратную навигацию, более статусный визуал и комфортную повседневную работу без визуального шума.
-            </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {quickLinks.slice(0, 4).map(item => {
+              {quickLinks.map(item => {
                 const Icon = item.icon
                 return (
                   <Link
@@ -135,8 +130,8 @@ export default function Dashboard() {
         })}
       </section>
 
-      {stats && (
-        <section className="grid grid-cols-1 gap-6">
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-[0.88fr_1.12fr]">
+        {stats && (
           <Card title="Статусы задач" eyebrow="Нагрузка">
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -158,10 +153,8 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           </Card>
-        </section>
-      )}
+        )}
 
-      <section className="grid grid-cols-1 gap-6">
         <Card title="Виджеты для сайта" eyebrow="Интеграции">
           <div className="space-y-4">
             <div className="rounded-[24px] border border-border/70 bg-slate-950 px-4 py-4 font-mono text-xs leading-6 text-blue-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">

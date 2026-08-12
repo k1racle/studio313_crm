@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 
 import Layout from './components/Layout'
 import { useAuth } from './contexts/AuthContext'
+import { PageHeaderProvider } from './contexts/PageHeaderContext'
 import Bookings from './pages/Bookings'
 import Chat from './pages/Chat'
 import ClientPortal from './pages/ClientPortal'
@@ -43,7 +44,7 @@ function App() {
       <Route path="/payment/success" element={<PaymentSuccess />} />
       <Route path="/payment/fail" element={<PaymentFail />} />
       <Route path="/portal/:token" element={<ClientPortal />} />
-      <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+      <Route path="/" element={<PrivateRoute><PageHeaderProvider><Layout /></PageHeaderProvider></PrivateRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="tasks" element={<Tasks />} />
         <Route path="production" element={<Production />} />

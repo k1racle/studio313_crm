@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -205,27 +206,23 @@ export default function Clients() {
     }
   }
 
+  usePageHeaderContent(
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {user?.is_manager && (
+        <Button onClick={openCreate}>
+          <Plus size={16} />
+          Новый клиент
+        </Button>
+      )}
+      <Button variant="secondary" onClick={handleExport}>
+        <Download size={16} />
+        Выгрузить
+      </Button>
+    </div>
+  )
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Клиенты</h1>
-          <p className="text-text-muted">Клиентская база студии</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {user?.is_manager && (
-            <Button onClick={openCreate}>
-              <Plus size={16} className="mr-1.5" />
-              Новый клиент
-            </Button>
-          )}
-          <Button variant="secondary" onClick={handleExport}>
-            <Download size={16} className="mr-1.5" />
-            Выгрузить
-          </Button>
-        </div>
-      </div>
-
       <Card className="mb-6">
         <div className="flex flex-col sm:flex-row gap-3">
           <Input

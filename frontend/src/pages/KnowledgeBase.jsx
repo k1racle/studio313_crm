@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -205,21 +206,15 @@ export default function KnowledgeBase() {
     ...categories.map(c => ({ value: c.id, label: c.name })),
   ]
 
+  usePageHeaderContent(user?.is_manager ? (
+    <Button onClick={openCreate}>
+      <Plus size={16} />
+      Новый материал
+    </Button>
+  ) : null)
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">База знаний</h1>
-          <p className="text-text-muted">Обучающие материалы и инструкции</p>
-        </div>
-        {user?.is_manager && (
-          <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1.5" />
-            Новый материал
-          </Button>
-        )}
-      </div>
-
       <Card className="mb-6">
         <div className="flex flex-wrap items-end gap-3">
           <Select value={filters.kind} onChange={e => setFilters({ ...filters, kind: e.target.value })} options={kindOptions} />

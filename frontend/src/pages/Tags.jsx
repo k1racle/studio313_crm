@@ -6,6 +6,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 
 const emptyForm = { name: '', color: '#3b82f6' }
 
@@ -56,21 +57,15 @@ export default function Tags() {
     load()
   }
 
+  usePageHeaderContent(user?.is_manager ? (
+    <Button onClick={openCreate}>
+      <Plus size={16} />
+      Новый тег
+    </Button>
+  ) : null)
+
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Теги</h1>
-          <p className="text-text-muted">Управление тегами задач</p>
-        </div>
-        {user?.is_manager && (
-          <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1.5" />
-            Новый тег
-          </Button>
-        )}
-      </div>
-
       <Card>
         <div className="flex flex-wrap gap-3">
           {tags.map(tag => (

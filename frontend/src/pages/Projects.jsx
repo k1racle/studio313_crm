@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -90,33 +91,30 @@ export default function Projects() {
     if (!q) return users
     return users.filter(u => formatShortName(u).toLowerCase().includes(q))
   }, [users, memberSearch])
+  const headerActions = useMemo(() => (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      <label className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/78 px-4 py-2 text-sm text-text-muted">
+        <input
+          type="checkbox"
+          checked={showArchived}
+          onChange={e => setShowArchived(e.target.checked)}
+          className="h-4 w-4 rounded border-border text-primary"
+        />
+        Показать архив
+      </label>
+      {user?.is_manager && (
+        <Button onClick={openCreate}>
+          <Plus size={16} />
+          Новый проект
+        </Button>
+      )}
+    </div>
+  ), [showArchived, user?.is_manager])
+
+  usePageHeaderContent(headerActions)
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Проекты</h1>
-          <p className="text-text-muted">Управление проектами и доступом сотрудников</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-text-muted cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={e => setShowArchived(e.target.checked)}
-              className="w-4 h-4 text-primary rounded"
-            />
-            Показать архив
-          </label>
-          {user?.is_manager && (
-            <Button onClick={openCreate}>
-              <Plus size={16} className="mr-1.5" />
-              Новый проект
-            </Button>
-          )}
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {projects.map(p => (
           <Card key={p.id} className={`hover:shadow-md transition-shadow ${p.is_archived ? 'opacity-60' : ''}`}>

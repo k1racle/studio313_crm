@@ -6,6 +6,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Badge from '../components/ui/Badge'
 import { CreditCard, Save, ExternalLink, RefreshCw, Search } from 'lucide-react'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 
 const statusLabels = {
   pending: 'В ожидании',
@@ -86,34 +87,30 @@ export default function Payments() {
     String(p.booking_info?.service || '').toLowerCase().includes(search.toLowerCase()) ||
     String(p.id).includes(search)
   )
+  const headerActions = user?.is_director ? (
+    <div className="flex gap-2 rounded-full border border-border/70 bg-surface/75 p-1">
+      {[
+        { key: 'list', label: 'Платежи' },
+        { key: 'settings', label: 'Настройки' },
+      ].map(item => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => setTab(item.key)}
+          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            tab === item.key ? 'bg-white text-primary shadow-[0_8px_18px_rgba(15,23,40,0.08)]' : 'text-text-muted hover:text-text'
+          }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  ) : null
+
+  usePageHeaderContent(headerActions)
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Платежи</h1>
-          <p className="text-text-muted">История платежей и настройки терминала Альфа-Банк</p>
-        </div>
-        {user?.is_director && (
-          <div className="flex gap-2 bg-subtle p-1 rounded-lg">
-            {[
-              { key: 'list', label: 'Платежи' },
-              { key: 'settings', label: 'Настройки' },
-            ].map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  tab === t.key ? 'bg-surface text-primary shadow-sm' : 'text-text-muted hover:text-text'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
       {tab === 'list' && (
         <>
           <Card className="mb-6">

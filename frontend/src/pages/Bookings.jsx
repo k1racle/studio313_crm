@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { format, setHours, setMinutes } from 'date-fns'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import BookingCalendar from '../components/BookingCalendar'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -124,44 +125,42 @@ export default function Bookings() {
 
   const clientOptions = [{ value: '', label: 'Выберите клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
   const serviceOptions = [{ value: '', label: 'Выберите услугу' }, ...services.map(s => ({ value: s.id, label: `${s.name} (${s.duration_minutes} мин)` }))]
+  const headerActions = useMemo(() => (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      <div className="flex gap-2 rounded-full border border-border/70 bg-surface/75 p-1">
+        {[
+          { key: 'calendar', label: 'Календарь', icon: CalendarDays },
+          { key: 'list', label: 'Список', icon: List },
+        ].map(item => {
+          const Icon = item.icon
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setView(item.key)}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                view === item.key ? 'bg-white text-primary shadow-[0_8px_18px_rgba(15,23,40,0.08)]' : 'text-text-muted hover:text-text'
+              }`}
+            >
+              <Icon size={15} />
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
+      {user?.is_manager && (
+        <Button onClick={openCreate}>
+          <Plus size={16} />
+          Новая запись
+        </Button>
+      )}
+    </div>
+  ), [user?.is_manager, view])
+
+  usePageHeaderContent(headerActions)
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Запись на услуги</h1>
-          <p className="text-text-muted">Календарь и список записей с оплатой</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-2 bg-subtle p-1 rounded-lg">
-            {[
-              { key: 'calendar', label: 'Календарь', icon: CalendarDays },
-              { key: 'list', label: 'Список', icon: List },
-            ].map(v => {
-              const Icon = v.icon
-              return (
-                <button
-                  key={v.key}
-                  onClick={() => setView(v.key)}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    view === v.key ? 'bg-surface text-primary shadow-sm' : 'text-text-muted hover:text-text'
-                  }`}
-                >
-                  <Icon size={16} />
-                  {v.label}
-                </button>
-              )
-            })}
-          </div>
-          {user?.is_manager && (
-            <Button onClick={openCreate}>
-              <Plus size={16} className="mr-1.5" />
-              Новая запись
-            </Button>
-          )}
-        </div>
-      </div>
-
       {view === 'calendar' && (
         <BookingCalendar bookings={bookings} services={services} onSlotClick={handleSlotClick} onBookingClick={openEdit} onBookingMove={handleBookingMove} />
       )}

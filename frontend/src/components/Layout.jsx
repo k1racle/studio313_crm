@@ -25,6 +25,7 @@ import {
 
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageHeader } from '../contexts/PageHeaderContext'
 import { formatFullName } from '../utils/format'
 import FloatingChatButton from './FloatingChatButton'
 import ThemeToggle from './ThemeToggle'
@@ -67,6 +68,7 @@ function UserAvatar({ user, size = 'md' }) {
 
 export default function Layout() {
   const { user, logout } = useAuth()
+  const { headerContent } = usePageHeader()
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -251,7 +253,9 @@ export default function Layout() {
                     <span className="pb-1 text-sm capitalize text-text-muted">{currentDate}</span>
                   </div>
                 </div>
-                <ThemeToggle />
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                  {headerContent}
+                </div>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
 import ProductionKanbanBoard from '../components/ProductionKanbanBoard'
@@ -13,6 +13,7 @@ import Card from '../components/ui/Card'
 import SearchableSelect from '../components/ui/SearchableSelect'
 import SearchableMultiSelect from '../components/ui/SearchableMultiSelect'
 import Subtasks from '../components/Subtasks'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import ProductionDetail from '../pages/ProductionDetail'
 import Avatar from '../components/ui/Avatar'
 import { Plus, Pencil, Trash2, Search, List, LayoutGrid, Calendar as CalendarIcon, BarChart3, Download } from 'lucide-react'
@@ -200,22 +201,19 @@ export default function Production() {
   const projectOptions = [{ value: '', label: 'Все проекты' }, ...projects.map(p => ({ value: p.id, label: p.name }))]
   const clientOptions = [{ value: '', label: 'Без клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
   const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
+  const headerActions = useMemo(() => (
+    user?.is_manager ? (
+      <Button onClick={openCreate}>
+        <Plus size={16} />
+        Новая заявка
+      </Button>
+    ) : null
+  ), [user?.is_manager])
+
+  usePageHeaderContent(headerActions)
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Производство</h1>
-          <p className="text-text-muted">Канбан производства контента</p>
-        </div>
-        {user?.is_manager && (
-          <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1.5" />
-            Новая заявка
-          </Button>
-        )}
-      </div>
-
       <Card className="mb-6">
         <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
           <div className="flex shrink-0 gap-2 bg-subtle p-1 rounded-lg">

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
+import { usePageHeaderContent } from '../contexts/PageHeaderContext'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -75,22 +76,19 @@ export default function Services() {
     await api.delete(`/booking/services/${id}/`)
     load()
   }
+  const headerActions = useMemo(() => (
+    user?.is_manager ? (
+      <Button onClick={openCreate}>
+        <Plus size={16} />
+        Новая услуга
+      </Button>
+    ) : null
+  ), [user?.is_manager])
+
+  usePageHeaderContent(headerActions)
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Услуги</h1>
-          <p className="text-text-muted">Каталог услуг студии</p>
-        </div>
-        {user?.is_manager && (
-          <Button onClick={openCreate}>
-            <Plus size={16} className="mr-1.5" />
-            Новая услуга
-          </Button>
-        )}
-      </div>
-
       <Card className="mb-6">
         <div className="flex flex-col sm:flex-row gap-3">
           <Input
