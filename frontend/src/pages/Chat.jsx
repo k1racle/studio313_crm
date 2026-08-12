@@ -53,7 +53,7 @@ export default function Chat() {
       const unread = isActive ? 0 : (msg.sender?.id === user?.id ? (chat.unread_count || 0) : (chat.unread_count || 0) + 1)
       return [
         { ...chat, last_message: msg, unread_count: unread, updated_at: msg.created_at || new Date().toISOString() },
-        ...prev.filter(c => c.id !== msg.chat)
+        ...prev.filter(c => c.id !== msg.chat),
       ].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
     })
   }, [activeChat, user])
@@ -76,7 +76,7 @@ export default function Chat() {
       if (!chat || chat.last_message?.id !== msg.id) return prev
       return [
         { ...chat, last_message: msg },
-        ...prev.filter(c => c.id !== msg.chat)
+        ...prev.filter(c => c.id !== msg.chat),
       ]
     })
   }, [])
@@ -139,9 +139,9 @@ export default function Chat() {
   )
 
   return (
-    <div className="fixed inset-0 top-14 z-30 h-[calc(100dvh-3.5rem)] md:absolute md:inset-8 md:z-auto md:h-auto md:w-auto bg-surface md:rounded-xl md:border md:border-border overflow-hidden">
+    <div className="soft-panel h-[calc(100dvh-10rem)] overflow-hidden rounded-[30px] lg:h-[calc(100vh-11rem)]">
       <div className="flex h-full min-w-0">
-        <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 bg-surface border-r border-border flex-col h-full`}>
+        <div className={`${activeChat ? 'hidden md:flex' : 'flex'} h-full w-full flex-col border-r border-border bg-surface md:w-80`}>
           <ChatSidebar
             chats={filteredChats}
             activeChat={activeChat}
@@ -151,11 +151,11 @@ export default function Chat() {
             setSearch={setSearch}
           />
         </div>
-        <div className={`${activeChat ? 'flex' : 'hidden md:flex'} flex-1 flex-col h-full min-w-0`}>
-          <div className="px-4 md:px-6 py-2 border-b border-border text-xs text-text-muted flex items-center justify-between">
+        <div className={`${activeChat ? 'flex' : 'hidden md:flex'} min-w-0 flex-1 flex-col h-full`}>
+          <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs text-text-muted md:px-6">
             <div className="flex items-center gap-2">
-              <button onClick={handleBack} className="md:hidden p-1 text-text-muted hover:text-text">← Назад</button>
-              <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <button onClick={handleBack} className="p-1 text-text-muted hover:text-text md:hidden">← Назад</button>
+              <span className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
               {connected ? 'Онлайн' : 'Нет подключения'}
             </div>
           </div>

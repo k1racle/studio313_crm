@@ -344,7 +344,7 @@ export default function Tasks() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden" bodyClassName="space-y-5">
+      <Card className="overflow-hidden" bodyClassName="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           {[
             { key: 'kanban', label: 'Kanban' },
@@ -367,7 +367,11 @@ export default function Tasks() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.2fr_repeat(4,minmax(0,0.8fr))]">
+        <div className={`grid grid-cols-1 gap-3 ${
+          view === 'kanban'
+            ? 'xl:grid-cols-[minmax(0,1.2fr)_200px_200px_220px_auto_auto]'
+            : '2xl:grid-cols-[minmax(0,1.15fr)_180px_180px_180px_220px_auto_auto] xl:grid-cols-[minmax(0,1fr)_180px_180px_180px_220px]'
+        }`}>
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск по названию, описанию или тегам..."
@@ -377,14 +381,11 @@ export default function Tasks() {
           <Select value={filters.project} onChange={event => setFilters({ ...filters, project: event.target.value })} options={projectOptions} />
           {view !== 'kanban' ? (
             <Select value={filters.status} onChange={event => setFilters({ ...filters, status: event.target.value })} options={statusOptions} />
-          ) : (
-            <div className="hidden xl:block" />
-          )}
+          ) : null}
           <Select value={filters.priority} onChange={event => setFilters({ ...filters, priority: event.target.value })} options={priorityOptions} />
-          <SearchableSelect value={filters.assignees} onChange={value => setFilters({ ...filters, assignees: value })} options={userOptions} />
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <SearchableSelect value={filters.assignees} onChange={value => setFilters({ ...filters, assignees: value })} options={userOptions} />
+          </div>
           <label className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/70 px-4 py-2 text-sm text-text-muted">
             <input
               type="checkbox"

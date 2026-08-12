@@ -166,20 +166,19 @@ export default function PasswordVault() {
   return (
     <div className="space-y-6">
       <Card>
-        <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_260px]">
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск по названию, логину, ссылке или комментарию..."
             value={search}
             onChange={event => setSearch(event.target.value)}
-            className="flex-1"
           />
-          <div className="w-full lg:w-64">
+          <div>
             <label className="block text-sm font-medium text-text mb-1.5">Категория</label>
             <select
               value={categoryFilter}
               onChange={event => setCategoryFilter(event.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full rounded-2xl border border-border/80 bg-surface/86 px-4 py-3 text-text shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none transition-all focus:border-primary/70 focus:bg-surface focus:shadow-[0_0_0_4px_rgba(34,80,255,0.12)]"
             >
               <option value="">Все категории</option>
               {categories.map(category => (

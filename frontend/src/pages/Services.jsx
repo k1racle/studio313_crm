@@ -90,15 +90,14 @@ export default function Services() {
   return (
     <div>
       <Card className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск по названию или описанию..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="flex-1"
           />
-          <div className="flex items-center gap-2 bg-subtle p-1 rounded-lg">
+          <div className="flex flex-wrap items-center gap-2 rounded-[22px] border border-border/70 bg-subtle/72 p-1.5">
             {[
               { key: 'all', label: 'Все' },
               { key: 'active', label: 'Активные' },
@@ -107,8 +106,8 @@ export default function Services() {
               <button
                 key={f.key}
                 onClick={() => setActiveFilter(f.key)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  activeFilter === f.key ? 'bg-surface text-primary shadow-sm' : 'text-text-muted hover:text-text'
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  activeFilter === f.key ? 'bg-white text-primary shadow-[0_8px_18px_rgba(15,23,40,0.08)]' : 'text-text-muted hover:text-text'
                 }`}
               >
                 {f.label}

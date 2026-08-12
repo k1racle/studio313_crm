@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
 import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import SearchableSelect from '../components/ui/SearchableSelect'
@@ -583,30 +584,25 @@ export default function Files() {
         onChange={handleFileSelected}
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Файлы</h1>
-          <p className="text-text-muted">Хранилище файлов по проектам</p>
+      <Card className="mb-6">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[260px_minmax(0,1fr)]">
+          <div>
+            <SearchableSelect
+              value={selectedProject}
+              onChange={val => setSelectedProject(val)}
+              options={projectOptions}
+            />
+          </div>
+          <div>
+            <Input
+              icon={<Search size={16} />}
+              placeholder="Поиск по файлам и папкам..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
         </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="w-full sm:w-64">
-          <SearchableSelect
-            value={selectedProject}
-            onChange={val => setSelectedProject(val)}
-            options={projectOptions}
-          />
-        </div>
-        <div className="flex-1">
-          <Input
-            icon={<Search size={16} />}
-            placeholder="Поиск по файлам и папкам..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
+      </Card>
 
       {loading && <div className="text-text-muted">Загрузка...</div>}
 

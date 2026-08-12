@@ -119,7 +119,6 @@ export default function Payments() {
               placeholder="Поиск по клиенту, услуге или ID..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="max-w-md"
             />
           </Card>
           <Card className="overflow-hidden">

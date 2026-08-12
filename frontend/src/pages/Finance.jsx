@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { Calendar, CreditCard, Users } from 'lucide-react'
+
 import api from '../api/axios'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
-import { Calendar, CreditCard, Users, Briefcase } from 'lucide-react'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
@@ -28,45 +29,40 @@ export default function Finance() {
     load()
   }, [])
 
-  const unpaidTotal = report?.unpaid?.reduce((sum, u) => sum + u.remaining_amount, 0) || 0
+  const unpaidTotal = report?.unpaid?.reduce((sum, item) => sum + item.remaining_amount, 0) || 0
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Финансы</h1>
-          <p className="text-text-muted">Отчёты по платежам и задолженностям</p>
-        </div>
-      </div>
-
       <Card className="mb-6">
-        <div className="flex flex-col sm:flex-row items-end gap-3">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-sm text-text-muted whitespace-nowrap">С</span>
-            <Input type="date" value={from} onChange={e => setFrom(e.target.value)} />
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[220px_220px_auto]">
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-sm text-text-muted">С</span>
+            <Input type="date" value={from} onChange={event => setFrom(event.target.value)} />
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-sm text-text-muted whitespace-nowrap">По</span>
-            <Input type="date" value={to} onChange={e => setTo(e.target.value)} />
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-sm text-text-muted">По</span>
+            <Input type="date" value={to} onChange={event => setTo(event.target.value)} />
           </div>
-          <Button onClick={load}>Обновить</Button>
+          <div className="flex items-center xl:justify-end">
+            <Button onClick={load}>Обновить</Button>
+          </div>
         </div>
       </Card>
 
       {report && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Card className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white shrink-0">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-green-500 text-white">
                 <CreditCard size={24} />
               </div>
               <div>
-                <div className="text-2xl font-bold text-text">{report.total_paid.toLocaleString('ru')} ₽</div>
+                <div className="text-2xl font-bold text-text">{report.total_paid.toLocaleString('ru-RU')} ₽</div>
                 <div className="text-sm text-text-muted">Оплачено за период</div>
               </div>
             </Card>
             <Card className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center text-white shrink-0">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500 text-white">
                 <Calendar size={24} />
               </div>
               <div>
@@ -75,17 +71,17 @@ export default function Finance() {
               </div>
             </Card>
             <Card className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center text-white shrink-0">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
                 <Users size={24} />
               </div>
               <div>
-                <div className="text-2xl font-bold text-text">{unpaidTotal.toLocaleString('ru')} ₽</div>
+                <div className="text-2xl font-bold text-text">{unpaidTotal.toLocaleString('ru-RU')} ₽</div>
                 <div className="text-sm text-text-muted">Сумма к оплате</div>
               </div>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Card title="Выручка по месяцам" className="lg:col-span-2">
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -103,8 +99,8 @@ export default function Finance() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={report.by_service} dataKey="total" nameKey="booking__service__name" cx="50%" cy="50%" outerRadius={80} label>
-                      {report.by_service.map((_, i) => (
-                        <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+                      {report.by_service.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip formatter={value => [`${value} ₽`, '']} />
@@ -116,7 +112,7 @@ export default function Finance() {
           </div>
 
           <Card title="Задолженности" className="overflow-hidden">
-            <div className="overflow-x-auto -mx-6 px-6">
+            <div className="-mx-6 overflow-x-auto px-6">
               <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="border-b border-border text-left text-sm text-text-muted">
@@ -130,15 +126,19 @@ export default function Finance() {
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {report.unpaid.map(u => (
-                    <tr key={u.id} className="border-b border-border hover:bg-subtle">
-                      <td className="py-3 text-text">{u.client__name}</td>
-                      <td className="py-3 text-text">{u.service__name}</td>
-                      <td className="py-3 text-text-muted">{new Date(u.start_time).toLocaleString('ru')}</td>
-                      <td className="py-3"><Badge variant={u.status === 'pending' ? 'yellow' : u.status === 'confirmed' ? 'blue' : 'gray'}>{u.status}</Badge></td>
-                      <td className="py-3 text-text">{u.service__price.toLocaleString('ru')} ₽</td>
-                      <td className="py-3 text-success">{u.paid_amount.toLocaleString('ru')} ₽</td>
-                      <td className="py-3 text-danger font-medium">{u.remaining_amount.toLocaleString('ru')} ₽</td>
+                  {report.unpaid.map(item => (
+                    <tr key={item.id} className="border-b border-border hover:bg-subtle">
+                      <td className="py-3 text-text">{item.client__name}</td>
+                      <td className="py-3 text-text">{item.service__name}</td>
+                      <td className="py-3 text-text-muted">{new Date(item.start_time).toLocaleString('ru-RU')}</td>
+                      <td className="py-3">
+                        <Badge variant={item.status === 'pending' ? 'yellow' : item.status === 'confirmed' ? 'blue' : 'gray'}>
+                          {item.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 text-text">{item.service__price.toLocaleString('ru-RU')} ₽</td>
+                      <td className="py-3 text-success">{item.paid_amount.toLocaleString('ru-RU')} ₽</td>
+                      <td className="py-3 font-medium text-danger">{item.remaining_amount.toLocaleString('ru-RU')} ₽</td>
                     </tr>
                   ))}
                 </tbody>

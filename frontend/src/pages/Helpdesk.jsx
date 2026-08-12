@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Pencil, RefreshCw, Search, Trash2 } from 'lucide-react'
+
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
 import Card from '../components/ui/Card'
@@ -8,7 +10,6 @@ import Input from '../components/ui/Input'
 import Select from '../components/ui/Select'
 import Modal from '../components/ui/Modal'
 import Badge from '../components/ui/Badge'
-import { RefreshCw, Pencil, Trash2, Search } from 'lucide-react'
 
 const statusLabels = {
   open: 'Открыт',
@@ -105,8 +106,8 @@ export default function Helpdesk() {
     setIsModalOpen(true)
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
     await api.put(`/helpdesk/${editingTicket.id}/`, form)
     setIsModalOpen(false)
     setEditingTicket(null)
@@ -120,37 +121,31 @@ export default function Helpdesk() {
     loadTickets()
   }
 
-  const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
-  const filterPriorityOptions = [{ value: '', label: 'Все приоритеты' }, ...Object.entries(priorityLabels).map(([k, v]) => ({ value: k, label: v }))]
-  const sourceOptions = [{ value: '', label: 'Все источники' }, ...Object.entries(sourceLabels).map(([k, v]) => ({ value: k, label: v }))]
-  const categoryOptions = [{ value: '', label: 'Все категории' }, ...Object.entries(categoryLabels).map(([k, v]) => ({ value: k, label: v }))]
-  const categoryFormOptions = Object.entries(categoryLabels).map(([k, v]) => ({ value: k, label: v }))
+  const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([value, label]) => ({ value, label }))]
+  const filterPriorityOptions = [{ value: '', label: 'Все приоритеты' }, ...Object.entries(priorityLabels).map(([value, label]) => ({ value, label }))]
+  const sourceOptions = [{ value: '', label: 'Все источники' }, ...Object.entries(sourceLabels).map(([value, label]) => ({ value, label }))]
+  const categoryOptions = [{ value: '', label: 'Все категории' }, ...Object.entries(categoryLabels).map(([value, label]) => ({ value, label }))]
+  const categoryFormOptions = Object.entries(categoryLabels).map(([value, label]) => ({ value, label }))
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text">Хелпдеск</h1>
-        <p className="text-text-muted">Обращения клиентов и сотрудников</p>
-      </div>
-
       <Card className="mb-6">
-        <div className="flex flex-wrap items-end gap-3">
-          <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />
-          <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={filterPriorityOptions} />
-          <Select value={filters.source} onChange={e => setFilters({ ...filters, source: e.target.value })} options={sourceOptions} />
-          <Select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })} options={categoryOptions} />
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_170px_170px_170px_170px] 2xl:grid-cols-[minmax(0,1.15fr)_180px_180px_180px_180px]">
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск по теме, описанию, заявителю..."
             value={filters.search}
-            onChange={e => setFilters({ ...filters, search: e.target.value })}
-            className="w-full sm:w-80"
+            onChange={event => setFilters({ ...filters, search: event.target.value })}
           />
+          <Select value={filters.status} onChange={event => setFilters({ ...filters, status: event.target.value })} options={statusOptions} />
+          <Select value={filters.priority} onChange={event => setFilters({ ...filters, priority: event.target.value })} options={filterPriorityOptions} />
+          <Select value={filters.source} onChange={event => setFilters({ ...filters, source: event.target.value })} options={sourceOptions} />
+          <Select value={filters.category} onChange={event => setFilters({ ...filters, category: event.target.value })} options={categoryOptions} />
         </div>
       </Card>
 
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto -mx-6 px-6">
+        <div className="-mx-6 overflow-x-auto px-6">
           <table className="w-full min-w-[900px]">
             <thead>
               <tr className="border-b border-border text-left text-sm text-text-muted">
@@ -166,34 +161,34 @@ export default function Helpdesk() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {tickets.map(t => (
-                <tr key={t.id} className="border-b border-border hover:bg-subtle">
-                  <td className="py-3 text-text-muted">#{t.id}</td>
-                  <td className="py-3 font-medium text-text">{t.subject}</td>
-                  <td className="py-3"><Badge variant={statusBadgeVariant[t.status]}>{statusLabels[t.status]}</Badge></td>
-                  <td className="py-3 text-text">{priorityLabels[t.priority]}</td>
-                  <td className="py-3"><Badge variant={categoryBadgeVariant[t.category]}>{categoryLabels[t.category] || '—'}</Badge></td>
-                  <td className="py-3 text-text">{sourceLabels[t.source]}</td>
-                  <td className="py-3 text-text">{t.requester_name || '—'}</td>
-                  <td className="py-3 text-text-muted">{new Date(t.created_at).toLocaleString('ru')}</td>
+              {tickets.map(ticket => (
+                <tr key={ticket.id} className="border-b border-border hover:bg-subtle">
+                  <td className="py-3 text-text-muted">#{ticket.id}</td>
+                  <td className="py-3 font-medium text-text">{ticket.subject}</td>
+                  <td className="py-3"><Badge variant={statusBadgeVariant[ticket.status]}>{statusLabels[ticket.status]}</Badge></td>
+                  <td className="py-3 text-text">{priorityLabels[ticket.priority]}</td>
+                  <td className="py-3"><Badge variant={categoryBadgeVariant[ticket.category]}>{categoryLabels[ticket.category] || '—'}</Badge></td>
+                  <td className="py-3 text-text">{sourceLabels[ticket.source]}</td>
+                  <td className="py-3 text-text">{ticket.requester_name || '—'}</td>
+                  <td className="py-3 text-text-muted">{new Date(ticket.created_at).toLocaleString('ru-RU')}</td>
                   <td className="py-3">
                     <div className="flex items-center gap-1">
-                      {user?.is_manager && t.status !== 'closed' && (
-                        <Button size="sm" variant="secondary" onClick={() => convertToTask(t.id)}>
+                      {user?.is_manager && ticket.status !== 'closed' && (
+                        <Button size="sm" variant="secondary" onClick={() => convertToTask(ticket.id)}>
                           <RefreshCw size={14} className="mr-1" />
                           В задачу
                         </Button>
                       )}
                       <button
-                        onClick={() => openEdit(t)}
-                        className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors"
+                        onClick={() => openEdit(ticket)}
+                        className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-subtle hover:text-primary"
                         title="Изменить"
                       >
                         <Pencil size={16} />
                       </button>
                       <button
-                        onClick={() => handleDelete(t)}
-                        className="p-1.5 text-text-muted hover:text-danger hover:bg-subtle rounded-lg transition-colors"
+                        onClick={() => handleDelete(ticket)}
+                        className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-subtle hover:text-danger"
                         title="Удалить"
                       >
                         <Trash2 size={16} />
@@ -212,37 +207,37 @@ export default function Helpdesk() {
           <Input
             label="Тема"
             value={form.subject}
-            onChange={e => setForm({ ...form, subject: e.target.value })}
+            onChange={event => setForm({ ...form, subject: event.target.value })}
             required
           />
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Описание</label>
+            <label className="mb-1.5 block text-sm font-medium text-text">Описание</label>
             <textarea
               value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              onChange={event => setForm({ ...form, description: event.target.value })}
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               rows="4"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select
               label="Приоритет"
               value={form.priority}
-              onChange={e => setForm({ ...form, priority: e.target.value })}
+              onChange={event => setForm({ ...form, priority: event.target.value })}
               options={priorityOptions}
             />
             <Select
               label="Статус"
               value={form.status}
-              onChange={e => setForm({ ...form, status: e.target.value })}
-              options={Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))}
+              onChange={event => setForm({ ...form, status: event.target.value })}
+              options={Object.entries(statusLabels).map(([value, label]) => ({ value, label }))}
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select
               label="Категория"
               value={form.category}
-              onChange={e => setForm({ ...form, category: e.target.value })}
+              onChange={event => setForm({ ...form, category: event.target.value })}
               options={categoryFormOptions}
             />
           </div>

@@ -216,16 +216,15 @@ export default function KnowledgeBase() {
   return (
     <div>
       <Card className="mb-6">
-        <div className="flex flex-wrap items-end gap-3">
-          <Select value={filters.kind} onChange={e => setFilters({ ...filters, kind: e.target.value })} options={kindOptions} />
-          <Select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })} options={categoryOptions} />
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_220px_220px]">
           <Input
             icon={<Search size={16} />}
             placeholder="Поиск по названию или описанию..."
             value={filters.search}
             onChange={e => setFilters({ ...filters, search: e.target.value })}
-            className="w-full sm:w-80"
           />
+          <Select value={filters.kind} onChange={e => setFilters({ ...filters, kind: e.target.value })} options={kindOptions} />
+          <Select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })} options={categoryOptions} />
         </div>
       </Card>
 

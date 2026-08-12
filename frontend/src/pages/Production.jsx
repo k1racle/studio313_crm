@@ -214,8 +214,8 @@ export default function Production() {
 
   return (
     <div>
-      <Card className="mb-6">
-        <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
+      <Card className="mb-6" bodyClassName="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex shrink-0 gap-2 bg-subtle p-1 rounded-lg">
             {[
               { key: 'kanban', label: 'Kanban', icon: LayoutGrid },
@@ -238,25 +238,30 @@ export default function Production() {
               )
             })}
           </div>
-          <div className="shrink-0 w-40">
+        </div>
+        <div className={`grid grid-cols-1 gap-3 ${
+          view === 'kanban'
+            ? 'xl:grid-cols-[minmax(0,1.2fr)_200px_220px_auto]'
+            : '2xl:grid-cols-[minmax(0,1.1fr)_180px_180px_220px_auto] xl:grid-cols-[minmax(0,1fr)_180px_180px_220px]'
+        }`}>
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск..."
+            value={filters.search}
+            onChange={e => setFilters({ ...filters, search: e.target.value })}
+          />
+          <div>
             <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
           </div>
           {view !== 'kanban' && (
-            <div className="shrink-0 w-36">
+            <div>
               <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusOptions} />
             </div>
           )}
-          <div className="shrink-0 w-44">
+          <div>
             <SearchableSelect value={filters.assignees} onChange={val => setFilters({ ...filters, assignees: val })} options={userOptions} />
           </div>
-          <div className="flex shrink-0 items-center gap-3 w-auto">
-            <Input
-              icon={<Search size={16} />}
-              placeholder="Поиск..."
-              value={filters.search}
-              onChange={e => setFilters({ ...filters, search: e.target.value })}
-              className="w-48 sm:w-64"
-            />
+          <div className="flex items-center xl:justify-end">
             <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
               <Download size={14} className="mr-1" />
               Excel

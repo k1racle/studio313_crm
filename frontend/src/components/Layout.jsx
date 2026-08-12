@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquare,
   Newspaper,
   Users,
   X,
@@ -49,6 +50,11 @@ const menuItems = [
   { path: '/knowledge', label: 'База знаний', icon: BookOpen },
 ]
 
+const headerItems = [
+  ...menuItems,
+  { path: '/chat', label: 'Чаты', icon: MessageSquare },
+]
+
 function UserAvatar({ user, size = 'md' }) {
   const sizes = {
     sm: 'h-10 w-10 text-sm',
@@ -75,7 +81,7 @@ export default function Layout() {
   const [birthdays, setBirthdays] = useState([])
 
   const currentItem = useMemo(
-    () => menuItems.find(item => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)) || menuItems[0],
+    () => headerItems.find(item => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)) || menuItems[0],
     [location.pathname]
   )
 
@@ -190,7 +196,7 @@ export default function Layout() {
           </div>
         </aside>
 
-        <div className="lg:hidden fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.88)] px-4 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.84)]">
+        <div className="fixed left-0 right-0 top-0 z-40 border-b border-border/70 bg-[rgba(255,255,255,0.88)] px-4 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.84)] lg:hidden">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-muted">Studio 313</div>

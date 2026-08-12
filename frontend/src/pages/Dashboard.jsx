@@ -4,9 +4,10 @@ import {
   ArrowRight,
   Calendar,
   CheckSquare,
+  Clapperboard,
   CreditCard,
   Layers3,
-  Sparkles,
+  Newspaper,
   Users,
 } from 'lucide-react'
 import {
@@ -37,6 +38,8 @@ const quickLinks = [
   { path: '/tasks', label: 'Задачи', desc: 'Kanban, календарь и список задач', icon: CheckSquare },
   { path: '/bookings', label: 'Запись', desc: 'Календарь и клиентские слоты', icon: Calendar },
   { path: '/projects', label: 'Проекты', desc: 'Управление студийными проектами', icon: Layers3 },
+  { path: '/production', label: 'Производство', desc: 'Съемка, монтаж, отсмотр и правки', icon: Clapperboard },
+  { path: '/media-plan', label: 'Медиа-план', desc: 'Контент, площадки и публикации', icon: Newspaper },
   { path: '/finance', label: 'Финансы', desc: 'Платежи, долги и отчеты', icon: CreditCard },
 ]
 
@@ -83,12 +86,7 @@ export default function Dashboard() {
       <section className="soft-panel overflow-hidden rounded-[34px]">
         <div className="px-6 py-7 md:px-8 lg:py-8">
           <div className="rounded-[30px] bg-[linear-gradient(160deg,#0b1322,#112241_55%,#1e4cff)] p-6 text-white shadow-[0_24px_70px_rgba(15,23,40,0.26)]">
-            <div className="mb-3 flex items-center gap-2 text-blue-100/84">
-              <Sparkles size={16} />
-              <span className="text-xs font-semibold uppercase tracking-[0.22em]">Быстрый старт</span>
-            </div>
-            <div className="text-2xl font-semibold leading-tight">Основные действия команды доступны в один клик.</div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {quickLinks.map(item => {
                 const Icon = item.icon
                 return (

@@ -288,8 +288,8 @@ export default function Contacts() {
   return (
     <div>
       <Card className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_260px]">
+          <div>
             <Input
               icon={<Search size={16} />}
               placeholder="Поиск по ФИО или организации..."
@@ -297,7 +297,7 @@ export default function Contacts() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <div className="w-full sm:w-64">
+          <div>
             <SearchableSelect
               value={orgFilter}
               onChange={val => setOrgFilter(val)}

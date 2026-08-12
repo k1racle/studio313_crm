@@ -357,27 +357,26 @@ export default function MediaPlan() {
   return (
     <div>
       <Card className="mb-6">
-        <div className="flex flex-nowrap sm:flex-wrap items-end gap-3 overflow-x-auto pb-2 sm:overflow-visible">
-          <div className="shrink-0 w-40">
+        <div className="grid grid-cols-1 gap-3 2xl:grid-cols-[minmax(0,1.1fr)_180px_220px_180px_180px_auto] xl:grid-cols-[minmax(0,1fr)_180px_220px_180px_180px]">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск..."
+            value={filters.search}
+            onChange={e => setFilters({ ...filters, search: e.target.value })}
+          />
+          <div>
             <Select value={filters.project} onChange={e => setFilters({ ...filters, project: e.target.value })} options={projectOptions} />
           </div>
-          <div className="shrink-0 w-44">
+          <div>
             <SearchableSelect value={filters.responsible} onChange={val => setFilters({ ...filters, responsible: val })} options={responsibleFilterOptions} />
           </div>
-          <div className="shrink-0 w-36">
+          <div>
             <Select value={filters.priority} onChange={e => setFilters({ ...filters, priority: e.target.value })} options={priorityFilterOptions} />
           </div>
-          <div className="shrink-0 w-36">
+          <div>
             <Select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })} options={statusFilterOptions} />
           </div>
-          <div className="flex shrink-0 items-center gap-3 w-auto">
-            <Input
-              icon={<Search size={16} />}
-              placeholder="Поиск..."
-              value={filters.search}
-              onChange={e => setFilters({ ...filters, search: e.target.value })}
-              className="w-48 sm:w-64"
-            />
+          <div className="flex items-center 2xl:justify-end">
             <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
               <Download size={14} className="mr-1" />
               Excel
