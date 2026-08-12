@@ -279,6 +279,23 @@ textarea:focus-visible {
 }
 
 @media (max-width: 767px) {
+  .mobile-header-actions button,
+  .mobile-header-actions a {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    padding: 0 !important;
+    gap: 0 !important;
+    border-radius: 999px;
+    font-size: 0 !important;
+  }
+
+  .mobile-header-actions svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
   .modal-form-shell label,
   .mobile-filters-shell label {
     display: block;

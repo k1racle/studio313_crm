@@ -323,7 +323,7 @@ export default function Layout() {
               <div className="brand-display truncate text-[1.75rem] leading-none text-text">{currentItem.label}</div>
             </div>
             {hasHeaderActions ? (
-              <div className="min-w-0 max-w-[62%] overflow-x-auto pb-1">
+              <div className="mobile-header-actions min-w-0 max-w-[62%] overflow-x-auto pb-1">
                 <div className="flex w-max min-w-full justify-end">
                   {headerContent}
                 </div>
