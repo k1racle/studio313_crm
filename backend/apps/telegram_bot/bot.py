@@ -9,7 +9,7 @@ from telegram.ext import (
     ApplicationBuilder, ContextTypes, MessageHandler,
     CommandHandler, filters
 )
-from telegram.request import BaseRequest
+from telegram.request import BaseRequest, HTTPXRequest
 import httpx
 from django.conf import settings
 from apps.tasks.models import Task
@@ -426,12 +426,28 @@ def get_application():
     return _application
 
 
+def build_httpx_request(proxy_url=None) -> HTTPXRequest:
+    return HTTPXRequest(
+        proxy=proxy_url,
+        http_version='1.1',
+        read_timeout=30,
+        write_timeout=30,
+        connect_timeout=30,
+        pool_timeout=30,
+        httpx_kwargs={
+            'headers': {'Connection': 'close'},
+            'limits': httpx.Limits(max_connections=20, max_keepalive_connections=0),
+        },
+    )
+
+
 def build_application():
     if not settings.TELEGRAM_BOT_TOKEN:
         raise ValueError('TELEGRAM_BOT_TOKEN не настроен')
 
     proxy_url = getattr(settings, 'TELEGRAM_PROXY_URL', None)
-    request = CustomHTTPXRequest(proxy_url=proxy_url)
+    request = build_httpx_request(proxy_url=proxy_url)
+    get_updates_request = build_httpx_request(proxy_url=proxy_url)
     if proxy_url:
         logger.info('Используется прокси: %s', proxy_url)
 
@@ -439,7 +455,7 @@ def build_application():
         ApplicationBuilder()
         .token(settings.TELEGRAM_BOT_TOKEN)
         .request(request)
-        .get_updates_request(request)
+        .get_updates_request(get_updates_request)
         .build()
     )
 
