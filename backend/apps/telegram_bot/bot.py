@@ -466,6 +466,7 @@ def build_application():
     application = (
         ApplicationBuilder()
         .token(settings.TELEGRAM_BOT_TOKEN)
+        .updater(None)
         .request(request)
         .get_updates_request(get_updates_request)
         .build()
