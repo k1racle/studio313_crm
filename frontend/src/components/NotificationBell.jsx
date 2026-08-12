@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Bell, Check, X } from 'lucide-react'
 
 import api from '../api/axios'
@@ -54,32 +55,18 @@ export default function NotificationBell({
     load()
   }
 
-  return (
+  const panel = (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={`relative inline-flex items-center justify-center rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)] transition-all hover:-translate-y-0.5 hover:text-primary hover:shadow-[0_12px_30px_rgba(15,23,40,0.12)] ${buttonClassName}`}
-        title={title}
-      >
-        <Bell size={size} />
-        {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </button>
-
       <div
         onClick={() => setOpen(false)}
-        className={`fixed inset-0 z-40 bg-[rgba(7,11,18,0.44)] backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[80] bg-[rgba(7,11,18,0.44)] backdrop-blur-sm transition-opacity duration-300 ${
           open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
         aria-hidden="true"
       />
 
       <aside
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-lg transform border-l border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
+        className={`fixed inset-y-0 right-0 z-[81] w-full max-w-lg transform border-l border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(241,246,255,0.98))] shadow-[var(--panel-shadow-strong)] transition-transform duration-300 ease-out dark:bg-[linear-gradient(180deg,rgba(16,23,34,0.98),rgba(10,15,24,0.98))] ${
           open ? 'pointer-events-auto translate-x-0' : 'pointer-events-none translate-x-full'
         }`}
       >
@@ -152,6 +139,26 @@ export default function NotificationBell({
           )}
         </div>
       </aside>
+    </>
+  )
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`relative inline-flex items-center justify-center rounded-full border border-border/80 bg-surface/84 p-2.5 text-text-muted shadow-[0_8px_24px_rgba(15,23,40,0.08)] transition-all hover:-translate-y-0.5 hover:text-primary hover:shadow-[0_12px_30px_rgba(15,23,40,0.12)] ${buttonClassName}`}
+        title={title}
+      >
+        <Bell size={size} />
+        {unreadCount > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {typeof document !== 'undefined' ? createPortal(panel, document.body) : null}
     </>
   )
 }
