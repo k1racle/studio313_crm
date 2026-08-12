@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.clickjacking import xframe_options_exempt
 from .models import HelpdeskTicket
 from .serializers import HelpdeskTicketSerializer, TicketCommentSerializer
 from apps.users.permissions import IsManagerOrHigher
@@ -67,6 +69,7 @@ class PublicTicketCreateView(generics.CreateAPIView):
         return ticket
 
 
+@method_decorator(xframe_options_exempt, name='dispatch')
 class HelpdeskWidgetView(APIView):
     permission_classes = [permissions.AllowAny]
 

@@ -13,6 +13,7 @@ import {
   CreditCard,
   Folder,
   FolderOpen,
+  Globe,
   HeadphonesIcon,
   Key,
   LayoutDashboard,
@@ -67,6 +68,8 @@ const mobileQuickNav = [
 
 const mobilePrimaryPaths = ['/', '/tasks', '/production', '/media-plan', '/projects', '/files', '/clients', '/finance']
 
+const integrationsItem = { path: '/integrations', label: 'Интеграции', icon: Globe }
+
 const birthdayKindLabels = {
   employee: 'Сотрудник',
   client: 'Клиент',
@@ -110,7 +113,7 @@ export default function Layout() {
   const hasHeaderActions = Boolean(headerContent)
 
   const currentItem = useMemo(
-    () => headerItems.find(item => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)) || menuItems[0],
+    () => [...headerItems, integrationsItem].find(item => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)) || menuItems[0],
     [location.pathname]
   )
 
@@ -230,17 +233,19 @@ export default function Layout() {
     )
   }
 
-  const desktopNavLinks = (
-    <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 pb-4 pt-3">
-      {menuItems.map(renderMenuLink)}
-    </nav>
-  )
+const desktopNavLinks = (
+  <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 pb-4 pt-3">
+    {menuItems.map(renderMenuLink)}
+    {renderMenuLink(integrationsItem)}
+  </nav>
+)
 
-  const mobileNavLinks = (
-    <nav className="space-y-1.5">
-      {menuItems.map(renderMenuLink)}
-    </nav>
-  )
+const mobileNavLinks = (
+  <nav className="space-y-1.5">
+    {menuItems.map(renderMenuLink)}
+    {renderMenuLink(integrationsItem)}
+  </nav>
+)
 
   const birthdayButton = (
     <div className="mx-4 mb-4">

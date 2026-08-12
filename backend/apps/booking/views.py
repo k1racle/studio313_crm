@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.clickjacking import xframe_options_exempt
 from .models import Service, Booking
 from .serializers import ServiceSerializer, BookingSerializer, PublicBookingSerializer
 from apps.users.permissions import IsManagerOrHigher
@@ -78,6 +80,7 @@ class PublicBookingCreateView(generics.CreateAPIView):
         return booking
 
 
+@method_decorator(xframe_options_exempt, name='dispatch')
 class BookingWidgetView(APIView):
     permission_classes = [permissions.AllowAny]
 

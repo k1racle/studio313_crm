@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import Files from './pages/Files'
 import Finance from './pages/Finance'
 import Helpdesk from './pages/Helpdesk'
+import Integrations from './pages/Integrations'
 import KnowledgeBase from './pages/KnowledgeBase'
 import Login from './pages/Login'
 import MediaPlan from './pages/MediaPlan'
@@ -57,6 +58,7 @@ function App() {
         <Route path="timesheets" element={<Timesheets />} />
         <Route path="projects" element={<Projects />} />
         <Route path="helpdesk" element={<Helpdesk />} />
+        <Route path="integrations" element={<Integrations />} />
         <Route path="knowledge" element={<KnowledgeBase />} />
         <Route path="media-plan" element={<MediaPlan />} />
         <Route path="files" element={<Files />} />
