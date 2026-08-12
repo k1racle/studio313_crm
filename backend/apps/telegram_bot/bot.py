@@ -287,6 +287,29 @@ def get_sender_name(msg):
     return ''
 
 
+async def log_update(update: object, context: ContextTypes.DEFAULT_TYPE):
+    if not isinstance(update, Update):
+        logger.warning('Получен неожиданный тип update: %r', type(update))
+        return
+    message = update.effective_message
+    chat = update.effective_chat
+    logger.info(
+        'Получен update: update_id=%s chat_id=%s chat_type=%s text=%r',
+        update.update_id,
+        getattr(chat, 'id', None),
+        getattr(chat, 'type', None),
+        getattr(message, 'text', None),
+    )
+
+
+async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE):
+    logger.exception(
+        'Ошибка обработки update %s: %s',
+        getattr(update, 'update_id', None),
+        context.error,
+    )
+
+
 async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_message or not update.effective_message.text:
         return
@@ -420,6 +443,7 @@ def build_application():
         .build()
     )
 
+    application.add_handler(MessageHandler(filters.ALL, log_update), group=-1)
     application.add_handler(CommandHandler('start', help_command))
     application.add_handler(CommandHandler('help', help_command))
     application.add_handler(CommandHandler('task', task_command))
@@ -427,6 +451,7 @@ def build_application():
     application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, handle_private_message))
     application.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & ~filters.COMMAND, handle_text_message))
     application.add_handler(MessageHandler(filters.ChatType.SUPERGROUP & filters.TEXT & ~filters.COMMAND, handle_text_message))
+    application.add_error_handler(on_error)
 
     return application
 
