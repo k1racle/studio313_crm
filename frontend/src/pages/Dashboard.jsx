@@ -32,7 +32,15 @@ const taskStatusLabels = {
   canceled: 'Отменена',
 }
 
-const chartColors = ['#2250ff', '#5b7cff', '#0f1728', '#4d6edb', '#7c93ff', '#9bb0ff']
+const taskStatusColors = {
+  new: '#5B8DEF',
+  in_progress: '#F59E0B',
+  approval: '#EC4899',
+  review: '#8B5CF6',
+  content_placement: '#14B8A6',
+  done: '#22C55E',
+  canceled: '#64748B',
+}
 
 const quickLinks = [
   { path: '/tasks', label: 'Задачи', desc: 'Kanban, календарь и список задач', icon: CheckSquare },
@@ -135,8 +143,8 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={stats.tasks_by_status} dataKey="count" nameKey="status" cx="40%" cy="50%" outerRadius={78} innerRadius={42}>
-                    {stats.tasks_by_status.map((item, index) => (
-                      <Cell key={item.status} fill={chartColors[index % chartColors.length]} />
+                    {stats.tasks_by_status.map(item => (
+                      <Cell key={item.status} fill={taskStatusColors[item.status] || '#2250ff'} />
                     ))}
                   </Pie>
                   <Tooltip formatter={value => [value, 'Количество']} />
