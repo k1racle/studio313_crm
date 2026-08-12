@@ -58,6 +58,8 @@ class CustomHTTPXRequest(BaseRequest):
             proxy=self._proxy_url,
             http1=True,
             http2=False,
+            headers={'Connection': 'close'},
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=0),
             timeout=httpx.Timeout(connect=30, read=30, write=30, pool=30),
         )
 
@@ -436,7 +438,7 @@ def run_bot():
         try:
             _application = None
             application = get_application()
-            application.run_polling(timeout=10, poll_interval=1)
+            application.run_polling(timeout=10, poll_interval=1, close_loop=False)
         except (NetworkError, httpx.ConnectError, httpx.ConnectTimeout, httpx.TimeoutException) as e:
             logger.error('Ошибка сети Telegram-бота: %s. Повтор через 30 секунд...', e)
         except Exception as e:
