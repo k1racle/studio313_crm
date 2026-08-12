@@ -84,7 +84,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <section className="soft-panel overflow-hidden rounded-[34px]">
-        <div className="px-6 py-7 md:px-8 lg:py-8">
+        <div>
           <div className="rounded-[30px] bg-[linear-gradient(160deg,#0b1322,#112241_55%,#1e4cff)] p-6 text-white shadow-[0_24px_70px_rgba(15,23,40,0.26)]">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {quickLinks.map(item => {
