@@ -1,18 +1,35 @@
 import json
 import logging
 import re
-from config import socks5_ipv4_patch  # noqa: F401
+
 import httpx
 from asgiref.sync import sync_to_async
+from config import socks5_ipv4_patch  # noqa: F401
 from django.conf import settings
+
+from apps.bot_assistant import (
+    ACTION_CREATE_TASK,
+    ACTION_CREATE_TICKET,
+    ACTION_LINK,
+    ACTION_MENU,
+    MAIN_MENU_ROWS,
+    PLATFORM_MAX,
+    build_help_text,
+    build_link_help_text,
+    build_menu_caption,
+    clear_pending_action,
+    create_helpdesk_ticket_from_private_message,
+    create_task_from_private_message,
+    get_pending_action,
+    handle_menu_action,
+    link_platform_account,
+)
 from apps.tasks.models import Task
-from apps.helpdesk.models import HelpdeskTicket
-from apps.users.models import User
-from .models import MaxChat, MaxMessage, MaxLinkCode, MaxNewsSuggestion
+from .models import MaxChat, MaxMessage, MaxNewsSuggestion
 
 logger = logging.getLogger(__name__)
 
-MAX_API_BASE = getattr(settings, 'MAX_BOT_API_BASE', 'https://platform-api.max.ru')
+MAX_API_BASE = getattr(settings, 'MAX_BOT_API_BASE', 'https://platform-api2.max.ru')
 
 NEWS_KEYWORDS = [
     'новый', 'новая', 'новое', 'новые',
@@ -44,9 +61,7 @@ NEWS_KEYWORDS = [
     'выступил', 'выступила', 'выступили',
     'рассказал', 'рассказала', 'рассказали',
     'законодательство', 'законодательный', 'закон',
-    'термин',
-    'поддержка', 'развитие', 'направление',
-    'в ходе', 'по итогам', 'по словам',
+    'термин', 'поддержка', 'развитие', 'направление', 'в ходе', 'по итогам', 'по словам',
 ]
 
 NON_NEWS_PHRASES = [
@@ -62,10 +77,8 @@ def looks_like_news(text: str) -> bool:
         return False
 
     text_lower = text.lower()
-
     if len(text.strip()) < 40:
         return False
-
     if any(phrase in text_lower for phrase in NON_NEWS_PHRASES):
         return False
 
@@ -93,14 +106,40 @@ def make_task_title(text: str) -> str:
     return f'Узнать подробнее: {text}'
 
 
+def build_main_menu_attachments():
+    buttons = [
+        [{'type': 'callback', 'text': text, 'payload': f'crm:{action}'} for text, action in row]
+        for row in MAIN_MENU_ROWS
+    ]
+    buttons.append([{'type': 'callback', 'text': '♻️ Обновить меню', 'payload': f'crm:{ACTION_MENU}'}])
+    buttons.append([{'type': 'callback', 'text': '🔗 Подключить CRM', 'payload': 'crm:link'}])
+    return [
+        {
+            'type': 'inline_keyboard',
+            'payload': {
+                'buttons': buttons,
+            },
+        }
+    ]
+
+
+def build_menu_message(text: str) -> dict:
+    return {
+        'text': text,
+        'attachments': build_main_menu_attachments(),
+    }
+
+
 class MaxBotClient:
     def __init__(self, token=None, proxy_url=None):
         self.token = token or getattr(settings, 'MAX_BOT_TOKEN', '')
-        self.proxy_url = proxy_url
+        self.proxy_url = proxy_url or getattr(settings, 'MAX_PROXY_URL', '')
         self.headers = {'Authorization': self.token}
         logger.info(
             'MaxBotClient init: api_base=%s token_set=%s proxy=%s',
-            MAX_API_BASE, bool(self.token), bool(self.proxy_url)
+            MAX_API_BASE,
+            bool(self.token),
+            bool(self.proxy_url),
         )
         client_kwargs = {
             'http1': True,
@@ -116,22 +155,20 @@ class MaxBotClient:
         await self.client.aclose()
 
     async def get_me(self):
-        try:
-            r = await self.client.get(f'{MAX_API_BASE}/me')
-            r.raise_for_status()
-            return r.json()
-        except Exception as e:
-            logger.error('MAX get_me error: %s', e)
-            if hasattr(e, 'response'):
-                try:
-                    logger.error('MAX get_me response: %s %s', e.response.status_code, e.response.text)
-                except Exception:
-                    pass
-            raise
+        response = await self.client.get(f'{MAX_API_BASE}/me')
+        response.raise_for_status()
+        return response.json()
 
-    async def send_message(self, chat_id, text, reply_to_message_id=None, user_id=None):
-        # MAX API требует передавать user_id/chat_id как query-параметр,
-        # а в теле запроса оставлять только text и вложения.
+    async def send_message(
+        self,
+        chat_id,
+        text,
+        reply_to_message_id=None,
+        user_id=None,
+        attachments=None,
+        text_format=None,
+        notify=True,
+    ):
         params = {}
         if user_id:
             params['user_id'] = user_id
@@ -140,21 +177,35 @@ class MaxBotClient:
         else:
             raise ValueError('Не указан chat_id или user_id')
 
-        payload = {'text': text}
+        payload = {'text': text, 'notify': notify}
         if reply_to_message_id:
             payload['link'] = {'type': 'reply', 'mid': reply_to_message_id}
+        if attachments is not None:
+            payload['attachments'] = attachments
+        if text_format:
+            payload['format'] = text_format
 
-        r = await self.client.post(f'{MAX_API_BASE}/messages', params=params, json=payload)
-        r.raise_for_status()
-        return r.json()
+        response = await self.client.post(f'{MAX_API_BASE}/messages', params=params, json=payload)
+        response.raise_for_status()
+        return response.json()
 
-    async def get_updates(self, offset=None, limit=100, timeout=30):
+    async def answer_callback(self, callback_id, message=None):
+        payload = {}
+        if message is not None:
+            payload['message'] = message
+        response = await self.client.post(f'{MAX_API_BASE}/answers', params={'callback_id': callback_id}, json=payload)
+        response.raise_for_status()
+        return response.json()
+
+    async def get_updates(self, marker=None, limit=100, timeout=30, types=None):
         params = {'limit': limit, 'timeout': timeout}
-        if offset:
-            params['offset'] = offset
-        r = await self.client.get(f'{MAX_API_BASE}/updates', params=params)
-        r.raise_for_status()
-        return r.json()
+        if marker is not None:
+            params['marker'] = marker
+        if types:
+            params['types'] = types
+        response = await self.client.get(f'{MAX_API_BASE}/updates', params=params)
+        response.raise_for_status()
+        return response.json()
 
 
 @sync_to_async
@@ -164,7 +215,7 @@ def get_or_create_chat(chat_id, chat_type, title=None):
         defaults={
             'chat_type': chat_type or 'private',
             'title': title or str(chat_id),
-        }
+        },
     )
     return chat
 
@@ -183,11 +234,7 @@ def save_message(chat, message_id, text, sender_name):
 def create_task_from_news(message_obj: MaxMessage):
     title = make_task_title(message_obj.text)
     chat_title = message_obj.chat.title or message_obj.chat.chat_id
-    description = (
-        f'Источник: {chat_title}\n'
-        f'Автор: {message_obj.sender_name}\n\n'
-        f'{message_obj.text}'
-    )
+    description = f'Источник: {chat_title}\nАвтор: {message_obj.sender_name}\n\n{message_obj.text}'
     task = Task.objects.create(
         title=title,
         description=description,
@@ -204,48 +251,21 @@ def create_task_from_news(message_obj: MaxMessage):
     return task, suggestion
 
 
-@sync_to_async
-def link_max_account(code, max_user_id):
-    try:
-        link_code = MaxLinkCode.objects.get(code=code)
-    except MaxLinkCode.DoesNotExist:
-        return None, 'Неверный код. Получите новый код в профиле приложения.'
-    if link_code.is_expired():
-        return None, 'Код истёк. Создайте новый.'
-    user = link_code.user
-    user.max_id = str(max_user_id)
-    user.save()
-    link_code.delete()
-    return user, f'Аккаунт {user.get_full_name() or user.username} успешно привязан. Вы будете получать уведомления.'
-
-
-@sync_to_async
-def create_helpdesk_ticket(text, sender_name, sender_username, chat_id):
-    return HelpdeskTicket.objects.create(
-        subject=text[:100],
-        description=text,
-        source=HelpdeskTicket.SOURCE_MAX,
-        requester_name=sender_name,
-        requester_contact=f'@{sender_username}' if sender_username else f'ID: {chat_id}',
-    )
-
-
 def _extract_message(update):
     return update.get('message') or update.get('payload') or update.get('data') or {}
 
 
 def _extract_chat(update):
-    """Извлекает chat из update в зависимости от структуры MAX."""
-    # Событие bot_started: chat_id на верхнем уровне
     if 'chat_id' in update:
         return {
             'chat_id': update['chat_id'],
             'chat_type': update.get('chat_type', 'dialog'),
         }
+
     message = _extract_message(update)
     if not message:
         return None
-    # Структура message_created: message.recipient = {'chat_id': ..., 'chat_type': 'dialog'}
+
     chat = message.get('recipient') or message.get('chat') or message.get('peer') or {}
     if not chat and 'chat_id' in message:
         return {'chat_id': message['chat_id']}
@@ -253,25 +273,19 @@ def _extract_chat(update):
 
 
 def _extract_sender(update):
-    # Событие bot_started: user на верхнем уровне
     if 'user' in update:
         return update['user']
     message = _extract_message(update)
-    sender = message.get('sender') or message.get('from') or message.get('user') or {}
-    return sender
+    return message.get('sender') or message.get('from') or message.get('user') or {}
 
 
 def _extract_text(update):
     message = _extract_message(update)
-    # Структура MAX: message.body.text
     body = message.get('body') or {}
-    if isinstance(body, dict):
-        text = body.get('text')
-        if text:
-            return text
-    text = message.get('text')
-    if text:
-        return text
+    if isinstance(body, dict) and body.get('text'):
+        return body.get('text')
+    if message.get('text'):
+        return message.get('text')
     content = message.get('content') or {}
     if isinstance(content, dict):
         return content.get('text') or ''
@@ -286,8 +300,30 @@ def _extract_message_id(update):
     return message.get('id') or message.get('message_id') or message.get('msg_id') or '0'
 
 
+def _extract_callback(update):
+    return update.get('callback') or update.get('message_callback') or {}
+
+
+async def _send_menu(client: MaxBotClient, chat_id, user_id, text: str):
+    return await client.send_message(
+        chat_id=chat_id,
+        user_id=user_id,
+        text=text,
+        attachments=build_main_menu_attachments(),
+    )
+
+
+async def _answer_with_menu(client: MaxBotClient, callback_id, text: str):
+    return await client.answer_callback(callback_id, message=build_menu_message(text))
+
+
 async def handle_update(client: MaxBotClient, update: dict):
     logger.info('MAX update raw: %s', json.dumps(update, ensure_ascii=False))
+
+    update_type = update.get('update_type', '')
+    callback = _extract_callback(update)
+    callback_id = callback.get('callback_id')
+    callback_payload = callback.get('payload') or callback.get('data') or ''
 
     text = _extract_text(update)
     chat = _extract_chat(update)
@@ -303,8 +339,15 @@ async def handle_update(client: MaxBotClient, update: dict):
     user_id = sender.get('user_id') or sender.get('id')
 
     logger.info(
-        'MAX parsed: chat_id=%s chat_type=%s message_id=%r text=%r sender=%s user_id=%s',
-        chat_id, chat_type, message_id, text, sender_name, user_id
+        'MAX parsed: type=%s chat_id=%s chat_type=%s message_id=%r text=%r sender=%s user_id=%s callback=%r',
+        update_type,
+        chat_id,
+        chat_type,
+        message_id,
+        text,
+        sender_name,
+        user_id,
+        callback_payload,
     )
 
     if not chat_id:
@@ -312,77 +355,106 @@ async def handle_update(client: MaxBotClient, update: dict):
         return
 
     chat_obj = await get_or_create_chat(chat_id, chat_type, title)
-    message_obj = await save_message(chat_obj, message_id, text, sender_name)
+    message_obj = None
+    if text:
+        message_obj = await save_message(chat_obj, message_id, text, sender_name)
 
-    async def _send(text_to_send):
-        try:
-            await client.send_message(chat_id, text_to_send, user_id=user_id)
-        except Exception as e:
-            logger.exception('Не удалось отправить сообщение в MAX chat_id=%s user_id=%s: %s', chat_id, user_id, e)
-
-    update_type = update.get('update_type', '')
-
-    # Команды
-    if update_type == 'bot_started' or text.startswith('/start') or text.startswith('/hello'):
-        await _send(
-            'Я бот медиа-студии.\n'
-            'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости.\n'
-            'Команды:\n'
-            '/task <текст> — создать задачу вручную\n'
-            '/link <код> — привязать MAX-аккаунт к профилю в системе\n'
-            '/help — помощь'
+    if update_type == 'message_callback' and callback_payload:
+        action = str(callback_payload).replace('crm:', '', 1)
+        reply_text = await sync_to_async(handle_menu_action)(
+            PLATFORM_MAX,
+            action,
+            str(user_id),
+            str(chat_id),
         )
+        if callback_id:
+            await _answer_with_menu(client, callback_id, reply_text)
+        else:
+            await _send_menu(client, chat_id, user_id, reply_text)
+        return
+
+    if update_type in ('bot_started', 'bot_added') or text.startswith('/start') or text.startswith('/hello'):
+        reply_text = await sync_to_async(build_menu_caption)(PLATFORM_MAX, str(user_id))
+        await _send_menu(client, chat_id, user_id, reply_text)
         return
 
     if text.startswith('/help'):
-        await _send(
-            'Я бот медиа-студии.\n'
-            'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости.\n'
-            'Команды:\n'
-            '/task <текст> — создать задачу вручную\n'
-            '/link <код> — привязать MAX-аккаунт к профилю в системе\n'
-            '/help — помощь'
-        )
+        await _send_menu(client, chat_id, user_id, build_help_text(PLATFORM_MAX))
+        return
+
+    if text.startswith('/link'):
+        parts = text.split(maxsplit=1)
+        if len(parts) < 2:
+            await _send_menu(client, chat_id, user_id, build_link_help_text(PLATFORM_MAX))
+            return
+        _, reply_text = await sync_to_async(link_platform_account)(PLATFORM_MAX, parts[1], str(user_id))
+        await sync_to_async(clear_pending_action)(PLATFORM_MAX, str(chat_id))
+        await _send_menu(client, chat_id, user_id, reply_text)
         return
 
     if text.startswith('/task'):
         title_text = re.sub(r'^/task\s*', '', text).strip()
         if not title_text:
-            await _send('Использование: /task Текст новости')
+            await _send_menu(client, chat_id, user_id, 'Использование: /task текст задачи')
             return
-        task, _ = await create_task_from_news(message_obj)
-        await _send(f'✅ Создана задача #{task.id}: «{task.title}»')
+        _, reply_text = await sync_to_async(create_task_from_private_message)(
+            PLATFORM_MAX,
+            str(user_id),
+            title_text,
+            sender_name,
+        )
+        await _send_menu(client, chat_id, user_id, reply_text)
         return
 
-    if text.startswith('/link'):
-        code = text.split(maxsplit=1)[1] if len(text.split()) > 1 else ''
-        if not code:
-            await _send('Использование: /link <код>')
-            return
-        user, message = await link_max_account(code, user_id)
-        await _send(message)
-        return
-
-    # Групповые чаты (в MAX личный тип называется 'dialog')
     if chat_type not in ('private', 'dialog'):
-        if looks_like_news(text):
+        if text and looks_like_news(text):
             task, _ = await create_task_from_news(message_obj)
             logger.info('MAX: создана задача #%s из новости в чате %s', task.id, chat_id)
         return
 
-    # Личные сообщения
-    if chat_type == 'private':
-        if text.startswith('/'):
-            return
-        ticket = await create_helpdesk_ticket(text, sender_name, sender_username, chat_id)
-        await _send(
-            f'📩 Ваше обращение зарегистрировано. Номер тикета: #{ticket.id}\n'
-            f'Мы скоро свяжемся с вами.'
+    pending_action = await sync_to_async(get_pending_action)(PLATFORM_MAX, str(chat_id))
+
+    if pending_action == ACTION_LINK:
+        _, reply_text = await sync_to_async(link_platform_account)(PLATFORM_MAX, text, str(user_id))
+        await sync_to_async(clear_pending_action)(PLATFORM_MAX, str(chat_id))
+        await _send_menu(client, chat_id, user_id, reply_text)
+        return
+
+    if pending_action == ACTION_CREATE_TASK:
+        _, reply_text = await sync_to_async(create_task_from_private_message)(
+            PLATFORM_MAX,
+            str(user_id),
+            text,
+            sender_name,
         )
+        await sync_to_async(clear_pending_action)(PLATFORM_MAX, str(chat_id))
+        await _send_menu(client, chat_id, user_id, reply_text)
+        return
+
+    if pending_action == ACTION_CREATE_TICKET:
+        _, reply_text = await sync_to_async(create_helpdesk_ticket_from_private_message)(
+            PLATFORM_MAX,
+            text,
+            sender_name,
+            f'@{sender_username}' if sender_username else f'ID: {chat_id}',
+        )
+        await sync_to_async(clear_pending_action)(PLATFORM_MAX, str(chat_id))
+        await _send_menu(client, chat_id, user_id, reply_text)
+        return
+
+    if text:
+        _, reply_text = await sync_to_async(create_helpdesk_ticket_from_private_message)(
+            PLATFORM_MAX,
+            text,
+            sender_name,
+            f'@{sender_username}' if sender_username else f'ID: {chat_id}',
+        )
+        await _send_menu(client, chat_id, user_id, reply_text)
 
 
 async def run_max_bot():
     import asyncio
+
     token = getattr(settings, 'MAX_BOT_TOKEN', None)
     if not token:
         logger.error('MAX_BOT_TOKEN не настроен')
@@ -394,33 +466,36 @@ async def run_max_bot():
             me = await client.get_me()
             logger.info('MAX бот запущен: %s', me)
             break
-        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as e:
-            logger.error('Не удалось подключиться к MAX API: %s. Повтор через 30 секунд...', e)
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as exc:
+            logger.error('Не удалось подключиться к MAX API: %s. Повтор через 30 секунд...', exc)
             await client.close()
             await asyncio.sleep(30)
         except Exception:
-            logger.exception('Не удалось получить информацию о MAX боте')
+            logger.exception('Не удалось получить информацию о MAX-боте')
             await client.close()
             await asyncio.sleep(30)
 
-    offset = None
-    logger.info('Запуск long polling для MAX бота...')
+    marker = None
+    logger.info('Запуск long polling для MAX-бота...')
 
     while True:
         try:
-            updates = await client.get_updates(offset=offset, timeout=30)
-            results = updates.get('results') or updates.get('updates') or []
+            updates = await client.get_updates(
+                marker=marker,
+                timeout=30,
+                types=['bot_started', 'bot_added', 'message_created', 'message_callback'],
+            )
+            results = updates.get('updates') or updates.get('results') or []
             for update in results:
                 try:
                     await handle_update(client, update)
-                except Exception as e:
-                    logger.exception('Ошибка обработки MAX update: %s', e)
-                update_id = update.get('update_id') or update.get('id')
-                if update_id:
-                    offset = update_id + 1
-        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as e:
-            logger.error('Ошибка сети MAX polling: %s. Повтор через 30 секунд...', e)
+                except Exception as exc:
+                    logger.exception('Ошибка обработки MAX update: %s', exc)
+            if 'marker' in updates:
+                marker = updates.get('marker')
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.NetworkError) as exc:
+            logger.error('Ошибка long polling MAX: %s. Повтор через 30 секунд...', exc)
             await asyncio.sleep(30)
-        except Exception as e:
-            logger.exception('Ошибка polling MAX: %s', e)
+        except Exception as exc:
+            logger.exception('Неожиданная ошибка MAX-бота: %s', exc)
             await asyncio.sleep(30)

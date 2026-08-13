@@ -1,38 +1,70 @@
+import asyncio
 import logging
 import random
 import re
-import asyncio
-from config import socks5_ipv4_patch  # noqa: F401
+
+import httpx
 from asgiref.sync import sync_to_async
-from telegram import Update
+from config import socks5_ipv4_patch  # noqa: F401
+from django.conf import settings
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import NetworkError
 from telegram.ext import (
-    ApplicationBuilder, ContextTypes, MessageHandler,
-    CommandHandler, filters
+    ApplicationBuilder,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
 )
 from telegram.request import BaseRequest, HTTPXRequest
-import httpx
-from django.conf import settings
+
+from apps.bot_assistant import (
+    ACTION_CREATE_TASK,
+    ACTION_CREATE_TICKET,
+    ACTION_LINK,
+    ACTION_MENU,
+    MAIN_MENU_ROWS,
+    PLATFORM_TELEGRAM,
+    build_help_text,
+    build_link_help_text,
+    build_menu_caption,
+    clear_pending_action,
+    create_helpdesk_ticket_from_private_message,
+    create_task_from_private_message,
+    get_pending_action,
+    handle_menu_action,
+    link_platform_account,
+)
 from apps.tasks.models import Task
-from apps.helpdesk.models import HelpdeskTicket
 from apps.users.models import User
-from .models import TelegramChat, TelegramMessage, NewsSuggestion, TelegramLinkCode
+from .models import NewsSuggestion, TelegramChat, TelegramMessage
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 logging.getLogger('telegram').setLevel(logging.INFO)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 
-class CustomHTTPXRequest(BaseRequest):
-    """Кастомная обёртка над httpx.AsyncClient с поддержкой SOCKS5/HTTP прокси.
 
-    python-telegram-bot использует HTTPXRequest, который при работе через
-    некоторые SOCKS5-прокси падает с ConnectTimeout на long-polling запросах.
-    Эта реализация использует httpx.AsyncClient напрямую и работает стабильно.
-    """
+def build_main_menu_markup() -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton(text, callback_data=f'crm:{action}') for text, action in row]
+        for row in MAIN_MENU_ROWS
+    ]
+    rows.append([InlineKeyboardButton('♻️ Обновить меню', callback_data=f'crm:{ACTION_MENU}')])
+    rows.append([InlineKeyboardButton('🔗 Подключить CRM', callback_data='crm:link')])
+    return InlineKeyboardMarkup(rows)
+
+
+async def send_menu_message(target, text: str):
+    return await target.reply_text(text, reply_markup=build_main_menu_markup())
+
+
+class CustomHTTPXRequest(BaseRequest):
+    """HTTPX request adapter for Telegram Bot API with proxy support."""
 
     def __init__(self, proxy_url=None):
         self._proxy_url = proxy_url
@@ -78,7 +110,7 @@ class CustomHTTPXRequest(BaseRequest):
         write_timeout: float | None = None,
         connect_timeout: float | None = None,
         pool_timeout: float | None = None,
-    ) -> tuple[int, str]:
+    ) -> tuple[int, bytes]:
         timeout = httpx.Timeout(
             connect=connect_timeout or 30,
             read=read_timeout or 30,
@@ -86,14 +118,14 @@ class CustomHTTPXRequest(BaseRequest):
             pool=pool_timeout or 30,
         )
         if method == 'POST':
-            r = await self._client.post(
+            response = await self._client.post(
                 url,
                 json=request_data.parameters if request_data else None,
                 timeout=timeout,
             )
         else:
-            r = await self._client.get(url, timeout=timeout)
-        return r.status_code, r.content
+            response = await self._client.get(url, timeout=timeout)
+        return response.status_code, response.content
 
 
 NEWS_KEYWORDS = [
@@ -101,7 +133,7 @@ NEWS_KEYWORDS = [
     'появился', 'появилась', 'появилось', 'появились',
     'запустил', 'запустила', 'запустили', 'запущен', 'запущена', 'запущено',
     'открыл', 'открыла', 'открыли', 'открыт', 'открыта', 'открыто',
-    'проведут', 'проведут', 'состоится', 'состоялось',
+    'проведут', 'состоится', 'состоялось',
     'представил', 'представила', 'представили', 'представлен', 'представлена', 'представлено',
     'анонсировал', 'анонсировала', 'анонсировали', 'анонсирован', 'анонс', 'анонсирована',
     'сообщил', 'сообщила', 'сообщили', 'сообщает', 'сообщают',
@@ -127,9 +159,6 @@ NEWS_KEYWORDS = [
     'винодел', 'винодельня', 'винодельни',
 ]
 
-# Слова/фразы, которые обычно говорят о личной переписке, а не о новости.
-# Важно: сюда не включаем общие слова вроде "когда"/"где"/"сколько", потому что
-# они часто встречаются и в новостных текстах.
 NON_NEWS_PHRASES = [
     'привет', 'здравствуй', 'спасибо', 'пожалуйста', 'ок', 'окей', 'давай',
     'как дела', 'до завтра', 'до встречи',
@@ -139,55 +168,37 @@ NON_NEWS_PHRASES = [
 
 
 def looks_like_news(text: str) -> bool:
-    """Определяет, похоже ли сообщение на новость по набору признаков."""
     if not text:
         return False
 
     text_lower = text.lower()
-
-    # Слишком короткие сообщения — не новости
     if len(text.strip()) < 40:
         return False
 
-    # Явно не новость (приветствия, бытовая переписка). Проверяем по границам слов,
-    # чтобы короткие слова вроде "ок" не попадали внутрь других слов ("покупателя").
     if any(re.search(r'\b' + re.escape(phrase) + r'\b', text_lower) for phrase in NON_NEWS_PHRASES):
         return False
 
     score = 0
-
-    # Новостные маркеры
     for keyword in NEWS_KEYWORDS:
         if keyword in text_lower:
             score += 2
 
-    # Наличие ссылки — сильный признак новости
     if re.search(r'https?://\S+', text):
         score += 3
-
-    # Наличие даты/времени
     if re.search(r'\d{1,2}[.\-/]\d{1,2}[.\-/]\d{2,4}', text):
         score += 2
     if re.search(r'\d{1,2}:\d{2}', text):
         score += 1
-
-    # Цитаты в кавычках-ёлочках — типичный маркер новостного текста
     if '«' in text and '»' in text:
         score += 2
-
-    # Числа с единицами измерения (экономика/отраслевые данные)
     if re.search(r'\d+(?:[\s\u00A0]?\d{3})*(?:,\d+)?\s*(?:тыс|млн|млрд|руб|₽|%|л\b|кг|т\b)', text_lower):
         score += 2
-
-    # Прямая речь/цитирование: Имя: «...» или Имя, «...»
     if re.search(r'(?:\b[А-ЯЁ][а-яё]+\b).*?[:,]\s*«', text):
         score += 2
-
-    # Большой абзац без вопросительных знаков — вероятнее новость
     if '?' not in text:
         score += 1
 
-    logger.info(f"News detection score: {score} for text (first 80 chars): {text[:80]!r}")
+    logger.info('News detection score=%s text=%r', score, text[:80])
     return score >= 3
 
 
@@ -205,7 +216,7 @@ def get_or_create_chat(chat_id, chat_type, title=None):
         defaults={
             'chat_type': chat_type,
             'title': title or str(chat_id),
-        }
+        },
     )
     return chat
 
@@ -224,11 +235,7 @@ def save_message(chat, message_id, text, sender_name):
 def create_task_from_news(message_obj: TelegramMessage, assignee=None):
     title = make_task_title(message_obj.text)
     chat_title = message_obj.chat.title or message_obj.chat.chat_id
-    description = (
-        f'Источник: {chat_title}\n'
-        f'Автор: {message_obj.sender_name}\n\n'
-        f'{message_obj.text}'
-    )
+    description = f'Источник: {chat_title}\nАвтор: {message_obj.sender_name}\n\n{message_obj.text}'
     task = Task.objects.create(
         title=title,
         description=description,
@@ -262,8 +269,9 @@ async def notify_journalists(bot, task, journalists, source_chat_title):
     if not journalists:
         logger.info('Нет журналистов с привязанным Telegram для уведомления')
         return
+
     assignees = list(task.assignees.all())
-    assignee_name = ', '.join(u.get_full_name() for u in assignees) if assignees else 'не назначен'
+    assignee_name = ', '.join(user.get_full_name() for user in assignees) if assignees else 'не назначен'
     text = (
         f'📰 Новая задача из Telegram-источника «{source_chat_title}»\n\n'
         f'#{task.id}: {task.title}\n'
@@ -272,8 +280,12 @@ async def notify_journalists(bot, task, journalists, source_chat_title):
     for journalist in journalists:
         try:
             await bot.send_message(chat_id=journalist.telegram_id, text=text)
-        except Exception as e:
-            logger.warning('Не удалось отправить уведомление журналисту %s: %s', journalist.telegram_id, e)
+        except Exception as exc:
+            logger.warning(
+                'Не удалось отправить уведомление журналисту %s: %s',
+                journalist.telegram_id,
+                exc,
+            )
 
 
 def get_sender_name(msg):
@@ -325,7 +337,7 @@ async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     if looks_like_news(text):
         journalists = await get_journalists()
         assignee = pick_random_journalist(journalists)
-        task, suggestion = await create_task_from_news(message_obj, assignee=assignee)
+        task, _ = await create_task_from_news(message_obj, assignee=assignee)
         await notify_journalists(context.bot, task, journalists, chat_obj.title or chat_obj.chat_id)
 
 
@@ -333,88 +345,127 @@ async def task_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_message or not update.effective_message.text:
         return
 
-    text = update.effective_message.text
-    # Remove command itself
-    title_text = re.sub(r'^/task\s*', '', text).strip()
+    title_text = re.sub(r'^/task\s*', '', update.effective_message.text).strip()
     if not title_text:
+        await update.effective_message.reply_text('Использование: /task текст задачи')
         return
 
     chat = update.effective_chat
     msg = update.effective_message
-
     chat_obj = await get_or_create_chat(chat.id, chat.type, getattr(chat, 'title', None))
     message_obj = await save_message(chat_obj, msg.message_id, title_text, get_sender_name(msg))
     journalists = await get_journalists()
     assignee = pick_random_journalist(journalists)
-    task, suggestion = await create_task_from_news(message_obj, assignee=assignee)
+    task, _ = await create_task_from_news(message_obj, assignee=assignee)
     await notify_journalists(context.bot, task, journalists, chat_obj.title or chat_obj.chat_id)
+    await update.effective_message.reply_text(f'✅ Создана задача #{task.id}: {task.title}')
+
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_message:
+        text = await sync_to_async(build_menu_caption)(PLATFORM_TELEGRAM, str(update.effective_user.id))
+        await send_menu_message(update.effective_message, text)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_message.reply_text(
-        'Я бот медиа-студии.\n'
-        'В групповом чате я автоматически создаю задачи из сообщений, похожих на новости, '
-        'и уведомляю журналистов в личных сообщениях.\n'
-        'Команды:\n'
-        '/task <текст> — создать задачу вручную\n'
-        '/link <код> — привязать Telegram-аккаунт к профилю в системе\n'
-        '/help — помощь'
-    )
-
-
-@sync_to_async
-def link_telegram_account(code, telegram_id):
-    try:
-        link_code = TelegramLinkCode.objects.get(code=code)
-    except TelegramLinkCode.DoesNotExist:
-        return None, 'Неверный код. Получите новый код в профиле приложения.'
-    if link_code.is_expired():
-        return None, 'Код истёк. Создайте новый.'
-    user = link_code.user
-    user.telegram_id = telegram_id
-    user.save()
-    link_code.delete()
-    return user, f'Аккаунт {user.get_full_name() or user.username} успешно привязан. Вы будете получать уведомления.'
+    if update.effective_message:
+        await send_menu_message(update.effective_message, build_help_text(PLATFORM_TELEGRAM))
 
 
 async def link_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        await update.effective_message.reply_text('Использование: /link <код>')
+    if not update.effective_message:
         return
-    code = context.args[0]
-    telegram_id = str(update.effective_user.id)
-    user, message = await link_telegram_account(code, telegram_id)
-    await update.effective_message.reply_text(message)
+
+    if not context.args:
+        await send_menu_message(update.effective_message, build_link_help_text(PLATFORM_TELEGRAM))
+        return
+
+    _, message = await sync_to_async(link_platform_account)(
+        PLATFORM_TELEGRAM,
+        context.args[0],
+        str(update.effective_user.id),
+    )
+    await sync_to_async(clear_pending_action)(PLATFORM_TELEGRAM, str(update.effective_chat.id))
+    await send_menu_message(update.effective_message, message)
+
+
+async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if not query:
+        return
+
+    await query.answer()
+    action = (query.data or '').replace('crm:', '', 1)
+    text = await sync_to_async(handle_menu_action)(
+        PLATFORM_TELEGRAM,
+        action,
+        str(update.effective_user.id),
+        str(update.effective_chat.id),
+    )
+    await query.message.reply_text(text, reply_markup=build_main_menu_markup())
 
 
 async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_message or not update.effective_message.text:
         return
 
-    text = update.effective_message.text
-
+    text = update.effective_message.text.strip()
     if text.startswith('/'):
         return
 
     chat = update.effective_chat
     msg = update.effective_message
-
     sender_name = get_sender_name(msg)
+    sender_contact = (
+        f'@{msg.from_user.username}'
+        if msg.from_user and msg.from_user.username
+        else f'ID: {chat.id}'
+    )
+
     chat_obj = await get_or_create_chat(chat.id, chat.type, sender_name or str(chat.id))
     await save_message(chat_obj, msg.message_id, text, sender_name)
 
-    ticket = await sync_to_async(HelpdeskTicket.objects.create)(
-        subject=text[:100],
-        description=text,
-        source=HelpdeskTicket.SOURCE_TELEGRAM,
-        requester_name=sender_name,
-        requester_contact=f'@{msg.from_user.username}' if msg.from_user and msg.from_user.username else f'ID: {chat.id}',
-    )
+    pending_action = await sync_to_async(get_pending_action)(PLATFORM_TELEGRAM, str(chat.id))
 
-    await msg.reply_text(
-        f'📩 Ваше обращение зарегистрировано. Номер тикета: #{ticket.id}\n'
-        f'Мы скоро свяжемся с вами.'
+    if pending_action == ACTION_LINK:
+        _, reply_text = await sync_to_async(link_platform_account)(
+            PLATFORM_TELEGRAM,
+            text,
+            str(update.effective_user.id),
+        )
+        await sync_to_async(clear_pending_action)(PLATFORM_TELEGRAM, str(chat.id))
+        await send_menu_message(msg, reply_text)
+        return
+
+    if pending_action == ACTION_CREATE_TASK:
+        _, reply_text = await sync_to_async(create_task_from_private_message)(
+            PLATFORM_TELEGRAM,
+            str(update.effective_user.id),
+            text,
+            sender_name,
+        )
+        await sync_to_async(clear_pending_action)(PLATFORM_TELEGRAM, str(chat.id))
+        await send_menu_message(msg, reply_text)
+        return
+
+    if pending_action == ACTION_CREATE_TICKET:
+        _, reply_text = await sync_to_async(create_helpdesk_ticket_from_private_message)(
+            PLATFORM_TELEGRAM,
+            text,
+            sender_name,
+            sender_contact,
+        )
+        await sync_to_async(clear_pending_action)(PLATFORM_TELEGRAM, str(chat.id))
+        await send_menu_message(msg, reply_text)
+        return
+
+    _, reply_text = await sync_to_async(create_helpdesk_ticket_from_private_message)(
+        PLATFORM_TELEGRAM,
+        text,
+        sender_name,
+        sender_contact,
     )
+    await send_menu_message(msg, reply_text)
 
 
 _application = None
@@ -473,10 +524,11 @@ def build_application():
     )
 
     application.add_handler(MessageHandler(filters.ALL, log_update), group=-1)
-    application.add_handler(CommandHandler('start', help_command))
+    application.add_handler(CommandHandler('start', start_command))
     application.add_handler(CommandHandler('help', help_command))
     application.add_handler(CommandHandler('task', task_command))
     application.add_handler(CommandHandler('link', link_command))
+    application.add_handler(CallbackQueryHandler(handle_callback_query, pattern=r'^crm:'))
     application.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, handle_private_message))
     application.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & ~filters.COMMAND, handle_text_message))
     application.add_handler(MessageHandler(filters.ChatType.SUPERGROUP & filters.TEXT & ~filters.COMMAND, handle_text_message))
@@ -524,12 +576,14 @@ def run_bot():
         try:
             _application = None
             asyncio.run(run_bot_once())
-        except (NetworkError, httpx.ConnectError, httpx.ConnectTimeout, httpx.TimeoutException) as e:
-            logger.error('Ошибка сети Telegram-бота: %s. Повтор через 30 секунд...', e)
-        except Exception as e:
-            logger.exception('Неожиданная ошибка Telegram-бота: %s', e)
+        except (NetworkError, httpx.ConnectError, httpx.ConnectTimeout, httpx.TimeoutException) as exc:
+            logger.error('Ошибка сети Telegram-бота: %s. Повтор через 30 секунд...', exc)
+        except Exception as exc:
+            logger.exception('Неожиданная ошибка Telegram-бота: %s', exc)
+
         try:
             import time
+
             time.sleep(30)
         except KeyboardInterrupt:
             logger.info('Остановка Telegram-бота')

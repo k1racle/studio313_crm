@@ -193,6 +193,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.tasks.tasks.archive_done_tasks_after_24h',
         'schedule': 3600.0,  # каждый час
     },
+    'send-task-deadline-reminders': {
+        'task': 'apps.tasks.tasks.send_task_deadline_reminders',
+        'schedule': 3600.0,  # РєР°Р¶РґС‹Р№ С‡Р°СЃ
+    },
     'send-media-plan-reminders': {
         'task': 'apps.media_plan.tasks.send_media_plan_reminders',
         'schedule': 3600.0,  # каждый час
@@ -207,7 +211,7 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_PROXY_URL = os.getenv('TELEGRAM_PROXY_URL', '')
 MAX_BOT_TOKEN = os.getenv('MAX_BOT_TOKEN', '')
 MAX_PROXY_URL = os.getenv('MAX_PROXY_URL', '')
-MAX_BOT_API_BASE = os.getenv('MAX_BOT_API_BASE', 'https://platform-api.max.ru')
+MAX_BOT_API_BASE = os.getenv('MAX_BOT_API_BASE', 'https://platform-api2.max.ru')
 TELEGRAM_WEBHOOK_URL = os.getenv('TELEGRAM_WEBHOOK_URL', '')
 
 # Web Push (VAPID)

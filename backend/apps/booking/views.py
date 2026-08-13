@@ -1,3 +1,6 @@
+import json
+
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -85,8 +88,10 @@ class BookingWidgetView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        services = list(
-            Service.objects.filter(is_active=True).values('id', 'name', 'duration_minutes', 'price')
+        services = json.dumps(
+            list(Service.objects.filter(is_active=True).values('id', 'name', 'duration_minutes', 'price')),
+            ensure_ascii=False,
+            cls=DjangoJSONEncoder,
         )
         html = f'''<!DOCTYPE html>
 <html lang="ru">
@@ -212,6 +217,14 @@ class BookingWidgetView(APIView):
   }}
   .service-card.active .service-meta {{
     color: rgba(255,255,255,0.92);
+  }}
+  .service-empty {{
+    border: 1px dashed var(--line);
+    padding: 18px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+    background: #fbfcff;
   }}
   .field-grid {{
     display: grid;
@@ -403,6 +416,9 @@ class BookingWidgetView(APIView):
     }});
   }}
 
+  if (!services.length) {{
+    servicesGrid.innerHTML = '<div class="service-empty">Активные услуги пока не добавлены в CRM. Проверьте, что у нужной услуги включён флаг активности.</div>';
+  }} else {{
   services.forEach((service, index) => {{
     const card = document.createElement('button');
     card.type = 'button';
@@ -416,6 +432,7 @@ class BookingWidgetView(APIView):
     servicesGrid.appendChild(card);
     if (index === 0) setActiveService(service);
   }});
+  }}
 
   document.getElementById('bookingForm').addEventListener('submit', async (e) => {{
     e.preventDefault();
