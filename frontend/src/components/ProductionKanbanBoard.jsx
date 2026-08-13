@@ -58,7 +58,7 @@ export default function ProductionKanbanBoard({ items, onItemMoved, onItemClick 
 
   return (
     <div className="space-y-3">
-      <div ref={topScrollRef} className="hidden h-4 overflow-x-auto overscroll-x-contain md:block">
+      <div ref={topScrollRef} className="hidden h-4 cursor-grab overflow-x-auto overscroll-x-contain md:block">
         <div className="grid grid-flow-col auto-cols-[320px] gap-4 md:gap-5">
           {columns.map(column => (
             <div key={column.key} className="h-px" />
@@ -66,7 +66,7 @@ export default function ProductionKanbanBoard({ items, onItemMoved, onItemClick 
         </div>
       </div>
 
-      <div ref={boardRef} className="grid grid-flow-col auto-cols-[84vw] gap-4 overflow-x-auto overscroll-x-contain pb-4 snap-x snap-proximity scroll-smooth sm:auto-cols-[320px] md:gap-5 md:snap-none">
+      <div ref={boardRef} className="grid grid-flow-col auto-cols-[84vw] gap-4 cursor-grab overflow-x-auto overscroll-x-contain pb-4 snap-x snap-proximity scroll-smooth sm:auto-cols-[320px] md:gap-5 md:snap-none">
         {columns.map(column => {
           const columnItems = items.filter(item => item.status === column.key)
 

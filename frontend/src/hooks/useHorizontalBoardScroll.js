@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 
 export default function useHorizontalBoardScroll(topScrollRef, boardRef) {
   const syncLockRef = useRef(null)
+  const dragCleanupRef = useRef(null)
 
   useEffect(() => {
     const top = topScrollRef.current
@@ -29,32 +30,63 @@ export default function useHorizontalBoardScroll(topScrollRef, boardRef) {
     const handleTopScroll = () => syncScroll(top, board)
     const handleBoardScroll = () => syncScroll(board, top)
 
-    const handleWheel = (event) => {
-      const target = event.currentTarget
-      const canScrollHorizontally = target.scrollWidth > target.clientWidth + 1
-      if (!canScrollHorizontally) return
+    const startDragScroll = (container, event) => {
+      if (event.button !== 0) return
+      if (container.scrollWidth <= container.clientWidth + 1) return
 
-      const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
-      if (!dominantDelta) return
+      const interactiveTarget = event.target.closest(
+        'button, a, input, textarea, select, [contenteditable="true"], [draggable="true"]',
+      )
+      if (interactiveTarget) return
 
-      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
-        return
+      const startX = event.clientX
+      const startScrollLeft = container.scrollLeft
+      let hasMoved = false
+
+      container.classList.add('cursor-grabbing')
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'grabbing'
+
+      const stopDragging = () => {
+        container.classList.remove('cursor-grabbing')
+        document.body.style.userSelect = ''
+        document.body.style.cursor = ''
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('mouseup', stopDragging)
+        dragCleanupRef.current = null
       }
 
-      event.preventDefault()
-      target.scrollBy({ left: dominantDelta, behavior: 'auto' })
+      const handleMouseMove = (moveEvent) => {
+        const deltaX = moveEvent.clientX - startX
+        if (Math.abs(deltaX) > 3) {
+          hasMoved = true
+        }
+
+        if (!hasMoved) return
+
+        container.scrollLeft = startScrollLeft - deltaX
+        moveEvent.preventDefault()
+      }
+
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', stopDragging)
+      dragCleanupRef.current = stopDragging
     }
+
+    const handleTopMouseDown = (event) => startDragScroll(top, event)
+    const handleBoardMouseDown = (event) => startDragScroll(board, event)
 
     top.addEventListener('scroll', handleTopScroll, { passive: true })
     board.addEventListener('scroll', handleBoardScroll, { passive: true })
-    top.addEventListener('wheel', handleWheel, { passive: false })
-    board.addEventListener('wheel', handleWheel, { passive: false })
+    top.addEventListener('mousedown', handleTopMouseDown)
+    board.addEventListener('mousedown', handleBoardMouseDown)
 
     return () => {
       top.removeEventListener('scroll', handleTopScroll)
       board.removeEventListener('scroll', handleBoardScroll)
-      top.removeEventListener('wheel', handleWheel)
-      board.removeEventListener('wheel', handleWheel)
+      top.removeEventListener('mousedown', handleTopMouseDown)
+      board.removeEventListener('mousedown', handleBoardMouseDown)
+      dragCleanupRef.current?.()
     }
   }, [topScrollRef, boardRef])
 }
