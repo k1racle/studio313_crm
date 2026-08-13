@@ -379,11 +379,19 @@ def format_media_plan(
     if not linked_user:
         return build_link_help_text(platform)
 
+    today = timezone.localdate()
+    week_start = today - timedelta(days=today.weekday())
+    next_week_end = week_start + timedelta(days=13)
+
     queryset = Publication.objects.all() if linked_user.is_manager else Publication.objects.filter(
         Q(responsible=linked_user) | Q(created_by=linked_user)
     )
     items = list(
-        queryset.exclude(status__in=[Publication.STATUS_PUBLISHED, Publication.STATUS_CANCELLED])
+        queryset.filter(
+            publish_at__date__gte=week_start,
+            publish_at__date__lte=next_week_end,
+        )
+        .exclude(status__in=[Publication.STATUS_PUBLISHED, Publication.STATUS_CANCELLED])
         .distinct()
         .select_related('project', 'responsible')
         .prefetch_related('platforms')
@@ -391,9 +399,12 @@ def format_media_plan(
     )
 
     if not items:
-        return '📰 В медиа-плане сейчас нет активных публикаций.'
+        return (
+            f'📰 На период {week_start.strftime("%d.%m")}–{next_week_end.strftime("%d.%m")} '
+            f'активных публикаций нет.'
+        )
 
-    lines = ['📰 Медиа-план:']
+    lines = [f'📰 Медиа-план на {week_start.strftime("%d.%m")}–{next_week_end.strftime("%d.%m")}:']
     for item in items:
         project = item.project.name if item.project else 'без проекта'
         platforms = ', '.join(item.platforms.values_list('name', flat=True)) or 'платформы не указаны'
