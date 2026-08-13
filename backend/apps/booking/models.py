@@ -1,4 +1,5 @@
 from django.db import models
+
 from apps.clients.models import Client
 
 
@@ -25,13 +26,22 @@ class Booking(models.Model):
     STATUS_CANCELED = 'canceled'
 
     STATUS_CHOICES = [
-        (STATUS_PENDING, 'Ожидает'),
+        (STATUS_PENDING, 'На согласовании'),
         (STATUS_CONFIRMED, 'Подтверждена'),
         (STATUS_COMPLETED, 'Выполнена'),
         (STATUS_CANCELED, 'Отменена'),
     ]
 
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='bookings', verbose_name='Клиент')
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='bookings',
+        verbose_name='Клиент',
+    )
+    requester_name = models.CharField(max_length=255, blank=True, verbose_name='Имя заявителя')
+    requester_phone = models.CharField(max_length=20, blank=True, verbose_name='Телефон заявителя')
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name='bookings', verbose_name='Услуга')
     start_time = models.DateTimeField(verbose_name='Начало')
     end_time = models.DateTimeField(verbose_name='Окончание')
@@ -45,5 +55,17 @@ class Booking(models.Model):
         verbose_name_plural = 'Записи'
         ordering = ['-start_time']
 
+    @property
+    def contact_name(self):
+        if self.client and self.client.name:
+            return self.client.name
+        return self.requester_name or 'Без имени'
+
+    @property
+    def contact_phone(self):
+        if self.client and self.client.phone:
+            return self.client.phone
+        return self.requester_phone
+
     def __str__(self):
-        return f'{self.service} — {self.start_time}'
+        return f'{self.service} - {self.contact_name} - {self.start_time}'

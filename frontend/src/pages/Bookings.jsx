@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { format, setHours, setMinutes } from 'date-fns'
+import { CalendarDays, CreditCard, List, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
+
 import api from '../api/axios'
+import BookingCalendar from '../components/BookingCalendar'
+import Badge from '../components/ui/Badge'
+import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
+import Input from '../components/ui/Input'
+import Modal from '../components/ui/Modal'
+import SearchableSelect from '../components/ui/SearchableSelect'
+import Select from '../components/ui/Select'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageHeaderContent } from '../contexts/PageHeaderContext'
-import BookingCalendar from '../components/BookingCalendar'
-import Card from '../components/ui/Card'
-import Button from '../components/ui/Button'
-import Input from '../components/ui/Input'
-import Select from '../components/ui/Select'
-import SearchableSelect from '../components/ui/SearchableSelect'
-import Modal from '../components/ui/Modal'
-import Badge from '../components/ui/Badge'
-import { Plus, Pencil, Trash2, CreditCard, X, Save, CalendarDays, List } from 'lucide-react'
 
 const statusLabels = {
-  pending: 'Ожидает',
+  pending: 'На согласовании',
   confirmed: 'Подтверждена',
   completed: 'Выполнена',
   canceled: 'Отменена',
@@ -28,13 +29,32 @@ const statusBadgeVariant = {
 }
 
 const statusOptions = [
-  { value: 'pending', label: 'Ожидает' },
+  { value: 'pending', label: 'На согласовании' },
   { value: 'confirmed', label: 'Подтверждена' },
   { value: 'completed', label: 'Выполнена' },
   { value: 'canceled', label: 'Отменена' },
 ]
 
-const emptyForm = { client_id: '', service_id: '', start_time: '', notes: '', status: 'pending' }
+const emptyForm = {
+  client_id: '',
+  requester_name: '',
+  requester_phone: '',
+  service_id: '',
+  start_time: '',
+  notes: '',
+  status: 'pending',
+}
+
+function formatError(error) {
+  const data = error?.response?.data
+  if (!data) return 'Не удалось выполнить операцию.'
+  if (typeof data.detail === 'string') return data.detail
+  if (typeof data === 'string') return data
+
+  return Object.entries(data)
+    .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+    .join(' | ') || 'Не удалось выполнить операцию.'
+}
 
 export default function Bookings() {
   const { user } = useAuth()
@@ -48,14 +68,14 @@ export default function Bookings() {
   const [form, setForm] = useState(emptyForm)
 
   const load = async () => {
-    const [b, s, c] = await Promise.all([
+    const [bookingResponse, serviceResponse, clientResponse] = await Promise.all([
       api.get('/booking/'),
       api.get('/booking/services/'),
       api.get('/clients/'),
     ])
-    setBookings(b.data.results || b.data)
-    setServices(s.data.results || s.data)
-    setClients(c.data.results || c.data)
+    setBookings(bookingResponse.data.results || bookingResponse.data)
+    setServices(serviceResponse.data.results || serviceResponse.data)
+    setClients(clientResponse.data.results || clientResponse.data)
   }
 
   useEffect(() => {
@@ -79,6 +99,8 @@ export default function Bookings() {
     setEditingBooking(booking)
     setForm({
       client_id: booking.client?.id || '',
+      requester_name: booking.requester_name || booking.contact_name || '',
+      requester_phone: booking.requester_phone || booking.contact_phone || '',
       service_id: booking.service?.id || '',
       start_time: booking.start_time ? booking.start_time.slice(0, 16) : '',
       notes: booking.notes || '',
@@ -87,44 +109,57 @@ export default function Bookings() {
     setIsBookingModalOpen(true)
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (editingBooking) {
-      await api.put(`/booking/${editingBooking.id}/`, form)
-    } else {
-      await api.post('/booking/', form)
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    const payload = {
+      ...form,
+      client_id: form.client_id || null,
     }
-    setForm(emptyForm)
-    setEditingBooking(null)
-    setIsBookingModalOpen(false)
-    load()
+    try {
+      if (editingBooking) {
+        await api.put(`/booking/${editingBooking.id}/`, payload)
+      } else {
+        await api.post('/booking/', payload)
+      }
+      setForm(emptyForm)
+      setEditingBooking(null)
+      setIsBookingModalOpen(false)
+      await load()
+    } catch (error) {
+      alert(formatError(error))
+    }
   }
 
   const handleBookingMove = async (id, newStart) => {
-    await api.patch(`/booking/${id}/`, { start_time: format(newStart, "yyyy-MM-dd'T'HH:mm") })
-    load()
+    try {
+      await api.patch(`/booking/${id}/`, { start_time: format(newStart, "yyyy-MM-dd'T'HH:mm") })
+      await load()
+    } catch (error) {
+      alert(formatError(error))
+    }
   }
 
   const handleDelete = async (booking) => {
-    if (!confirm(`Удалить запись «${booking.service?.name}» для ${booking.client?.name}?`)) return
+    if (!confirm(`Удалить запись «${booking.service?.name}» для ${booking.contact_name || 'клиента'}?`)) return
     await api.delete(`/booking/${booking.id}/`)
-    load()
+    await load()
   }
 
-  const createPayment = async (e) => {
-    e.preventDefault()
+  const createPayment = async (event) => {
+    event.preventDefault()
     if (!paymentForm.bookingId || !paymentForm.amount) return
-    const res = await api.post('/payments/', {
+    const response = await api.post('/payments/', {
       booking: paymentForm.bookingId,
       amount: paymentForm.amount,
     })
-    await api.post('/payments/callback/', { orderId: res.data.bank_order_id })
+    await api.post('/payments/callback/', { orderId: response.data.bank_order_id })
     setPaymentForm({ bookingId: null, amount: '' })
-    load()
+    await load()
   }
 
-  const clientOptions = [{ value: '', label: 'Выберите клиента' }, ...clients.map(c => ({ value: c.id, label: c.name }))]
-  const serviceOptions = [{ value: '', label: 'Выберите услугу' }, ...services.map(s => ({ value: s.id, label: `${s.name} (${s.duration_minutes} мин)` }))]
+  const clientOptions = [{ value: '', label: 'Выберите клиента' }, ...clients.map(client => ({ value: client.id, label: client.name }))]
+  const serviceOptions = [{ value: '', label: 'Выберите услугу' }, ...services.map(service => ({ value: service.id, label: `${service.name} (${service.duration_minutes} мин)` }))]
+
   const headerActions = useMemo(() => (
     <div className="flex flex-wrap items-center justify-end gap-3">
       <div className="flex gap-2 rounded-full border border-border/70 bg-surface/75 p-1">
@@ -168,10 +203,10 @@ export default function Bookings() {
       {view === 'list' && (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto -mx-6 px-6">
-            <table className="w-full min-w-[900px]">
+            <table className="w-full min-w-[980px]">
               <thead>
                 <tr className="border-b border-border text-left text-sm text-text-muted">
-                  <th className="pb-3 font-medium">Клиент</th>
+                  <th className="pb-3 font-medium">Клиент / заявка</th>
                   <th className="pb-3 font-medium">Услуга</th>
                   <th className="pb-3 font-medium">Начало</th>
                   <th className="pb-3 font-medium">Статус</th>
@@ -182,27 +217,31 @@ export default function Bookings() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {bookings.map(b => (
-                  <tr key={b.id} className="border-b border-border hover:bg-subtle">
-                    <td className="py-3 font-medium text-text">{b.client?.name}</td>
-                    <td className="py-3 text-text">{b.service?.name}</td>
-                    <td className="py-3 text-text-muted">{new Date(b.start_time).toLocaleString('ru')}</td>
-                    <td className="py-3"><Badge variant={statusBadgeVariant[b.status]}>{statusLabels[b.status]}</Badge></td>
-                    <td className="py-3 text-text">{b.service?.price} ₽</td>
-                    <td className="py-3 text-success font-medium">{b.paid_amount} ₽</td>
-                    <td className="py-3 text-text-muted">{b.remaining_amount} ₽</td>
+                {bookings.map(booking => (
+                  <tr key={booking.id} className="border-b border-border hover:bg-subtle">
+                    <td className="py-3 text-text">
+                      <div className="font-medium">{booking.contact_name || '—'}</div>
+                      <div className="text-xs text-text-muted">{booking.contact_phone || 'Без телефона'}</div>
+                      {booking.is_pending_request && <div className="mt-1 text-xs font-medium text-primary">Заявка еще не подтверждена</div>}
+                    </td>
+                    <td className="py-3 text-text">{booking.service?.name}</td>
+                    <td className="py-3 text-text-muted">{new Date(booking.start_time).toLocaleString('ru')}</td>
+                    <td className="py-3"><Badge variant={statusBadgeVariant[booking.status]}>{statusLabels[booking.status]}</Badge></td>
+                    <td className="py-3 text-text">{booking.service?.price} ₽</td>
+                    <td className="py-3 font-medium text-success">{booking.paid_amount} ₽</td>
+                    <td className="py-3 text-text-muted">{booking.remaining_amount} ₽</td>
                     <td className="py-3">
                       <div className="flex items-center gap-1">
-                        {b.remaining_amount > 0 && (
-                          paymentForm.bookingId === b.id ? (
-                            <form onSubmit={createPayment} className="flex items-center gap-2 mr-2">
+                        {booking.client && booking.remaining_amount > 0 && (
+                          paymentForm.bookingId === booking.id ? (
+                            <form onSubmit={createPayment} className="mr-2 flex items-center gap-2">
                               <input
                                 type="number"
                                 step="0.01"
-                                max={b.remaining_amount}
+                                max={booking.remaining_amount}
                                 value={paymentForm.amount}
-                                onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                                className="w-24 px-2 py-1 text-sm border border-border rounded bg-surface text-text"
+                                onChange={event => setPaymentForm({ ...paymentForm, amount: event.target.value })}
+                                className="w-24 rounded border border-border bg-surface px-2 py-1 text-sm text-text"
                                 required
                               />
                               <Button type="submit" size="sm">
@@ -214,7 +253,7 @@ export default function Bookings() {
                               </Button>
                             </form>
                           ) : (
-                            <Button size="sm" onClick={() => setPaymentForm({ bookingId: b.id, amount: b.remaining_amount })}>
+                            <Button size="sm" onClick={() => setPaymentForm({ bookingId: booking.id, amount: booking.remaining_amount })}>
                               <CreditCard size={14} className="mr-1" />
                               Оплатить
                             </Button>
@@ -223,15 +262,15 @@ export default function Bookings() {
                         {user?.is_manager && (
                           <>
                             <button
-                              onClick={() => openEdit(b)}
-                              className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors"
+                              onClick={() => openEdit(booking)}
+                              className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-subtle hover:text-primary"
                               title="Изменить"
                             >
                               <Pencil size={16} />
                             </button>
                             <button
-                              onClick={() => handleDelete(b)}
-                              className="p-1.5 text-text-muted hover:text-danger hover:bg-subtle rounded-lg transition-colors"
+                              onClick={() => handleDelete(booking)}
+                              className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-subtle hover:text-danger"
                               title="Удалить"
                             >
                               <Trash2 size={16} />
@@ -250,11 +289,13 @@ export default function Bookings() {
 
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title={editingBooking ? 'Изменить запись' : 'Новая запись'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <SearchableSelect label="Клиент" value={form.client_id} onChange={val => setForm({ ...form, client_id: val })} options={clientOptions} />
-          <Select label="Услуга" value={form.service_id} onChange={e => setForm({ ...form, service_id: e.target.value })} options={serviceOptions} required />
-          <Input label="Дата и время" type="datetime-local" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} required />
-          <Select label="Статус" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} options={statusOptions} />
-          <Input label="Примечания" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+          <SearchableSelect label="Клиент" value={form.client_id} onChange={value => setForm({ ...form, client_id: value })} options={clientOptions} />
+          <Input label="Имя заявителя" value={form.requester_name} onChange={event => setForm({ ...form, requester_name: event.target.value })} />
+          <Input label="Телефон заявителя" type="tel" value={form.requester_phone} onChange={event => setForm({ ...form, requester_phone: event.target.value })} />
+          <Select label="Услуга" value={form.service_id} onChange={event => setForm({ ...form, service_id: event.target.value })} options={serviceOptions} required />
+          <Input label="Дата и время" type="datetime-local" value={form.start_time} onChange={event => setForm({ ...form, start_time: event.target.value })} required />
+          <Select label="Статус" value={form.status} onChange={event => setForm({ ...form, status: event.target.value })} options={statusOptions} />
+          <Input label="Примечания" value={form.notes} onChange={event => setForm({ ...form, notes: event.target.value })} />
           <div className="modal-actions flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsBookingModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingBooking ? 'Сохранить' : 'Создать'}</Button>

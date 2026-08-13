@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     ServiceListCreateView, ServiceDetailView,
     BookingListCreateView, BookingDetailView,
-    PublicBookingCreateView, BookingWidgetView
+    PublicBookingCreateView, PublicBookingAvailabilityView, BookingWidgetView
 )
 
 urlpatterns = [
@@ -11,5 +11,6 @@ urlpatterns = [
     path('', BookingListCreateView.as_view(), name='booking_list_create'),
     path('<int:pk>/', BookingDetailView.as_view(), name='booking_detail'),
     path('public/', PublicBookingCreateView.as_view(), name='public_booking_create'),
+    path('public-availability/', PublicBookingAvailabilityView.as_view(), name='public_booking_availability'),
     path('widget/', BookingWidgetView.as_view(), name='booking_widget'),
 ]

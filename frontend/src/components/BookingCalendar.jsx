@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react'
-import { addDays, startOfWeek, format, isSameDay, parseISO, setHours, setMinutes } from 'date-fns'
+import { useMemo, useState } from 'react'
+import { addDays, format, isSameDay, parseISO, setHours, setMinutes, startOfWeek } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, GripVertical } from 'lucide-react'
 
 const START_HOUR = 8
 const END_HOUR = 22
-const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i)
+const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index)
 
 const serviceColors = [
   'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-800',
@@ -23,36 +23,34 @@ export default function BookingCalendar({ bookings, services, onSlotClick, onBoo
 
   const days = useMemo(() => {
     const start = addDays(weekStart, weekOffset * 7)
-    return Array.from({ length: 7 }, (_, i) => addDays(start, i))
-  }, [weekStart, weekOffset])
+    return Array.from({ length: 7 }, (_, index) => addDays(start, index))
+  }, [weekOffset, weekStart])
 
-  const getBookingsForDayAndHour = (day, hour) => {
-    return bookings.filter(b => {
-      const start = parseISO(b.start_time)
-      return isSameDay(start, day) && start.getHours() === hour
-    })
-  }
+  const getBookingsForDayAndHour = (day, hour) => bookings.filter(booking => {
+    const start = parseISO(booking.start_time)
+    return isSameDay(start, day) && start.getHours() === hour
+  })
 
   const getServiceColor = (serviceId) => serviceColors[(serviceId || 0) % serviceColors.length]
 
-  const handleDragStart = (e, booking) => {
+  const handleDragStart = (event, booking) => {
     setDraggingId(booking.id)
-    e.dataTransfer.setData('text/plain', String(booking.id))
-    e.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(booking.id))
+    event.dataTransfer.effectAllowed = 'move'
   }
 
   const handleDragEnd = () => {
     setDraggingId(null)
   }
 
-  const handleDragOver = (e) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
+  const handleDragOver = (event) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
   }
 
-  const handleDrop = (e, day, hour) => {
-    e.preventDefault()
-    const bookingId = e.dataTransfer.getData('text/plain')
+  const handleDrop = (event, day, hour) => {
+    event.preventDefault()
+    const bookingId = event.dataTransfer.getData('text/plain')
     if (bookingId && onBookingMove) {
       const newStart = setMinutes(setHours(day, hour), 0)
       onBookingMove(Number(bookingId), newStart)
@@ -61,20 +59,20 @@ export default function BookingCalendar({ bookings, services, onSlotClick, onBoo
   }
 
   return (
-    <div className="bg-surface rounded-xl border border-border overflow-hidden">
-      <div className="flex items-center justify-between p-4 border-b border-border">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface">
+      <div className="flex items-center justify-between border-b border-border p-4">
         <button
           onClick={() => setWeekOffset(weekOffset - 1)}
-          className="px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-subtle hover:text-text"
         >
           <ChevronLeft size={18} />
         </button>
-        <div className="text-base md:text-lg font-semibold text-text">
-          {format(days[0], 'dd MMM', { locale: ru })} — {format(days[6], 'dd MMM yyyy', { locale: ru })}
+        <div className="text-base font-semibold text-text md:text-lg">
+          {format(days[0], 'dd MMM', { locale: ru })} - {format(days[6], 'dd MMM yyyy', { locale: ru })}
         </div>
         <button
           onClick={() => setWeekOffset(weekOffset + 1)}
-          className="px-3 py-1.5 text-sm font-medium text-text-muted hover:text-text hover:bg-subtle rounded-lg transition-colors"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-subtle hover:text-text"
         >
           <ChevronRight size={18} />
         </button>
@@ -82,11 +80,11 @@ export default function BookingCalendar({ bookings, services, onSlotClick, onBoo
       <div className="overflow-x-auto">
         <div className="min-w-[800px]">
           <div className="grid grid-cols-8 border-b border-border">
-            <div className="p-3 text-sm font-medium text-text-muted bg-subtle border-r border-border">Время</div>
+            <div className="border-r border-border bg-subtle p-3 text-sm font-medium text-text-muted">Время</div>
             {days.map(day => (
-              <div key={day.toISOString()} className="p-3 text-center bg-subtle border-r border-border last:border-r-0">
+              <div key={day.toISOString()} className="border-r border-border bg-subtle p-3 text-center last:border-r-0">
                 <div className="text-sm font-semibold capitalize text-text">{format(day, 'EEEE', { locale: ru })}</div>
-                <div className={`text-xs ${isSameDay(day, new Date()) ? 'text-primary font-bold' : 'text-text-muted'}`}>
+                <div className={`text-xs ${isSameDay(day, new Date()) ? 'font-bold text-primary' : 'text-text-muted'}`}>
                   {format(day, 'dd.MM')}
                 </div>
               </div>
@@ -94,32 +92,35 @@ export default function BookingCalendar({ bookings, services, onSlotClick, onBoo
           </div>
           {HOURS.map(hour => (
             <div key={hour} className="grid grid-cols-8 border-b border-border last:border-b-0">
-              <div className="p-2 text-xs text-center text-text-muted bg-subtle border-r border-border">{`${hour}:00`}</div>
+              <div className="border-r border-border bg-subtle p-2 text-center text-xs text-text-muted">{`${hour}:00`}</div>
               {days.map(day => {
                 const slotBookings = getBookingsForDayAndHour(day, hour)
                 return (
                   <div
                     key={`${day.toISOString()}-${hour}`}
-                    className={`min-h-[90px] p-1 border-r border-border last:border-r-0 transition-colors ${draggingId ? 'bg-primary/5' : 'hover:bg-subtle'}`}
+                    className={`min-h-[90px] border-r border-border p-1 transition-colors last:border-r-0 ${draggingId ? 'bg-primary/5' : 'hover:bg-subtle'}`}
                     onClick={() => onSlotClick && onSlotClick(day, hour)}
                     onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, day, hour)}
+                    onDrop={event => handleDrop(event, day, hour)}
                   >
-                    {slotBookings.map(b => (
+                    {slotBookings.map(booking => (
                       <div
-                        key={b.id}
+                        key={booking.id}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, b)}
+                        onDragStart={event => handleDragStart(event, booking)}
                         onDragEnd={handleDragEnd}
-                        onClick={(e) => { e.stopPropagation(); onBookingClick?.(b) }}
-                        className={`text-xs p-2 rounded-md border mb-1 cursor-grab active:cursor-grabbing ${getServiceColor(b.service?.id)} ${draggingId === b.id ? 'opacity-50' : ''}`}
+                        onClick={event => {
+                          event.stopPropagation()
+                          onBookingClick?.(booking)
+                        }}
+                        className={`mb-1 cursor-grab rounded-md border p-2 text-xs active:cursor-grabbing ${getServiceColor(booking.service?.id)} ${draggingId === booking.id ? 'opacity-50' : ''}`}
                       >
                         <div className="flex items-start gap-1">
-                          <GripVertical size={12} className="shrink-0 mt-0.5 opacity-60" />
+                          <GripVertical size={12} className="mt-0.5 shrink-0 opacity-60" />
                           <div className="min-w-0">
-                            <div className="font-semibold truncate">{b.service?.name}</div>
-                            <div className="truncate">{b.client?.name}</div>
-                            <div>{format(parseISO(b.start_time), 'HH:mm')} - {format(parseISO(b.end_time), 'HH:mm')}</div>
+                            <div className="truncate font-semibold">{booking.service?.name}</div>
+                            <div className="truncate">{booking.contact_name || booking.client?.name || 'Без имени'}</div>
+                            <div>{format(parseISO(booking.start_time), 'HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}</div>
                           </div>
                         </div>
                       </div>

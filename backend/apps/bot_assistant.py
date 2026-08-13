@@ -361,7 +361,7 @@ def format_upcoming_bookings(
     lines = [f'🗓 Ближайшие записи на {days} дней:']
     for item in items:
         lines.append(
-            f'• #{item.id} {item.client.name} — {item.service.name}\n'
+            f'• #{item.id} {item.contact_name} — {item.service.name}\n'
             f'  {item.start_time.strftime("%d.%m %H:%M")} | Статус: {item.get_status_display()}'
         )
     return '\n'.join(lines)
