@@ -161,9 +161,14 @@ class MaxBotClient:
         await self.client.aclose()
 
     async def get_me(self):
-        response = await self.client.get(f'{MAX_API_BASE}/me')
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = await self.client.get(f'{MAX_API_BASE}/me')
+            response.raise_for_status()
+            return response.json()
+        except Exception as exc:
+            if hasattr(exc, 'response') and exc.response is not None:
+                logger.error('MAX get_me response: %s %s', exc.response.status_code, exc.response.text)
+            raise
 
     async def send_message(
         self,
@@ -191,27 +196,42 @@ class MaxBotClient:
         if text_format:
             payload['format'] = text_format
 
-        response = await self.client.post(f'{MAX_API_BASE}/messages', params=params, json=payload)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = await self.client.post(f'{MAX_API_BASE}/messages', params=params, json=payload)
+            response.raise_for_status()
+            return response.json()
+        except Exception as exc:
+            if hasattr(exc, 'response') and exc.response is not None:
+                logger.error('MAX send_message response: %s %s', exc.response.status_code, exc.response.text)
+            raise
 
     async def answer_callback(self, callback_id, message=None):
         payload = {}
         if message is not None:
             payload['message'] = message
-        response = await self.client.post(f'{MAX_API_BASE}/answers', params={'callback_id': callback_id}, json=payload)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = await self.client.post(f'{MAX_API_BASE}/answers', params={'callback_id': callback_id}, json=payload)
+            response.raise_for_status()
+            return response.json()
+        except Exception as exc:
+            if hasattr(exc, 'response') and exc.response is not None:
+                logger.error('MAX answer_callback response: %s %s', exc.response.status_code, exc.response.text)
+            raise
 
     async def get_updates(self, marker=None, limit=100, timeout=30, types=None):
         params = {'limit': limit, 'timeout': timeout}
         if marker is not None:
             params['marker'] = marker
         if types:
-            params['types'] = types
-        response = await self.client.get(f'{MAX_API_BASE}/updates', params=params)
-        response.raise_for_status()
-        return response.json()
+            params['types'] = ','.join(types) if isinstance(types, (list, tuple, set)) else types
+        try:
+            response = await self.client.get(f'{MAX_API_BASE}/updates', params=params)
+            response.raise_for_status()
+            return response.json()
+        except Exception as exc:
+            if hasattr(exc, 'response') and exc.response is not None:
+                logger.error('MAX get_updates response: %s %s', exc.response.status_code, exc.response.text)
+            raise
 
 
 @sync_to_async
