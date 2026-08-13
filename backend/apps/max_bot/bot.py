@@ -400,7 +400,7 @@ async def handle_update(client: MaxBotClient, update: dict):
         return
 
     if update_type in ('bot_started', 'bot_added') or text.startswith('/start') or text.startswith('/hello'):
-        reply_text = await sync_to_async(build_menu_caption)(PLATFORM_MAX, str(user_id))
+        reply_text = await sync_to_async(build_menu_caption)(PLATFORM_MAX, str(user_id), str(chat_id))
         await _send_menu(client, chat_id, user_id, reply_text)
         return
 
@@ -413,7 +413,12 @@ async def handle_update(client: MaxBotClient, update: dict):
         if len(parts) < 2:
             await _send_menu(client, chat_id, user_id, build_link_help_text(PLATFORM_MAX))
             return
-        _, reply_text = await sync_to_async(link_platform_account)(PLATFORM_MAX, parts[1], str(user_id))
+        _, reply_text = await sync_to_async(link_platform_account)(
+            PLATFORM_MAX,
+            parts[1],
+            str(user_id),
+            str(chat_id),
+        )
         await sync_to_async(clear_pending_action)(PLATFORM_MAX, str(chat_id))
         await _send_menu(client, chat_id, user_id, reply_text)
         return
@@ -428,6 +433,7 @@ async def handle_update(client: MaxBotClient, update: dict):
             str(user_id),
             title_text,
             sender_name,
+            str(chat_id),
         )
         await _send_menu(client, chat_id, user_id, reply_text)
         return
@@ -441,7 +447,12 @@ async def handle_update(client: MaxBotClient, update: dict):
     pending_action = await sync_to_async(get_pending_action)(PLATFORM_MAX, str(chat_id))
 
     if pending_action == ACTION_LINK:
-        _, reply_text = await sync_to_async(link_platform_account)(PLATFORM_MAX, text, str(user_id))
+        _, reply_text = await sync_to_async(link_platform_account)(
+            PLATFORM_MAX,
+            text,
+            str(user_id),
+            str(chat_id),
+        )
         await sync_to_async(clear_pending_action)(PLATFORM_MAX, str(chat_id))
         await _send_menu(client, chat_id, user_id, reply_text)
         return
@@ -452,6 +463,7 @@ async def handle_update(client: MaxBotClient, update: dict):
             str(user_id),
             text,
             sender_name,
+            str(chat_id),
         )
         await sync_to_async(clear_pending_action)(PLATFORM_MAX, str(chat_id))
         await _send_menu(client, chat_id, user_id, reply_text)

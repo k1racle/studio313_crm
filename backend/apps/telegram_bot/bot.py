@@ -363,7 +363,11 @@ async def task_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_message:
-        text = await sync_to_async(build_menu_caption)(PLATFORM_TELEGRAM, str(update.effective_user.id))
+        text = await sync_to_async(build_menu_caption)(
+            PLATFORM_TELEGRAM,
+            str(update.effective_user.id),
+            str(update.effective_chat.id),
+        )
         await send_menu_message(update.effective_message, text)
 
 
@@ -384,6 +388,7 @@ async def link_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         PLATFORM_TELEGRAM,
         context.args[0],
         str(update.effective_user.id),
+        str(update.effective_chat.id),
     )
     await sync_to_async(clear_pending_action)(PLATFORM_TELEGRAM, str(update.effective_chat.id))
     await send_menu_message(update.effective_message, message)
@@ -432,6 +437,7 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
             PLATFORM_TELEGRAM,
             text,
             str(update.effective_user.id),
+            str(chat.id),
         )
         await sync_to_async(clear_pending_action)(PLATFORM_TELEGRAM, str(chat.id))
         await send_menu_message(msg, reply_text)
@@ -443,6 +449,7 @@ async def handle_private_message(update: Update, context: ContextTypes.DEFAULT_T
             str(update.effective_user.id),
             text,
             sender_name,
+            str(chat.id),
         )
         await sync_to_async(clear_pending_action)(PLATFORM_TELEGRAM, str(chat.id))
         await send_menu_message(msg, reply_text)

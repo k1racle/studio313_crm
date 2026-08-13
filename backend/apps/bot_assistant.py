@@ -62,6 +62,34 @@ def get_linked_user(platform: str, external_user_id: str | int | None) -> User |
     return None
 
 
+def get_linked_user_by_chat(platform: str, chat_id: str | int | None) -> User | None:
+    if not chat_id:
+        return None
+
+    chat_id = str(chat_id)
+    if platform == PLATFORM_TELEGRAM:
+        from apps.telegram_bot.models import TelegramChat
+
+        chat = TelegramChat.objects.filter(chat_id=chat_id, is_active=True).select_related('user').first()
+        return chat.user if chat and chat.user and chat.user.is_active else None
+
+    if platform == PLATFORM_MAX:
+        from apps.max_bot.models import MaxChat
+
+        chat = MaxChat.objects.filter(chat_id=chat_id).select_related('user').first()
+        return chat.user if chat and chat.user and chat.user.is_active else None
+
+    return None
+
+
+def resolve_linked_user(
+    platform: str,
+    external_user_id: str | int | None,
+    chat_id: str | int | None = None,
+) -> User | None:
+    return get_linked_user(platform, external_user_id) or get_linked_user_by_chat(platform, chat_id)
+
+
 def build_link_help_text(platform: str) -> str:
     platform_label = 'Telegram' if platform == PLATFORM_TELEGRAM else 'MAX'
     return (
@@ -88,8 +116,12 @@ def build_help_text(platform: str) -> str:
     )
 
 
-def build_menu_caption(platform: str, external_user_id: str | int | None) -> str:
-    user = get_linked_user(platform, external_user_id)
+def build_menu_caption(
+    platform: str,
+    external_user_id: str | int | None,
+    chat_id: str | int | None = None,
+) -> str:
+    user = resolve_linked_user(platform, external_user_id, chat_id)
     if user:
         return (
             f'CRM-ассистент Studio 313\n'
@@ -125,8 +157,9 @@ def create_task_from_private_message(
     external_user_id: str | int | None,
     text: str,
     sender_name: str = '',
+    chat_id: str | int | None = None,
 ) -> tuple[Task | None, str]:
-    linked_user = get_linked_user(platform, external_user_id)
+    linked_user = resolve_linked_user(platform, external_user_id, chat_id)
     if not linked_user:
         return None, build_link_help_text(platform)
 
@@ -179,8 +212,13 @@ def create_helpdesk_ticket_from_private_message(
     )
 
 
-def format_user_tasks(platform: str, external_user_id: str | int | None, limit: int = 7) -> str:
-    linked_user = get_linked_user(platform, external_user_id)
+def format_user_tasks(
+    platform: str,
+    external_user_id: str | int | None,
+    limit: int = 7,
+    chat_id: str | int | None = None,
+) -> str:
+    linked_user = resolve_linked_user(platform, external_user_id, chat_id)
     if not linked_user:
         return build_link_help_text(platform)
 
@@ -209,8 +247,14 @@ def format_user_tasks(platform: str, external_user_id: str | int | None, limit: 
     return '\n'.join(lines)
 
 
-def format_upcoming_deadlines(platform: str, external_user_id: str | int | None, days: int = 7, limit: int = 7) -> str:
-    linked_user = get_linked_user(platform, external_user_id)
+def format_upcoming_deadlines(
+    platform: str,
+    external_user_id: str | int | None,
+    days: int = 7,
+    limit: int = 7,
+    chat_id: str | int | None = None,
+) -> str:
+    linked_user = resolve_linked_user(platform, external_user_id, chat_id)
     if not linked_user:
         return build_link_help_text(platform)
 
@@ -264,8 +308,12 @@ def format_birthdays(window_days: int = 7) -> str:
     return '\n'.join(lines)
 
 
-def format_crm_status(platform: str, external_user_id: str | int | None) -> str:
-    linked_user = get_linked_user(platform, external_user_id)
+def format_crm_status(
+    platform: str,
+    external_user_id: str | int | None,
+    chat_id: str | int | None = None,
+) -> str:
+    linked_user = resolve_linked_user(platform, external_user_id, chat_id)
     if not linked_user:
         return build_link_help_text(platform)
 
@@ -310,11 +358,11 @@ def handle_menu_action(platform: str, action: str, external_user_id: str | int |
     clear_pending_action(platform, chat_id)
 
     if action == ACTION_MENU:
-        return build_menu_caption(platform, external_user_id)
+        return build_menu_caption(platform, external_user_id, chat_id)
     if action == ACTION_HELP:
         return build_help_text(platform)
     if action == ACTION_CREATE_TASK:
-        if not get_linked_user(platform, external_user_id):
+        if not resolve_linked_user(platform, external_user_id, chat_id):
             return build_link_help_text(platform)
         set_pending_action(platform, chat_id, ACTION_CREATE_TASK)
         return '📝 Пришлите текст задачи одним сообщением. Я создам её в CRM и назначу на вас.'
@@ -322,26 +370,31 @@ def handle_menu_action(platform: str, action: str, external_user_id: str | int |
         set_pending_action(platform, chat_id, ACTION_CREATE_TICKET)
         return '📩 Пришлите текст обращения одним сообщением. Я создам заявку в helpdesk.'
     if action == ACTION_MY_TASKS:
-        return format_user_tasks(platform, external_user_id)
+        return format_user_tasks(platform, external_user_id, chat_id=chat_id)
     if action == ACTION_DEADLINES:
-        return format_upcoming_deadlines(platform, external_user_id)
+        return format_upcoming_deadlines(platform, external_user_id, chat_id=chat_id)
     if action == ACTION_BIRTHDAYS:
         return format_birthdays()
     if action == ACTION_CRM_STATUS:
-        return format_crm_status(platform, external_user_id)
+        return format_crm_status(platform, external_user_id, chat_id=chat_id)
     if action == ACTION_LINK:
         set_pending_action(platform, chat_id, ACTION_LINK)
         return '🔗 Пришлите код привязки из профиля CRM одним сообщением.'
-    return build_menu_caption(platform, external_user_id)
+    return build_menu_caption(platform, external_user_id, chat_id)
 
 
-def link_platform_account(platform: str, code: str, external_user_id: str | int) -> tuple[User | None, str]:
+def link_platform_account(
+    platform: str,
+    code: str,
+    external_user_id: str | int,
+    chat_id: str | int | None = None,
+) -> tuple[User | None, str]:
     code = (code or '').strip()
     if not code:
         return None, 'Код привязки пустой.'
 
     if platform == PLATFORM_TELEGRAM:
-        from apps.telegram_bot.models import TelegramLinkCode
+        from apps.telegram_bot.models import TelegramChat, TelegramLinkCode
 
         try:
             link_code = TelegramLinkCode.objects.select_related('user').get(code=code)
@@ -352,11 +405,13 @@ def link_platform_account(platform: str, code: str, external_user_id: str | int)
         user = link_code.user
         user.telegram_id = str(external_user_id)
         user.save(update_fields=['telegram_id'])
+        if chat_id:
+            TelegramChat.objects.filter(chat_id=str(chat_id)).update(user=user)
         link_code.delete()
         return user, f'✅ Telegram подключён к CRM-профилю: {user.get_full_name()}'
 
     if platform == PLATFORM_MAX:
-        from apps.max_bot.models import MaxLinkCode
+        from apps.max_bot.models import MaxChat, MaxLinkCode
 
         try:
             link_code = MaxLinkCode.objects.select_related('user').get(code=code)
@@ -367,6 +422,8 @@ def link_platform_account(platform: str, code: str, external_user_id: str | int)
         user = link_code.user
         user.max_id = str(external_user_id)
         user.save(update_fields=['max_id'])
+        if chat_id:
+            MaxChat.objects.filter(chat_id=str(chat_id)).update(user=user)
         link_code.delete()
         return user, f'✅ MAX подключён к CRM-профилю: {user.get_full_name()}'
 
