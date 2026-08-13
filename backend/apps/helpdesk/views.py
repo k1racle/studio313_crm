@@ -1,3 +1,6 @@
+import logging
+
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -13,16 +16,25 @@ from apps.users.permissions import IsManagerOrHigher
 from .models import HelpdeskTicket
 from .serializers import HelpdeskTicketSerializer, TicketCommentSerializer
 
+logger = logging.getLogger(__name__)
+
 
 def notify_new_ticket(ticket):
-    managers = User.objects.filter(is_manager=True)
+    managers = User.objects.filter(
+        Q(role__in=[User.ROLE_MANAGER, User.ROLE_DIRECTOR, User.ROLE_ADMIN])
+        | Q(is_staff=True)
+        | Q(is_superuser=True)
+    ).distinct()
     for manager in managers:
-        create_in_app_notification(
-            user=manager,
-            title='Новое обращение',
-            message=f'#{ticket.id}: {ticket.subject} от {ticket.requester_name}',
-            link='/helpdesk',
-        )
+        try:
+            create_in_app_notification(
+                user=manager,
+                title='Новое обращение',
+                message=f'#{ticket.id}: {ticket.subject} от {ticket.requester_name}',
+                link='/helpdesk',
+            )
+        except Exception:
+            logger.exception('Failed to notify manager %s about helpdesk ticket %s', manager.pk, ticket.pk)
 
 
 class HelpdeskTicketListCreateView(generics.ListCreateAPIView):

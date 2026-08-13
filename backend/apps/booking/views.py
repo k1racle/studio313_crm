@@ -1,6 +1,8 @@
 import json
+import logging
 
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import Q
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -15,16 +17,25 @@ from apps.users.permissions import IsManagerOrHigher
 from .models import Booking, Service
 from .serializers import BookingSerializer, PublicBookingSerializer, ServiceSerializer
 
+logger = logging.getLogger(__name__)
+
 
 def notify_managers_about_booking(booking):
-    managers = User.objects.filter(is_manager=True)
+    managers = User.objects.filter(
+        Q(role__in=[User.ROLE_MANAGER, User.ROLE_DIRECTOR, User.ROLE_ADMIN])
+        | Q(is_staff=True)
+        | Q(is_superuser=True)
+    ).distinct()
     for manager in managers:
-        create_in_app_notification(
-            user=manager,
-            title='Новая запись',
-            message=f'Клиент {booking.client.name} записан на {booking.service.name} ({booking.start_time})',
-            link='/bookings',
-        )
+        try:
+            create_in_app_notification(
+                user=manager,
+                title='Новая запись',
+                message=f'Клиент {booking.client.name} записан на {booking.service.name} ({booking.start_time})',
+                link='/bookings',
+            )
+        except Exception:
+            logger.exception('Failed to notify manager %s about booking %s', manager.pk, booking.pk)
 
 
 class ServiceListCreateView(generics.ListCreateAPIView):
@@ -407,6 +418,33 @@ class BookingWidgetView(APIView):
   const messageNode = document.getElementById('message');
 
   const formatPrice = (value) => Number(value || 0).toLocaleString('ru-RU');
+  const parseResponseBody = async (res) => {{
+    const text = await res.text();
+    if (!text) return null;
+
+    try {{
+      return JSON.parse(text);
+    }} catch (_error) {{
+      return {{ detail: `РЎРµСЂРІРµСЂ РІРµСЂРЅСѓР» РЅРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ РѕС‚РІРµС‚ (HTTP ${{res.status}}).` }};
+    }}
+  }};
+
+  const formatResponseMessage = (payload, fallback) => {{
+    if (!payload) return fallback;
+    if (typeof payload === 'string') return payload;
+    if (payload.detail && typeof payload.detail === 'string') return payload.detail;
+
+    const entries = Object.entries(payload)
+      .map(([key, value]) => {{
+        if (Array.isArray(value)) {{
+          return `${{key}}: ${{value.join(', ')}}`;
+        }}
+        return `${{key}}: ${{value}}`;
+      }})
+      .filter(Boolean);
+
+    return entries.join(' | ') || fallback;
+  }};
 
   function setActiveService(service) {{
     serviceInput.value = service.id;
@@ -447,11 +485,11 @@ class BookingWidgetView(APIView):
         headers: {{ 'Content-Type': 'application/json' }},
         body: JSON.stringify(body),
       }});
-      const data = await res.json();
+      const data = await parseResponseBody(res);
       messageNode.className = `message ${{res.ok ? 'success' : 'error'}}`;
       messageNode.textContent = res.ok
         ? 'Заявка отправлена. Мы подтвердим запись и свяжемся с вами.'
-        : JSON.stringify(data);
+        : formatResponseMessage(data, `РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ Р·Р°СЏРІРєСѓ (HTTP ${{res.status}}).`);
 
       if (res.ok) {{
         e.target.reset();
