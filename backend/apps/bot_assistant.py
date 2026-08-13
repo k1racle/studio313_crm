@@ -19,6 +19,9 @@ ACTION_CREATE_TASK = 'create_task'
 ACTION_CREATE_TICKET = 'create_ticket'
 ACTION_MY_TASKS = 'my_tasks'
 ACTION_DEADLINES = 'deadlines'
+ACTION_PRODUCTION = 'production'
+ACTION_BOOKINGS = 'bookings'
+ACTION_MEDIA_PLAN = 'media_plan'
 ACTION_BIRTHDAYS = 'birthdays'
 ACTION_CRM_STATUS = 'crm_status'
 ACTION_LINK = 'link'
@@ -27,8 +30,9 @@ ACTION_HELP = 'help'
 MAIN_MENU_ROWS = [
     [('📝 Создать задачу', ACTION_CREATE_TASK), ('📩 Helpdesk', ACTION_CREATE_TICKET)],
     [('📋 Мои задачи', ACTION_MY_TASKS), ('⏰ Дедлайны', ACTION_DEADLINES)],
-    [('🎂 Дни рождения', ACTION_BIRTHDAYS), ('🔗 CRM', ACTION_CRM_STATUS)],
-    [('❓ Помощь', ACTION_HELP)],
+    [('🎬 Производство', ACTION_PRODUCTION), ('🗓 Записи', ACTION_BOOKINGS)],
+    [('📰 Медиа-план', ACTION_MEDIA_PLAN), ('🎂 Дни рождения', ACTION_BIRTHDAYS)],
+    [('🔗 CRM', ACTION_CRM_STATUS), ('❓ Помощь', ACTION_HELP)],
 ]
 
 PENDING_STATE_TIMEOUT = 20 * 60
@@ -96,8 +100,7 @@ def build_link_help_text(platform: str) -> str:
         f'🔗 CRM пока не подключена.\n\n'
         f'1. Откройте профиль в CRM.\n'
         f'2. Сгенерируйте код привязки для {platform_label}.\n'
-        f'3. Отправьте его сюда командой `/link КОД` '
-        f'или нажмите кнопку «CRM» и пришлите код следующим сообщением.'
+        f'3. Отправьте его сюда командой `/link КОД` или нажмите кнопку «CRM» и пришлите код следующим сообщением.'
     )
 
 
@@ -110,6 +113,7 @@ def build_help_text(platform: str) -> str:
         f'• создавать заявки в helpdesk\n'
         f'• показывать ваши задачи и статусы\n'
         f'• напоминать о дедлайнах\n'
+        f'• показывать производство, записи и медиа-план\n'
         f'• показывать ближайшие дни рождения сотрудников, клиентов и контактов\n'
         f'• проверять статус подключения к CRM\n\n'
         f'Для персональных данных CRM сначала привяжите аккаунт через `/link КОД`.'
@@ -287,6 +291,121 @@ def format_upcoming_deadlines(
     return '\n'.join(lines)
 
 
+def format_user_production(
+    platform: str,
+    external_user_id: str | int | None,
+    limit: int = 7,
+    chat_id: str | int | None = None,
+) -> str:
+    from apps.production.models import Production
+
+    linked_user = resolve_linked_user(platform, external_user_id, chat_id)
+    if not linked_user:
+        return build_link_help_text(platform)
+
+    queryset = Production.objects.all() if linked_user.is_manager else Production.objects.filter(assignees=linked_user)
+    items = list(
+        queryset.exclude(status=Production.STATUS_SENT_TO_CLIENT)
+        .distinct()
+        .select_related('project', 'client')
+        .prefetch_related('assignees')
+        .order_by('due_date', '-created_at')[:limit]
+    )
+
+    if not items:
+        return '🎬 Активных позиций в производстве сейчас нет.'
+
+    lines = ['🎬 Производство:']
+    for item in items:
+        due = item.due_date.strftime('%d.%m %H:%M') if item.due_date else 'без срока'
+        project = item.project.name if item.project else 'без проекта'
+        client = item.client.name if item.client else 'без клиента'
+        lines.append(
+            f'• #{item.id} {item.title}\n'
+            f'  Статус: {item.get_status_display()} | Срок: {due}\n'
+            f'  Проект: {project} | Клиент: {client}'
+        )
+    return '\n'.join(lines)
+
+
+def format_upcoming_bookings(
+    platform: str,
+    external_user_id: str | int | None,
+    days: int = 14,
+    limit: int = 7,
+    chat_id: str | int | None = None,
+) -> str:
+    from apps.booking.models import Booking
+
+    linked_user = resolve_linked_user(platform, external_user_id, chat_id)
+    if not linked_user:
+        return build_link_help_text(platform)
+    if not linked_user.is_manager:
+        return '🗓 Записи доступны менеджерам и выше.'
+
+    now = timezone.now()
+    threshold = now + timedelta(days=days)
+    items = list(
+        Booking.objects.filter(
+            start_time__gte=now,
+            start_time__lte=threshold,
+            status__in=[Booking.STATUS_PENDING, Booking.STATUS_CONFIRMED],
+        )
+        .select_related('client', 'service')
+        .order_by('start_time')[:limit]
+    )
+
+    if not items:
+        return f'🗓 На ближайшие {days} дней записей нет.'
+
+    lines = [f'🗓 Ближайшие записи на {days} дней:']
+    for item in items:
+        lines.append(
+            f'• #{item.id} {item.client.name} — {item.service.name}\n'
+            f'  {item.start_time.strftime("%d.%m %H:%M")} | Статус: {item.get_status_display()}'
+        )
+    return '\n'.join(lines)
+
+
+def format_media_plan(
+    platform: str,
+    external_user_id: str | int | None,
+    limit: int = 7,
+    chat_id: str | int | None = None,
+) -> str:
+    from apps.media_plan.models import Publication
+
+    linked_user = resolve_linked_user(platform, external_user_id, chat_id)
+    if not linked_user:
+        return build_link_help_text(platform)
+
+    queryset = Publication.objects.all() if linked_user.is_manager else Publication.objects.filter(
+        Q(responsible=linked_user) | Q(created_by=linked_user)
+    )
+    items = list(
+        queryset.exclude(status__in=[Publication.STATUS_PUBLISHED, Publication.STATUS_CANCELLED])
+        .distinct()
+        .select_related('project', 'responsible')
+        .prefetch_related('platforms')
+        .order_by('publish_at')[:limit]
+    )
+
+    if not items:
+        return '📰 В медиа-плане сейчас нет активных публикаций.'
+
+    lines = ['📰 Медиа-план:']
+    for item in items:
+        project = item.project.name if item.project else 'без проекта'
+        platforms = ', '.join(item.platforms.values_list('name', flat=True)) or 'платформы не указаны'
+        responsible = item.responsible.get_full_name() if item.responsible else 'не назначен'
+        lines.append(
+            f'• #{item.id} {item.title}\n'
+            f'  Статус: {item.get_status_display()} | Публикация: {item.publish_at.strftime("%d.%m %H:%M")}\n'
+            f'  Проект: {project} | Платформы: {platforms} | Ответственный: {responsible}'
+        )
+    return '\n'.join(lines)
+
+
 def format_birthdays(window_days: int = 7) -> str:
     items = collect_birthdays(window_days=window_days)
     if not items:
@@ -373,6 +492,12 @@ def handle_menu_action(platform: str, action: str, external_user_id: str | int |
         return format_user_tasks(platform, external_user_id, chat_id=chat_id)
     if action == ACTION_DEADLINES:
         return format_upcoming_deadlines(platform, external_user_id, chat_id=chat_id)
+    if action == ACTION_PRODUCTION:
+        return format_user_production(platform, external_user_id, chat_id=chat_id)
+    if action == ACTION_BOOKINGS:
+        return format_upcoming_bookings(platform, external_user_id, chat_id=chat_id)
+    if action == ACTION_MEDIA_PLAN:
+        return format_media_plan(platform, external_user_id, chat_id=chat_id)
     if action == ACTION_BIRTHDAYS:
         return format_birthdays()
     if action == ACTION_CRM_STATUS:
@@ -402,6 +527,7 @@ def link_platform_account(
             return None, 'Неверный код привязки. Сгенерируйте новый код в профиле CRM.'
         if link_code.is_expired():
             return None, 'Код привязки истёк. Сгенерируйте новый код в профиле CRM.'
+
         user = link_code.user
         user.telegram_id = str(external_user_id)
         user.save(update_fields=['telegram_id'])
@@ -419,6 +545,7 @@ def link_platform_account(
             return None, 'Неверный код привязки. Сгенерируйте новый код в профиле CRM.'
         if link_code.is_expired():
             return None, 'Код привязки истёк. Сгенерируйте новый код в профиле CRM.'
+
         user = link_code.user
         user.max_id = str(external_user_id)
         user.save(update_fields=['max_id'])

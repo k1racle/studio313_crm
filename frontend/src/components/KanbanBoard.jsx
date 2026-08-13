@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import api from '../api/axios'
+import useHorizontalBoardScroll from '../hooks/useHorizontalBoardScroll'
 import { formatShortName } from '../utils/format'
 import Avatar from './ui/Avatar'
 
@@ -36,25 +37,7 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
   const topScrollRef = useRef(null)
   const boardRef = useRef(null)
 
-  useEffect(() => {
-    const top = topScrollRef.current
-    const board = boardRef.current
-    if (!top || !board) return
-
-    const sync = (source, target) => () => {
-      target.scrollLeft = source.scrollLeft
-    }
-
-    const onTopScroll = sync(top, board)
-    const onBoardScroll = sync(board, top)
-
-    top.addEventListener('scroll', onTopScroll)
-    board.addEventListener('scroll', onBoardScroll)
-    return () => {
-      top.removeEventListener('scroll', onTopScroll)
-      board.removeEventListener('scroll', onBoardScroll)
-    }
-  }, [])
+  useHorizontalBoardScroll(topScrollRef, boardRef)
 
   const handleDragStart = (task) => {
     setDragging(task)
@@ -69,7 +52,7 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
 
   return (
     <div className="space-y-3">
-      <div ref={topScrollRef} className="hidden h-4 overflow-x-auto md:block">
+      <div ref={topScrollRef} className="hidden h-4 overflow-x-auto overscroll-x-contain md:block">
         <div className="grid grid-flow-col auto-cols-[320px] gap-4 md:gap-5">
           {columns.map(column => (
             <div key={column.key} className="h-px" />
@@ -77,7 +60,7 @@ export default function KanbanBoard({ tasks, onTaskMoved, onTaskClick }) {
         </div>
       </div>
 
-      <div ref={boardRef} className="grid grid-flow-col auto-cols-[84vw] gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:auto-cols-[320px] md:gap-5">
+      <div ref={boardRef} className="grid grid-flow-col auto-cols-[84vw] gap-4 overflow-x-auto overscroll-x-contain pb-4 snap-x snap-proximity scroll-smooth sm:auto-cols-[320px] md:gap-5 md:snap-none">
         {columns.map(column => {
           const columnTasks = tasks.filter(task => normalizeTaskStatus(task.status) === column.key)
           return (
