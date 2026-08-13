@@ -82,7 +82,7 @@ def build_help_text(platform: str) -> str:
         f'• создавать заявки в helpdesk\n'
         f'• показывать ваши задачи и статусы\n'
         f'• напоминать о дедлайнах\n'
-        f'• показывать ближайшие дни рождения сотрудников\n'
+        f'• показывать ближайшие дни рождения сотрудников, клиентов и контактов\n'
         f'• проверять статус подключения к CRM\n\n'
         f'Для персональных данных CRM сначала привяжите аккаунт через `/link КОД`.'
     )
@@ -244,15 +244,22 @@ def format_upcoming_deadlines(platform: str, external_user_id: str | int | None,
 
 
 def format_birthdays(window_days: int = 7) -> str:
-    employees = [item for item in collect_birthdays(window_days=window_days) if item['kind'] == 'employee']
-    if not employees:
-        return f'🎂 В ближайшие {window_days} дней дней рождения сотрудников нет.'
+    items = collect_birthdays(window_days=window_days)
+    if not items:
+        return f'🎂 В ближайшие {window_days} дней дней рождения нет.'
 
-    lines = [f'🎂 Дни рождения сотрудников на {window_days} дней:']
-    for item in employees:
+    kind_labels = {
+        'employee': 'Сотрудник',
+        'client': 'Клиент',
+        'contact': 'Контакт',
+    }
+
+    lines = [f'🎂 Ближайшие дни рождения на {window_days} дней:']
+    for item in items:
         prefix = 'Сегодня' if item['is_today'] else f'Через {item["days_until"]} дн.'
+        kind_label = kind_labels.get(item['kind'], 'Контакт')
         lines.append(
-            f'• {item["full_name"]} — {prefix}, {item["next_birthday"][8:10]}.{item["next_birthday"][5:7]}'
+            f'• {kind_label}: {item["full_name"]} — {prefix}, {item["next_birthday"][8:10]}.{item["next_birthday"][5:7]}'
         )
     return '\n'.join(lines)
 

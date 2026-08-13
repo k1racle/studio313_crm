@@ -134,18 +134,24 @@ class MaxBotClient:
     def __init__(self, token=None, proxy_url=None):
         self.token = token or getattr(settings, 'MAX_BOT_TOKEN', '')
         self.proxy_url = proxy_url or getattr(settings, 'MAX_PROXY_URL', '')
+        self.ssl_verify = getattr(settings, 'MAX_SSL_VERIFY', True)
+        self.ca_cert_path = getattr(settings, 'MAX_CA_CERT_PATH', '')
         self.headers = {'Authorization': self.token}
         logger.info(
-            'MaxBotClient init: api_base=%s token_set=%s proxy=%s',
+            'MaxBotClient init: api_base=%s token_set=%s proxy=%s ssl_verify=%s ca_cert=%s',
             MAX_API_BASE,
             bool(self.token),
             bool(self.proxy_url),
+            self.ssl_verify,
+            bool(self.ca_cert_path),
         )
+        verify = self.ca_cert_path or self.ssl_verify
         client_kwargs = {
             'http1': True,
             'http2': False,
             'timeout': httpx.Timeout(connect=30, read=60, write=30, pool=30),
             'headers': self.headers,
+            'verify': verify,
         }
         if self.proxy_url:
             client_kwargs['proxy'] = self.proxy_url
