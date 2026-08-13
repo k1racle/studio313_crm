@@ -1,16 +1,17 @@
-from rest_framework import generics, permissions, status, filters
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.notifications.services import create_in_app_notification
+from apps.tasks.models import Task
+from apps.users.models import User
+from apps.users.permissions import IsManagerOrHigher
 from .models import HelpdeskTicket
 from .serializers import HelpdeskTicketSerializer, TicketCommentSerializer
-from apps.users.permissions import IsManagerOrHigher
-from apps.tasks.models import Task
-from apps.notifications.services import create_in_app_notification
-from apps.users.models import User
 
 
 def notify_new_ticket(ticket):
@@ -79,49 +80,278 @@ class HelpdeskWidgetView(APIView):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Обращение в поддержку</title>
+<title>Связаться со студией</title>
 <style>
-  body { font-family: sans-serif; margin: 0; padding: 16px; background: #f9fafb; }
-  .widget { max-width: 360px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .widget h3 { margin-top: 0; }
-  .widget label { display: block; margin: 10px 0 4px; font-size: 14px; }
-  .widget input, .widget textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 4px; }
-  .widget button { width: 100%; margin-top: 15px; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
-  .widget .success { color: #065f46; margin-top: 10px; }
-  .widget .error { color: #b91c1c; margin-top: 10px; }
+  :root {
+    --bg: #f3f6fb;
+    --panel: #ffffff;
+    --line: #d7deea;
+    --text: #0e1730;
+    --muted: #5d677b;
+    --primary: #1d6fff;
+    --primary-dark: #1657cd;
+    --success-bg: #eafbf0;
+    --success-text: #176a43;
+    --error-bg: #fff1f1;
+    --error-text: #aa2d2d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: var(--text);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    background:
+      linear-gradient(180deg, rgba(29,111,255,0.06), transparent 240px),
+      var(--bg);
+  }
+  .widget {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 28px 28px 36px;
+  }
+  .hero {
+    margin-bottom: 22px;
+  }
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(36px, 5vw, 68px);
+    line-height: 0.92;
+    text-transform: uppercase;
+    letter-spacing: -0.06em;
+    font-weight: 900;
+  }
+  .hero-bar {
+    width: min(74%, 760px);
+    height: 22px;
+    margin-top: 8px;
+    background: var(--primary);
+  }
+  .layout {
+    display: grid;
+    gap: 18px;
+  }
+  .section {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 20px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .step {
+    display: inline-flex;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: white;
+    font-size: 15px;
+    font-weight: 900;
+  }
+  .section-title {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: -0.04em;
+    font-weight: 900;
+  }
+  .section-note {
+    margin: -2px 0 18px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.55;
+    max-width: 720px;
+  }
+  .field-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-wide {
+    grid-column: 1 / -1;
+  }
+  label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  input, textarea {
+    width: 100%;
+    min-height: 56px;
+    border: 1px solid var(--line);
+    padding: 14px 16px;
+    font-size: 16px;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: 160ms ease;
+  }
+  textarea {
+    min-height: 140px;
+    resize: vertical;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(29,111,255,0.12);
+  }
+  .submit-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 18px;
+  }
+  .summary {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .submit {
+    min-width: 280px;
+    min-height: 58px;
+    border: 0;
+    background: var(--primary);
+    color: #fff;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 900;
+    cursor: pointer;
+    transition: 160ms ease;
+  }
+  .submit:hover {
+    background: var(--primary-dark);
+  }
+  .message {
+    display: none;
+    margin-top: 16px;
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+  .message.success {
+    display: block;
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .message.error {
+    display: block;
+    background: var(--error-bg);
+    color: var(--error-text);
+  }
+  @media (max-width: 920px) {
+    .widget {
+      padding: 18px;
+    }
+    .hero-bar {
+      width: 78%;
+      height: 16px;
+    }
+    .field-grid {
+      grid-template-columns: 1fr;
+    }
+    .submit-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .submit {
+      min-width: 0;
+      width: 100%;
+    }
+  }
 </style>
 </head>
 <body>
 <div class="widget">
-  <h3>Обращение в поддержку</h3>
+  <div class="hero">
+    <h1>Связаться со студией</h1>
+    <div class="hero-bar"></div>
+  </div>
+
   <form id="ticketForm">
-    <label>Ваше имя</label>
-    <input type="text" name="requester_name" required>
-    <label>Контакт (телефон/email/Telegram)</label>
-    <input type="text" name="requester_contact" required>
-    <label>Тема</label>
-    <input type="text" name="subject" required>
-    <label>Описание</label>
-    <textarea name="description" rows="4" required></textarea>
-    <button type="submit">Отправить</button>
+    <div class="layout">
+      <section class="section">
+        <div class="section-header">
+          <div class="step">01</div>
+          <h2 class="section-title">Ваши контакты</h2>
+        </div>
+        <p class="section-note">Оставьте контакты и коротко опишите задачу. Мы быстро вернёмся с уточнениями и предложим решение.</p>
+        <div class="field-grid">
+          <div class="field">
+            <label for="requesterName">Имя</label>
+            <input id="requesterName" type="text" name="requester_name" placeholder="Как к вам обращаться" required>
+          </div>
+          <div class="field">
+            <label for="requesterContact">Контакт</label>
+            <input id="requesterContact" type="text" name="requester_contact" placeholder="Телефон, email, Telegram" required>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <div class="step">02</div>
+          <h2 class="section-title">Что нужно сделать</h2>
+        </div>
+        <div class="field-grid">
+          <div class="field field-wide">
+            <label for="subject">Тема</label>
+            <input id="subject" type="text" name="subject" placeholder="Например: нужна запись подкаста на следующей неделе" required>
+          </div>
+          <div class="field field-wide">
+            <label for="description">Описание</label>
+            <textarea id="description" name="description" placeholder="Опишите задачу, формат, дедлайн, количество участников и всё, что важно знать заранее" required></textarea>
+          </div>
+        </div>
+        <div class="submit-row">
+          <div class="summary">После отправки обращение сразу попадёт менеджерам в CRM.</div>
+          <button class="submit" type="submit">Отправить запрос</button>
+        </div>
+      </section>
+    </div>
   </form>
-  <div id="message"></div>
+
+  <div id="message" class="message"></div>
 </div>
+
 <script>
+  const messageNode = document.getElementById('message');
+
   document.getElementById('ticketForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const form = e.target;
     const body = {};
-    new FormData(form).forEach((v, k) => body[k] = v);
+    new FormData(e.target).forEach((value, key) => {
+      body[key] = value;
+    });
+
     try {
-      const res = await fetch('/api/helpdesk/public/', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const res = await fetch('/api/helpdesk/public/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
       const data = await res.json();
-      document.getElementById('message').className = res.ok ? 'success' : 'error';
-      document.getElementById('message').textContent = res.ok ? 'Обращение отправлено! Мы скоро свяжемся с вами.' : JSON.stringify(data);
-      if (res.ok) form.reset();
-    } catch (err) {
-      document.getElementById('message').className = 'error';
-      document.getElementById('message').textContent = err.message;
+      messageNode.className = `message ${res.ok ? 'success' : 'error'}`;
+      messageNode.textContent = res.ok
+        ? 'Обращение отправлено. Менеджер свяжется с вами в ближайшее время.'
+        : JSON.stringify(data);
+
+      if (res.ok) {
+        e.target.reset();
+      }
+    } catch (error) {
+      messageNode.className = 'message error';
+      messageNode.textContent = error.message;
     }
   });
 </script>
