@@ -46,7 +46,7 @@ export default function Integrations() {
   const widgetOptions = useMemo(() => ([
     {
       key: 'booking',
-      label: 'Р—Р°РїРёСЃСЊ',
+      label: 'Запись',
       src: `${window.location.origin}/api/booking/widget/`,
       fallbackHeight: 760,
       iframeCode: buildResponsiveIframeCode(
@@ -100,7 +100,7 @@ export default function Integrations() {
 
   return (
     <div className="space-y-6">
-      <Card title="Р’РёРґР¶РµС‚С‹ РґР»СЏ СЃР°Р№С‚Р°" eyebrow="РРЅС‚РµРіСЂР°С†РёРё">
+      <Card title="Виджеты для сайта" eyebrow="Интеграции">
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
             {widgetOptions.map(item => (
@@ -119,7 +119,7 @@ export default function Integrations() {
             ))}
             <Button type="button" size="sm" variant="secondary" onClick={copyWidgetCode} className="ml-auto">
               <Copy size={14} />
-              РЎРєРѕРїРёСЂРѕРІР°С‚СЊ iframe
+              Скопировать iframe
             </Button>
             <a
               href={currentWidget.src}
@@ -128,14 +128,14 @@ export default function Integrations() {
               className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-surface/88 px-4 py-2 text-sm font-semibold text-text-muted transition-all hover:bg-surface-strong hover:text-text"
             >
               <ExternalLink size={14} />
-              РћС‚РєСЂС‹С‚СЊ РѕС‚РґРµР»СЊРЅРѕ
+              Открыть отдельно
             </a>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
             <div className="overflow-hidden rounded-[26px] border border-border/70 bg-[linear-gradient(180deg,#0a1020,#13254a)] p-3 shadow-[0_24px_60px_rgba(15,23,40,0.18)]">
               <div className="mb-3 flex items-center justify-between rounded-[18px] border border-white/10 bg-white/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/68">
-                <span>РџСЂРµРґРїСЂРѕСЃРјРѕС‚СЂ</span>
+                <span>Предпросмотр</span>
                 <span>{currentWidget.label}</span>
               </div>
               <div className="overflow-hidden rounded-[22px] bg-white">
@@ -155,9 +155,9 @@ export default function Integrations() {
                 {currentWidget.iframeCode}
               </div>
               <div className="rounded-[24px] border border-border/70 bg-surface-strong/92 px-4 py-4 text-sm text-text-muted">
-                Р’ СЌС‚РѕРј РєРѕРґРµ iframe СЃР°Рј СЂР°СЃС‚СЏРіРёРІР°РµС‚СЃСЏ РїРѕ С€РёСЂРёРЅРµ РєРѕРЅС‚РµР№РЅРµСЂР° Рё Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїРѕР»СѓС‡Р°РµС‚ РЅСѓР¶РЅСѓСЋ РІС‹СЃРѕС‚Сѓ
+                В этом коде iframe сам растягивается по ширине контейнера и автоматически получает нужную высоту
                 {' '}
-                РѕС‚ СЃР°РјРѕРіРѕ РІРёРґР¶РµС‚Р° С‡РµСЂРµР· <span className="font-semibold text-text">postMessage</span>.
+                от самого виджета через <span className="font-semibold text-text">postMessage</span>.
               </div>
             </div>
           </div>
