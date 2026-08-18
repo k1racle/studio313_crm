@@ -216,8 +216,15 @@ class BookingWidgetView(APIView):
     --error-text: #af3027;
   }
   * { box-sizing: border-box; }
+  html {
+    width: 100%;
+    background: var(--bg);
+  }
   body {
     margin: 0;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
     font-family: Inter, "Segoe UI", Arial, sans-serif;
     color: var(--text);
     background:
@@ -226,9 +233,9 @@ class BookingWidgetView(APIView):
       var(--bg);
   }
   .widget {
-    max-width: 1180px;
+    width: min(100%, 1180px);
     margin: 0 auto;
-    padding: 24px;
+    padding: clamp(14px, 3vw, 24px);
   }
   .hero {
     margin-bottom: 20px;
@@ -427,6 +434,7 @@ class BookingWidgetView(APIView):
     opacity: 0.5;
   }
   .schedule-wrap {
+    max-width: 100%;
     overflow-x: auto;
     border: 1px solid var(--line);
   }
@@ -625,6 +633,45 @@ class BookingWidgetView(APIView):
     .schedule-toolbar { flex-direction: column; align-items: stretch; }
     .toolbar-group { justify-content: space-between; }
   }
+  @media (max-width: 720px) {
+    .hero h1 { font-size: clamp(28px, 11vw, 44px); }
+    .hero p { font-size: 14px; }
+    .section-head { flex-direction: column; align-items: flex-start; }
+    .section-head h2 { font-size: 22px; }
+    .summary-value { font-size: 16px; }
+    .toolbar-group {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .toolbar-button,
+    .ghost-button,
+    .primary-button {
+      width: 100%;
+    }
+    .schedule-grid { min-width: 660px; }
+    .schedule-head,
+    .schedule-row {
+      grid-template-columns: 72px repeat(7, minmax(82px, 1fr));
+    }
+    .day-cell,
+    .time-cell { padding: 10px 8px; }
+    .day-date { font-size: 16px; }
+    .slot-cell { min-height: 56px; padding: 4px; }
+    .slot-button,
+    .slot-blocked {
+      min-height: 44px;
+      padding: 6px;
+      font-size: 12px;
+    }
+    .success-card { padding: 20px; }
+    .success-card h2 { font-size: 24px; }
+    .success-list li {
+      flex-direction: column;
+      gap: 6px;
+    }
+    .success-list span:last-child { text-align: left; }
+  }
 </style>
 </head>
 <body>
@@ -777,6 +824,7 @@ class BookingWidgetView(APIView):
   const successService = document.getElementById('successService');
   const successTime = document.getElementById('successTime');
   const continueToClientButton = document.getElementById('continueToClientButton');
+  const widgetResizeMessageType = 'studio313:widget-resize';
 
   const state = {
     step: 1,
@@ -857,6 +905,58 @@ class BookingWidgetView(APIView):
     return `${formatDayDate(start)} - ${formatDayDate(end)}`;
   }
 
+  function getDocumentHeight() {
+    return Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.offsetHeight,
+      document.documentElement.clientHeight,
+    );
+  }
+
+  function postWidgetSize() {
+    if (window.parent === window) return;
+    window.parent.postMessage({
+      type: widgetResizeMessageType,
+      height: getDocumentHeight(),
+    }, '*');
+  }
+
+  let resizeFrame = null;
+
+  function queueWidgetResize() {
+    if (resizeFrame !== null) {
+      cancelAnimationFrame(resizeFrame);
+    }
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = null;
+      postWidgetSize();
+    });
+  }
+
+  if ('ResizeObserver' in window) {
+    const resizeObserver = new ResizeObserver(() => queueWidgetResize());
+    resizeObserver.observe(document.documentElement);
+    resizeObserver.observe(document.body);
+  }
+
+  const mutationObserver = new MutationObserver(() => queueWidgetResize());
+  mutationObserver.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    characterData: true,
+  });
+
+  window.addEventListener('resize', queueWidgetResize);
+  window.addEventListener('load', queueWidgetResize);
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'studio313:widget-parent-ready') {
+      queueWidgetResize();
+    }
+  });
+
   function setStep(step) {
     state.step = step;
     document.querySelectorAll('.step').forEach((node) => {
@@ -867,6 +967,7 @@ class BookingWidgetView(APIView):
     document.querySelectorAll('.panel').forEach((node, index) => {
       node.classList.toggle('active', index + 1 === step);
     });
+    queueWidgetResize();
   }
 
   function setSelectedService(service) {
@@ -884,6 +985,7 @@ class BookingWidgetView(APIView):
   function renderServices() {
     if (!services.length) {
       servicesGrid.innerHTML = '<div class="service-empty">Активные услуги пока не опубликованы. Вернитесь позже или свяжитесь со студией напрямую.</div>';
+      queueWidgetResize();
       return;
     }
     servicesGrid.innerHTML = '';
@@ -903,6 +1005,7 @@ class BookingWidgetView(APIView):
       });
       servicesGrid.appendChild(card);
     });
+    queueWidgetResize();
   }
 
   async function parseResponseBody(res) {
@@ -937,6 +1040,7 @@ class BookingWidgetView(APIView):
     const data = await parseResponseBody(res);
     if (!res.ok) {
       scheduleGrid.innerHTML = `<div class="empty">${formatResponseMessage(data, 'Не удалось загрузить свободные слоты.')}</div>`;
+      queueWidgetResize();
       return;
     }
 
@@ -1013,6 +1117,7 @@ class BookingWidgetView(APIView):
 
     scheduleGrid.innerHTML = '';
     scheduleGrid.appendChild(wrapper);
+    queueWidgetResize();
   }
 
   function showFormError(type, text) {
@@ -1020,6 +1125,7 @@ class BookingWidgetView(APIView):
     messageNode.textContent = text;
     if (type === 'client_name') nameErrorNode.textContent = text;
     if (type === 'client_phone') phoneErrorNode.textContent = text;
+    queueWidgetResize();
   }
 
   function clearFormErrors() {
@@ -1027,6 +1133,7 @@ class BookingWidgetView(APIView):
     phoneErrorNode.textContent = '';
     messageNode.className = 'message';
     messageNode.textContent = '';
+    queueWidgetResize();
   }
 
   function fillSuccess() {
@@ -1129,6 +1236,7 @@ class BookingWidgetView(APIView):
         messageNode.className = 'message show error';
         messageNode.textContent = formatResponseMessage(data, `Не удалось отправить заявку (HTTP ${res.status}).`);
       }
+      queueWidgetResize();
       return;
     }
 
@@ -1139,6 +1247,7 @@ class BookingWidgetView(APIView):
   });
 
   renderServices();
+  queueWidgetResize();
 </script>
 </body>
 </html>"""

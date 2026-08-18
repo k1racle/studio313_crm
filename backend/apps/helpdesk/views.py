@@ -108,8 +108,15 @@ class HelpdeskWidgetView(APIView):
     --error-text: #aa2d2d;
   }
   * { box-sizing: border-box; }
+  html {
+    width: 100%;
+    background: var(--bg);
+  }
   body {
     margin: 0;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
     color: var(--text);
     font-family: Inter, "Segoe UI", Arial, sans-serif;
     background:
@@ -117,9 +124,9 @@ class HelpdeskWidgetView(APIView):
       var(--bg);
   }
   .widget {
-    max-width: 1160px;
+    width: min(100%, 1160px);
     margin: 0 auto;
-    padding: 28px 28px 36px;
+    padding: clamp(16px, 3vw, 28px) clamp(16px, 3vw, 28px) clamp(20px, 4vw, 36px);
   }
   .hero {
     margin-bottom: 22px;
@@ -281,6 +288,30 @@ class HelpdeskWidgetView(APIView):
       width: 100%;
     }
   }
+  @media (max-width: 720px) {
+    .hero h1 {
+      font-size: clamp(28px, 11vw, 44px);
+    }
+    .hero-bar {
+      width: 100%;
+      height: 14px;
+    }
+    .section {
+      padding: 16px;
+    }
+    .section-header {
+      align-items: flex-start;
+    }
+    .section-title {
+      font-size: 18px;
+    }
+    .section-note {
+      font-size: 13px;
+    }
+    .submit {
+      min-height: 54px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -338,6 +369,59 @@ class HelpdeskWidgetView(APIView):
 
 <script>
   const messageNode = document.getElementById('message');
+  const widgetResizeMessageType = 'studio313:widget-resize';
+
+  function getDocumentHeight() {
+    return Math.max(
+      document.body.scrollHeight,
+      document.documentElement.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.offsetHeight,
+      document.documentElement.clientHeight,
+    );
+  }
+
+  function postWidgetSize() {
+    if (window.parent === window) return;
+    window.parent.postMessage({
+      type: widgetResizeMessageType,
+      height: getDocumentHeight(),
+    }, '*');
+  }
+
+  let resizeFrame = null;
+
+  function queueWidgetResize() {
+    if (resizeFrame !== null) {
+      cancelAnimationFrame(resizeFrame);
+    }
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = null;
+      postWidgetSize();
+    });
+  }
+
+  if ('ResizeObserver' in window) {
+    const resizeObserver = new ResizeObserver(() => queueWidgetResize());
+    resizeObserver.observe(document.documentElement);
+    resizeObserver.observe(document.body);
+  }
+
+  const mutationObserver = new MutationObserver(() => queueWidgetResize());
+  mutationObserver.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    characterData: true,
+  });
+
+  window.addEventListener('resize', queueWidgetResize);
+  window.addEventListener('load', queueWidgetResize);
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'studio313:widget-parent-ready') {
+      queueWidgetResize();
+    }
+  });
 
   document.getElementById('ticketForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -361,11 +445,15 @@ class HelpdeskWidgetView(APIView):
       if (res.ok) {
         e.target.reset();
       }
+      queueWidgetResize();
     } catch (error) {
       messageNode.className = 'message error';
       messageNode.textContent = error.message;
+      queueWidgetResize();
     }
   });
+
+  queueWidgetResize();
 </script>
 </body>
 </html>'''
