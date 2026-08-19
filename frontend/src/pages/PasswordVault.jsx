@@ -332,9 +332,6 @@ export default function PasswordVault() {
                         {entry.url}
                       </a>
                     )}
-                    {entry.notes && (
-                      <div className="mt-1 line-clamp-2 text-xs text-text-muted">{entry.notes}</div>
-                    )}
                   </td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
