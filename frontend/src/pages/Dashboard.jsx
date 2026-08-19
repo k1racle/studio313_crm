@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
+  BarChart3,
   Calendar,
   CheckSquare,
   Clapperboard,
@@ -11,26 +12,18 @@ import {
   Users,
 } from 'lucide-react'
 import {
+  Bar,
+  BarChart,
+  CartesianGrid,
   Cell,
-  Legend,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts'
 
 import api from '../api/axios'
 import Card from '../components/ui/Card'
-
-const taskStatusLabels = {
-  new: 'Новая',
-  in_progress: 'В работе',
-  approval: 'На согласовании',
-  review: 'На проверке',
-  content_placement: 'Выкладка контента',
-  done: 'Выполнена',
-  canceled: 'Отменена',
-}
 
 const taskStatusColors = {
   new: '#5B8DEF',
@@ -42,6 +35,23 @@ const taskStatusColors = {
   canceled: '#64748B',
 }
 
+const productionStatusColors = {
+  new: '#5B8DEF',
+  shooting: '#F97316',
+  editing: '#8B5CF6',
+  review: '#14B8A6',
+  corrections: '#EC4899',
+  sent_to_client: '#22C55E',
+}
+
+const publicationStatusColors = {
+  draft: '#64748B',
+  approval: '#EC4899',
+  scheduled: '#5B8DEF',
+  published: '#22C55E',
+  cancelled: '#F97316',
+}
+
 const quickLinks = [
   { path: '/tasks', label: 'Задачи', desc: 'Kanban, календарь и список задач', icon: CheckSquare },
   { path: '/bookings', label: 'Запись', desc: 'Календарь и клиентские слоты', icon: Calendar },
@@ -50,6 +60,48 @@ const quickLinks = [
   { path: '/media-plan', label: 'Медиа-план', desc: 'Контент, площадки и публикации', icon: Newspaper },
   { path: '/finance', label: 'Финансы', desc: 'Платежи, долги и отчёты', icon: CreditCard },
 ]
+
+function StatusChartCard({ title, eyebrow, data, colors, icon: Icon }) {
+  return (
+    <Card
+      title={title}
+      eyebrow={eyebrow}
+      action={(
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Icon size={18} />
+        </span>
+      )}
+      className="h-full"
+    >
+      <div className="h-72">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} barCategoryGap={18} margin={{ top: 8, right: 8, left: -18, bottom: 34 }}>
+            <CartesianGrid vertical={false} stroke="rgba(148,163,184,0.18)" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+              angle={-18}
+              textAnchor="end"
+              interval={0}
+              height={60}
+            />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} />
+            <Tooltip
+              cursor={{ fill: 'rgba(34,80,255,0.06)' }}
+              formatter={(value) => [value, 'Количество']}
+              labelFormatter={(label) => label}
+            />
+            <Bar dataKey="count" radius={[10, 10, 0, 0]} maxBarSize={44}>
+              {data.map(item => (
+                <Cell key={item.status} fill={colors[item.status] || '#2250ff'} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  )
+}
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null)
@@ -134,31 +186,31 @@ export default function Dashboard() {
         })}
       </section>
 
-      <section className="grid grid-cols-1 gap-6">
-        {stats && (
-          <Card title="Статусы задач" eyebrow="Нагрузка">
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={stats.tasks_by_status} dataKey="count" nameKey="status" cx="40%" cy="50%" outerRadius={78} innerRadius={42}>
-                    {stats.tasks_by_status.map(item => (
-                      <Cell key={item.status} fill={taskStatusColors[item.status] || '#2250ff'} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={value => [value, 'Количество']} />
-                  <Legend
-                    layout="vertical"
-                    verticalAlign="middle"
-                    align="right"
-                    wrapperStyle={{ fontSize: 12 }}
-                    formatter={value => taskStatusLabels[value] || value}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        )}
-      </section>
+      {stats && (
+        <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <StatusChartCard
+            title="Статусы задач"
+            eyebrow="Нагрузка"
+            data={stats.tasks_by_status}
+            colors={taskStatusColors}
+            icon={CheckSquare}
+          />
+          <StatusChartCard
+            title="Статусы производства"
+            eyebrow="Продакшн"
+            data={stats.productions_by_status}
+            colors={productionStatusColors}
+            icon={Clapperboard}
+          />
+          <StatusChartCard
+            title="Статусы медиаплана"
+            eyebrow="Контент"
+            data={stats.publications_by_status}
+            colors={publicationStatusColors}
+            icon={BarChart3}
+          />
+        </section>
+      )}
     </div>
   )
 }

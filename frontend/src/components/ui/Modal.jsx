@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { X } from 'lucide-react'
+import { lockBodyScroll } from '../../utils/bodyScrollLock'
 
 const sizeClasses = {
   md: 'md:max-w-xl',
@@ -9,23 +10,21 @@ const sizeClasses = {
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md', headerActions = null }) {
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow
-    const previousTouchAction = document.body.style.touchAction
-
     const handleEsc = (event) => {
       if (event.key === 'Escape') onClose()
     }
 
+    if (!isOpen) return undefined
+
+    const releaseBodyScroll = lockBodyScroll()
+
     if (isOpen) {
       document.addEventListener('keydown', handleEsc)
-      document.body.style.overflow = 'hidden'
-      document.body.style.touchAction = 'none'
     }
 
     return () => {
       document.removeEventListener('keydown', handleEsc)
-      document.body.style.overflow = previousOverflow
-      document.body.style.touchAction = previousTouchAction
+      releaseBodyScroll()
     }
   }, [isOpen, onClose])
 

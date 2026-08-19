@@ -7,8 +7,25 @@ from rest_framework.response import Response
 from apps.users.permissions import IsManagerOrHigher
 from apps.tasks.models import Task
 from apps.booking.models import Booking
+from apps.production.models import Production
+from apps.media_plan.models import Publication
 from apps.payments.models import Payment
 from apps.clients.models import Client
+
+
+def build_status_counts(queryset, field_name, order, labels):
+    counts = {
+        item[field_name]: item['count']
+        for item in queryset.values(field_name).annotate(count=Count('id'))
+    }
+    return [
+        {
+            'status': status,
+            'label': labels[status],
+            'count': counts.get(status, 0),
+        }
+        for status in order
+    ]
 
 
 class DashboardStatsView(APIView):
@@ -18,11 +35,46 @@ class DashboardStatsView(APIView):
         now = timezone.now()
         year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
 
-        tasks_by_status = list(
-            Task.objects.filter(is_archived=False)
-            .values('status')
-            .annotate(count=Count('id'))
-            .order_by('status')
+        tasks_by_status = build_status_counts(
+            Task.objects.filter(is_archived=False),
+            'status',
+            [
+                Task.STATUS_NEW,
+                Task.STATUS_IN_PROGRESS,
+                Task.STATUS_APPROVAL,
+                Task.STATUS_REVIEW,
+                Task.STATUS_CONTENT_PLACEMENT,
+                Task.STATUS_DONE,
+                Task.STATUS_CANCELED,
+            ],
+            dict(Task.STATUS_CHOICES),
+        )
+
+        productions_by_status = build_status_counts(
+            Production.objects.all(),
+            'status',
+            [
+                Production.STATUS_NEW,
+                Production.STATUS_SHOOTING,
+                Production.STATUS_EDITING,
+                Production.STATUS_REVIEW,
+                Production.STATUS_CORRECTIONS,
+                Production.STATUS_SENT_TO_CLIENT,
+            ],
+            dict(Production.STATUS_CHOICES),
+        )
+
+        publications_by_status = build_status_counts(
+            Publication.objects.all(),
+            'status',
+            [
+                Publication.STATUS_DRAFT,
+                Publication.STATUS_APPROVAL,
+                Publication.STATUS_SCHEDULED,
+                Publication.STATUS_PUBLISHED,
+                Publication.STATUS_CANCELLED,
+            ],
+            dict(Publication.STATUS_CHOICES),
         )
 
         bookings_by_status = list(
@@ -105,6 +157,8 @@ class DashboardStatsView(APIView):
 
         return Response({
             'tasks_by_status': tasks_by_status,
+            'productions_by_status': productions_by_status,
+            'publications_by_status': publications_by_status,
             'bookings_by_status': bookings_by_status,
             'revenue_by_month': revenue_by_month,
             'top_services': top_services,

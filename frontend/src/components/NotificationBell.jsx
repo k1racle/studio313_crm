@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Bell, Check, X } from 'lucide-react'
 
 import api from '../api/axios'
+import { lockBodyScroll } from '../utils/bodyScrollLock'
 
 export default function NotificationBell({
   size = 20,
@@ -37,15 +38,15 @@ export default function NotificationBell({
       if (event.key === 'Escape') setOpen(false)
     }
 
-    if (open) {
-      document.addEventListener('keydown', onKeyDown)
-      load()
-      document.body.style.overflow = 'hidden'
-    }
+    if (!open) return undefined
+
+    const releaseBodyScroll = lockBodyScroll()
+    document.addEventListener('keydown', onKeyDown)
+    load()
 
     return () => {
       document.removeEventListener('keydown', onKeyDown)
-      document.body.style.overflow = ''
+      releaseBodyScroll()
     }
   }, [open])
 

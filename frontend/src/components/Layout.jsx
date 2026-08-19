@@ -24,6 +24,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import { lockBodyScroll } from '../utils/bodyScrollLock'
 
 import api from '../api/axios'
 import { useAuth } from '../contexts/AuthContext'
@@ -169,17 +170,12 @@ export default function Layout() {
 
   useEffect(() => {
     const shouldLock = mobileOpen || birthdayOpen
-    const previousOverflow = document.body.style.overflow
-    const previousTouchAction = document.body.style.touchAction
+    if (!shouldLock) return undefined
 
-    if (shouldLock) {
-      document.body.style.overflow = 'hidden'
-      document.body.style.touchAction = 'none'
-    }
+    const releaseBodyScroll = lockBodyScroll()
 
     return () => {
-      document.body.style.overflow = previousOverflow
-      document.body.style.touchAction = previousTouchAction
+      releaseBodyScroll()
     }
   }, [birthdayOpen, mobileOpen])
 

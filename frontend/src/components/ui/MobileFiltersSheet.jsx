@@ -1,16 +1,13 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { SlidersHorizontal, X } from 'lucide-react'
+import { lockBodyScroll } from '../../utils/bodyScrollLock'
 
 export default function MobileFiltersSheet({ open, onClose, title = 'Фильтры', children, footer = null }) {
   useEffect(() => {
     if (!open) return undefined
 
-    const previousOverflow = document.body.style.overflow
-    const previousTouchAction = document.body.style.touchAction
-
-    document.body.style.overflow = 'hidden'
-    document.body.style.touchAction = 'none'
+    const releaseBodyScroll = lockBodyScroll()
 
     const handleEsc = (event) => {
       if (event.key === 'Escape') onClose()
@@ -19,8 +16,7 @@ export default function MobileFiltersSheet({ open, onClose, title = 'Фильт�
     document.addEventListener('keydown', handleEsc)
 
     return () => {
-      document.body.style.overflow = previousOverflow
-      document.body.style.touchAction = previousTouchAction
+      releaseBodyScroll()
       document.removeEventListener('keydown', handleEsc)
     }
   }, [open, onClose])
