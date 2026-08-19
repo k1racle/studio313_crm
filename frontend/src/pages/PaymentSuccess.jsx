@@ -1,83 +1,110 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
+
 import api from '../api/axios'
-import { CheckCircle, Loader2, AlertCircle, FileText } from 'lucide-react'
 
 const statusLabels = {
-  pending: 'Обработка платежа...',
+  pending: 'Проверяем статус платежа...',
   success: 'Оплата прошла успешно',
-  failed: 'Оплата не удалась',
-  canceled: 'Платёж отменён',
+  failed: 'Оплата не прошла',
+  canceled: 'Платеж отменен',
 }
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams()
-  const orderId = searchParams.get('orderId')
+  const paymentId = searchParams.get('payment')
+  const token = searchParams.get('token')
   const [payment, setPayment] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!orderId) {
-      setError('Номер заказа не указан')
+    if (!paymentId || !token) {
+      setError('Не передан идентификатор платежа.')
       setLoading(false)
       return
     }
 
+    let cancelled = false
     let attempts = 0
     const maxAttempts = 10
 
     const check = async () => {
       try {
-        const res = await api.get(`/payments/by-order/?orderId=${orderId}`)
-        setPayment(res.data)
-        if (res.data.status !== 'pending' || attempts >= maxAttempts) {
+        const response = await api.get(`/payments/public-status/?payment=${paymentId}&token=${encodeURIComponent(token)}`)
+        if (cancelled) return
+
+        setPayment(response.data)
+        if (response.data.status !== 'pending' || attempts >= maxAttempts) {
           setLoading(false)
           return
         }
+
         attempts += 1
-        setTimeout(check, 3000)
-      } catch (err) {
-        setError('Не удалось проверить статус платежа')
+        window.setTimeout(check, 3000)
+      } catch (_error) {
+        if (cancelled) return
+        setError('Не удалось проверить статус платежа.')
         setLoading(false)
       }
     }
 
     check()
-  }, [orderId])
+
+    return () => {
+      cancelled = true
+    }
+  }, [paymentId, token])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 p-4">
-      <div className="w-full max-w-md bg-surface rounded-2xl shadow-xl p-6 md:p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-blue-100 p-4">
+      <div className="w-full max-w-md rounded-3xl bg-white p-6 text-center shadow-xl md:p-8">
         {loading ? (
           <>
-            <Loader2 size={48} className="mx-auto text-primary animate-spin mb-4" />
+            <Loader2 size={48} className="mx-auto mb-4 animate-spin text-primary" />
             <h1 className="text-xl font-bold text-text">{statusLabels.pending}</h1>
           </>
         ) : error ? (
           <>
-            <AlertCircle size={48} className="mx-auto text-danger mb-4" />
+            <AlertCircle size={48} className="mx-auto mb-4 text-danger" />
             <h1 className="text-xl font-bold text-text">Ошибка</h1>
-            <p className="text-text-muted mt-2">{error}</p>
+            <p className="mt-2 text-text-muted">{error}</p>
           </>
         ) : payment?.status === 'success' ? (
           <>
-            <CheckCircle size={48} className="mx-auto text-success mb-4" />
+            <CheckCircle size={48} className="mx-auto mb-4 text-success" />
             <h1 className="text-xl font-bold text-text">{statusLabels.success}</h1>
-            <div className="mt-6 text-left text-sm space-y-2">
-              <div className="flex justify-between"><span className="text-text-muted">Услуга</span><span className="text-text font-medium">{payment.booking_info?.service || '—'}</span></div>
-              <div className="flex justify-between"><span className="text-text-muted">Клиент</span><span className="text-text font-medium">{payment.booking_info?.client || '—'}</span></div>
-              <div className="flex justify-between"><span className="text-text-muted">Сумма</span><span className="text-text font-medium">{payment.amount} ₽</span></div>
+            <div className="mt-6 space-y-2 text-left text-sm">
+              <div className="flex justify-between gap-4">
+                <span className="text-text-muted">Услуга</span>
+                <span className="font-medium text-text">{payment.booking_info?.service || '—'}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-text-muted">Клиент</span>
+                <span className="font-medium text-text">{payment.booking_info?.client || '—'}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-text-muted">Тип оплаты</span>
+                <span className="font-medium text-text">{payment.payment_type_display || '—'}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-text-muted">Сумма</span>
+                <span className="font-medium text-text">{payment.amount} ₽</span>
+              </div>
             </div>
           </>
         ) : (
           <>
-            <AlertCircle size={48} className="mx-auto text-danger mb-4" />
-            <h1 className="text-xl font-bold text-text">{statusLabels[payment?.status] || 'Платёж не завершён'}</h1>
-            <p className="text-text-muted mt-2">Если деньги списаны, свяжитесь с нами.</p>
+            <AlertCircle size={48} className="mx-auto mb-4 text-danger" />
+            <h1 className="text-xl font-bold text-text">{statusLabels[payment?.status] || 'Платеж не завершен'}</h1>
+            <p className="mt-2 text-text-muted">Если деньги списались, но статус не обновился, проверьте платеж позже или свяжитесь с менеджером.</p>
           </>
         )}
-        <Link to="/" className="inline-block mt-6 text-primary hover:underline">Вернуться на сайт</Link>
+
+        <Link to="/" className="mt-6 inline-block text-primary hover:underline">
+          Вернуться на сайт
+        </Link>
       </div>
     </div>
   )

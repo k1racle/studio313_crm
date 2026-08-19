@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { format, setHours, setMinutes } from 'date-fns'
-import { CalendarDays, CreditCard, List, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
+import { CalendarDays, Check, Copy, CreditCard, ExternalLink, List, Mail, Pencil, Plus, Trash2 } from 'lucide-react'
 
 import api from '../api/axios'
 import BookingCalendar from '../components/BookingCalendar'
@@ -56,6 +56,21 @@ function formatError(error) {
     .join(' | ') || 'Не удалось выполнить операцию.'
 }
 
+function getPaymentChoices(booking) {
+  const servicePrice = Number(booking.service?.price || 0)
+  const paidAmount = Number(booking.paid_amount || 0)
+  const remainingAmount = Number(booking.remaining_amount || 0)
+  const partialTarget = Math.round(servicePrice * 50) / 100
+  const partialAmount = Math.min(Math.max(partialTarget - paidAmount, 0), remainingAmount)
+
+  return {
+    partialAmount,
+    fullAmount: remainingAmount,
+    canPartial: partialAmount > 0,
+    canFull: remainingAmount > 0,
+  }
+}
+
 export default function Bookings() {
   const { user } = useAuth()
   const [bookings, setBookings] = useState([])
@@ -64,8 +79,14 @@ export default function Bookings() {
   const [view, setView] = useState('calendar')
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
   const [editingBooking, setEditingBooking] = useState(null)
-  const [paymentForm, setPaymentForm] = useState({ bookingId: null, amount: '' })
   const [form, setForm] = useState(emptyForm)
+
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [paymentBooking, setPaymentBooking] = useState(null)
+  const [paymentType, setPaymentType] = useState('partial')
+  const [sendEmail, setSendEmail] = useState(false)
+  const [paymentResult, setPaymentResult] = useState(null)
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false)
 
   const load = async () => {
     const [bookingResponse, serviceResponse, clientResponse] = await Promise.all([
@@ -81,13 +102,6 @@ export default function Bookings() {
   useEffect(() => {
     load()
   }, [])
-
-  const handleSlotClick = (day, hour) => {
-    const dt = setMinutes(setHours(day, hour), 0)
-    setEditingBooking(null)
-    setForm({ ...emptyForm, start_time: format(dt, "yyyy-MM-dd'T'HH:mm") })
-    setIsBookingModalOpen(true)
-  }
 
   const openCreate = () => {
     setEditingBooking(null)
@@ -109,12 +123,20 @@ export default function Bookings() {
     setIsBookingModalOpen(true)
   }
 
+  const handleSlotClick = (day, hour) => {
+    const dateTime = setMinutes(setHours(day, hour), 0)
+    setEditingBooking(null)
+    setForm({ ...emptyForm, start_time: format(dateTime, "yyyy-MM-dd'T'HH:mm") })
+    setIsBookingModalOpen(true)
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
     const payload = {
       ...form,
       client_id: form.client_id || null,
     }
+
     try {
       if (editingBooking) {
         await api.put(`/booking/${editingBooking.id}/`, payload)
@@ -140,25 +162,47 @@ export default function Bookings() {
   }
 
   const handleDelete = async (booking) => {
-    if (!confirm(`Удалить запись «${booking.service?.name}» для ${booking.contact_name || 'клиента'}?`)) return
+    if (!window.confirm(`Удалить запись «${booking.service?.name}» для ${booking.contact_name || 'клиента'}?`)) return
     await api.delete(`/booking/${booking.id}/`)
     await load()
   }
 
-  const createPayment = async (event) => {
-    event.preventDefault()
-    if (!paymentForm.bookingId || !paymentForm.amount) return
-    const response = await api.post('/payments/', {
-      booking: paymentForm.bookingId,
-      amount: paymentForm.amount,
-    })
-    await api.post('/payments/callback/', { orderId: response.data.bank_order_id })
-    setPaymentForm({ bookingId: null, amount: '' })
-    await load()
+  const openPaymentModal = (booking) => {
+    const choices = getPaymentChoices(booking)
+    setPaymentBooking(booking)
+    setPaymentType(choices.canPartial ? 'partial' : 'full')
+    setSendEmail(Boolean(booking.client?.email))
+    setPaymentResult(null)
+    setIsPaymentModalOpen(true)
   }
 
-  const clientOptions = [{ value: '', label: 'Выберите клиента' }, ...clients.map(client => ({ value: client.id, label: client.name }))]
-  const serviceOptions = [{ value: '', label: 'Выберите услугу' }, ...services.map(service => ({ value: service.id, label: `${service.name} (${service.duration_minutes} мин)` }))]
+  const createPaymentLink = async (event) => {
+    event.preventDefault()
+    if (!paymentBooking) return
+
+    setIsCreatingPayment(true)
+    try {
+      const response = await api.post('/payments/', {
+        booking: paymentBooking.id,
+        payment_type: paymentType,
+        send_email: sendEmail,
+      })
+      setPaymentResult(response.data)
+      await load()
+    } catch (error) {
+      alert(formatError(error))
+    } finally {
+      setIsCreatingPayment(false)
+    }
+  }
+
+  const copyPaymentLink = async () => {
+    if (!paymentResult?.payment_url) return
+    await navigator.clipboard.writeText(paymentResult.payment_url)
+  }
+
+  const clientOptions = [{ value: '', label: 'Выберите клиента' }, ...clients.map((client) => ({ value: client.id, label: client.name }))]
+  const serviceOptions = [{ value: '', label: 'Выберите услугу' }, ...services.map((service) => ({ value: service.id, label: `${service.name} (${service.duration_minutes} мин)` }))]
 
   const headerActions = useMemo(() => (
     <div className="flex flex-wrap items-center justify-end gap-3">
@@ -166,7 +210,7 @@ export default function Bookings() {
         {[
           { key: 'calendar', label: 'Календарь', icon: CalendarDays },
           { key: 'list', label: 'Список', icon: List },
-        ].map(item => {
+        ].map((item) => {
           const Icon = item.icon
           return (
             <button
@@ -194,16 +238,24 @@ export default function Bookings() {
 
   usePageHeaderContent(headerActions)
 
+  const paymentChoices = paymentBooking ? getPaymentChoices(paymentBooking) : null
+
   return (
     <div>
       {view === 'calendar' && (
-        <BookingCalendar bookings={bookings} services={services} onSlotClick={handleSlotClick} onBookingClick={openEdit} onBookingMove={handleBookingMove} />
+        <BookingCalendar
+          bookings={bookings}
+          services={services}
+          onSlotClick={handleSlotClick}
+          onBookingClick={openEdit}
+          onBookingMove={handleBookingMove}
+        />
       )}
 
       {view === 'list' && (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto -mx-6 px-6">
-            <table className="w-full min-w-[980px]">
+            <table className="w-full min-w-[1080px]">
               <thead>
                 <tr className="border-b border-border text-left text-sm text-text-muted">
                   <th className="pb-3 font-medium">Клиент / заявка</th>
@@ -217,51 +269,34 @@ export default function Bookings() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {bookings.map(booking => (
+                {bookings.map((booking) => (
                   <tr key={booking.id} className="border-b border-border hover:bg-subtle">
                     <td className="py-3 text-text">
                       <div className="font-medium">{booking.contact_name || '—'}</div>
                       <div className="text-xs text-text-muted">{booking.contact_phone || 'Без телефона'}</div>
-                      {booking.is_pending_request && <div className="mt-1 text-xs font-medium text-primary">Заявка еще не подтверждена</div>}
+                      {booking.client?.email && <div className="text-xs text-text-muted">{booking.client.email}</div>}
+                      {booking.is_pending_request && <div className="mt-1 text-xs font-medium text-primary">Публичная заявка без привязанного клиента</div>}
                     </td>
                     <td className="py-3 text-text">{booking.service?.name}</td>
-                    <td className="py-3 text-text-muted">{new Date(booking.start_time).toLocaleString('ru')}</td>
-                    <td className="py-3"><Badge variant={statusBadgeVariant[booking.status]}>{statusLabels[booking.status]}</Badge></td>
+                    <td className="py-3 text-text-muted">{new Date(booking.start_time).toLocaleString('ru-RU')}</td>
+                    <td className="py-3">
+                      <Badge variant={statusBadgeVariant[booking.status]}>{statusLabels[booking.status]}</Badge>
+                    </td>
                     <td className="py-3 text-text">{booking.service?.price} ₽</td>
                     <td className="py-3 font-medium text-success">{booking.paid_amount} ₽</td>
                     <td className="py-3 text-text-muted">{booking.remaining_amount} ₽</td>
                     <td className="py-3">
                       <div className="flex items-center gap-1">
-                        {booking.client && booking.remaining_amount > 0 && (
-                          paymentForm.bookingId === booking.id ? (
-                            <form onSubmit={createPayment} className="mr-2 flex items-center gap-2">
-                              <input
-                                type="number"
-                                step="0.01"
-                                max={booking.remaining_amount}
-                                value={paymentForm.amount}
-                                onChange={event => setPaymentForm({ ...paymentForm, amount: event.target.value })}
-                                className="w-24 rounded border border-border bg-surface px-2 py-1 text-sm text-text"
-                                required
-                              />
-                              <Button type="submit" size="sm">
-                                <Save size={14} className="mr-1" />
-                                Оплатить
-                              </Button>
-                              <Button type="button" variant="ghost" size="sm" onClick={() => setPaymentForm({ bookingId: null, amount: '' })}>
-                                <X size={16} />
-                              </Button>
-                            </form>
-                          ) : (
-                            <Button size="sm" onClick={() => setPaymentForm({ bookingId: booking.id, amount: booking.remaining_amount })}>
-                              <CreditCard size={14} className="mr-1" />
-                              Оплатить
-                            </Button>
-                          )
+                        {Number(booking.remaining_amount || 0) > 0 && (
+                          <Button size="sm" onClick={() => openPaymentModal(booking)}>
+                            <CreditCard size={14} className="mr-1" />
+                            Ссылка на оплату
+                          </Button>
                         )}
                         {user?.is_manager && (
                           <>
                             <button
+                              type="button"
                               onClick={() => openEdit(booking)}
                               className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-subtle hover:text-primary"
                               title="Изменить"
@@ -269,6 +304,7 @@ export default function Bookings() {
                               <Pencil size={16} />
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDelete(booking)}
                               className="rounded-lg p-1.5 text-text-muted transition-colors hover:bg-subtle hover:text-danger"
                               title="Удалить"
@@ -289,18 +325,102 @@ export default function Bookings() {
 
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title={editingBooking ? 'Изменить запись' : 'Новая запись'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <SearchableSelect label="Клиент" value={form.client_id} onChange={value => setForm({ ...form, client_id: value })} options={clientOptions} />
-          <Input label="Имя заявителя" value={form.requester_name} onChange={event => setForm({ ...form, requester_name: event.target.value })} />
-          <Input label="Телефон заявителя" type="tel" value={form.requester_phone} onChange={event => setForm({ ...form, requester_phone: event.target.value })} />
-          <Select label="Услуга" value={form.service_id} onChange={event => setForm({ ...form, service_id: event.target.value })} options={serviceOptions} required />
-          <Input label="Дата и время" type="datetime-local" value={form.start_time} onChange={event => setForm({ ...form, start_time: event.target.value })} required />
-          <Select label="Статус" value={form.status} onChange={event => setForm({ ...form, status: event.target.value })} options={statusOptions} />
-          <Input label="Примечания" value={form.notes} onChange={event => setForm({ ...form, notes: event.target.value })} />
-          <div className="modal-actions flex justify-end gap-3 pt-2">
+          <SearchableSelect label="Клиент" value={form.client_id} onChange={(value) => setForm({ ...form, client_id: value })} options={clientOptions} />
+          <Input label="Имя заявителя" value={form.requester_name} onChange={(event) => setForm({ ...form, requester_name: event.target.value })} />
+          <Input label="Телефон заявителя" type="tel" value={form.requester_phone} onChange={(event) => setForm({ ...form, requester_phone: event.target.value })} />
+          <Select label="Услуга" value={form.service_id} onChange={(event) => setForm({ ...form, service_id: event.target.value })} options={serviceOptions} required />
+          <Input label="Дата и время" type="datetime-local" value={form.start_time} onChange={(event) => setForm({ ...form, start_time: event.target.value })} required />
+          <Select label="Статус" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} options={statusOptions} />
+          <Input label="Примечания" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
+          <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setIsBookingModalOpen(false)}>Отмена</Button>
             <Button type="submit">{editingBooking ? 'Сохранить' : 'Создать'}</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Ссылка на оплату">
+        {paymentBooking && paymentChoices && (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-border bg-subtle/60 p-4">
+              <div className="text-sm font-medium text-text">{paymentBooking.contact_name}</div>
+              <div className="mt-1 text-sm text-text-muted">{paymentBooking.service?.name}</div>
+              <div className="mt-1 text-sm text-text-muted">Остаток к оплате: {paymentChoices.fullAmount} ₽</div>
+              <div className="mt-1 text-sm text-text-muted">Email: {paymentBooking.client?.email || 'не указан'}</div>
+            </div>
+
+            <form onSubmit={createPaymentLink} className="space-y-4">
+              <div className="space-y-2">
+                {paymentChoices.canPartial && (
+                  <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 ${paymentType === 'partial' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <input type="radio" name="payment_type" value="partial" checked={paymentType === 'partial'} onChange={() => setPaymentType('partial')} />
+                    <div>
+                      <div className="font-medium text-text">Частичная оплата 50%</div>
+                      <div className="text-sm text-text-muted">Клиент оплатит {paymentChoices.partialAmount} ₽.</div>
+                    </div>
+                  </label>
+                )}
+                {paymentChoices.canFull && (
+                  <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 ${paymentType === 'full' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <input type="radio" name="payment_type" value="full" checked={paymentType === 'full'} onChange={() => setPaymentType('full')} />
+                    <div>
+                      <div className="font-medium text-text">Полная оплата</div>
+                      <div className="text-sm text-text-muted">Клиент оплатит {paymentChoices.fullAmount} ₽.</div>
+                    </div>
+                  </label>
+                )}
+              </div>
+
+              <label className="flex items-center gap-3 rounded-2xl border border-border p-4 text-sm text-text">
+                <input
+                  type="checkbox"
+                  checked={sendEmail}
+                  onChange={(event) => setSendEmail(event.target.checked)}
+                  disabled={!paymentBooking.client?.email}
+                />
+                Сразу отправить ссылку клиенту на email
+                {!paymentBooking.client?.email && <span className="text-text-muted">(email не указан)</span>}
+              </label>
+
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="secondary" onClick={() => setIsPaymentModalOpen(false)}>Закрыть</Button>
+                <Button type="submit" disabled={isCreatingPayment}>
+                  <Mail size={16} className="mr-1.5" />
+                  {isCreatingPayment ? 'Создаем...' : 'Создать ссылку'}
+                </Button>
+              </div>
+            </form>
+
+            {paymentResult && (
+              <div className="rounded-2xl border border-success/30 bg-success/5 p-4">
+                <div className="flex items-center gap-2 font-medium text-text">
+                  <Check size={16} />
+                  Ссылка создана
+                </div>
+                <div className="mt-2 break-all text-sm text-text-muted">{paymentResult.payment_url}</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {paymentResult.payment_url && (
+                    <a href={paymentResult.payment_url} target="_blank" rel="noreferrer">
+                      <Button type="button" size="sm">
+                        <ExternalLink size={14} className="mr-1" />
+                        Открыть
+                      </Button>
+                    </a>
+                  )}
+                  {paymentResult.payment_url && (
+                    <Button type="button" size="sm" variant="secondary" onClick={copyPaymentLink}>
+                      <Copy size={14} className="mr-1" />
+                      Скопировать
+                    </Button>
+                  )}
+                  {paymentResult.email_sent_at && (
+                    <div className="flex items-center text-sm text-success">Письмо клиенту отправлено.</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   )

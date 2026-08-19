@@ -234,9 +234,8 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@studio.local')
 # Whisper (local transcription)
 WHISPER_MODEL = os.getenv('WHISPER_MODEL', 'base')
 
-# AlfaBank
-ALFABANK_TEST_MODE = os.getenv('ALFABANK_TEST_MODE', 'True').lower() == 'true'
-ALFABANK_USERNAME = os.getenv('ALFABANK_USERNAME', '')
-ALFABANK_PASSWORD = os.getenv('ALFABANK_PASSWORD', '')
-ALFABANK_TOKEN = os.getenv('ALFABANK_TOKEN', '')
-ALFABANK_BASE_URL = os.getenv('ALFABANK_BASE_URL', 'https://pay.alfabank.ru/rest/')
+# YooKassa
+YOOKASSA_TEST_MODE = os.getenv('YOOKASSA_TEST_MODE', 'True').lower() == 'true'
+YOOKASSA_SHOP_ID = os.getenv('YOOKASSA_SHOP_ID', '')
+YOOKASSA_SECRET_KEY = os.getenv('YOOKASSA_SECRET_KEY', '')
+YOOKASSA_BASE_URL = os.getenv('YOOKASSA_BASE_URL', 'https://api.yookassa.ru/v3/')

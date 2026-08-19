@@ -1,11 +1,13 @@
 from django.contrib import admin
+
 from .models import Payment, PaymentSettings
 
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ['id', 'booking', 'amount', 'status', 'created_at']
-    list_filter = ['status', 'created_at']
+    list_display = ['id', 'booking', 'provider', 'payment_type', 'amount', 'status', 'email_sent_at', 'created_at']
+    list_filter = ['provider', 'payment_type', 'status', 'created_at']
+    search_fields = ['transaction_id', 'bank_order_id', 'booking__requester_name', 'booking__client__name']
 
 
 @admin.register(PaymentSettings)

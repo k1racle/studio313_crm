@@ -1,10 +1,11 @@
-from datetime import timedelta
 import re
+from datetime import timedelta
 
 from rest_framework import serializers
 
 from apps.clients.models import Client
 from apps.clients.serializers import ClientSerializer
+
 from .models import Booking, Service
 
 NAME_PATTERN = re.compile(r"^[A-Za-zА-Яа-яЁё]+(?:[ '-][A-Za-zА-Яа-яЁё]+)*$")
@@ -65,39 +66,53 @@ class BookingValidationMixin:
         if not service or not start_time or not end_time:
             return
 
-        qs = Booking.objects.filter(
+        queryset = Booking.objects.filter(
             status__in=BLOCKING_STATUSES,
             start_time__lt=end_time,
             end_time__gt=start_time,
         )
         if instance:
-            qs = qs.exclude(pk=instance.pk)
-        if qs.exists():
+            queryset = queryset.exclude(pk=instance.pk)
+        if queryset.exists():
             raise serializers.ValidationError({
                 'start_time': 'Это время уже занято. Выберите другой слот.',
             })
 
-    def _get_or_create_client(self, name, phone):
+    def _get_or_create_client(self, name, phone, email=''):
         if not name:
             raise serializers.ValidationError({'requester_name': 'Нужно указать имя клиента для подтверждения записи.'})
 
         normalized_name = normalize_client_name(name)
         normalized_phone = normalize_phone_number(phone) if phone else ''
-        client, created = Client.objects.get_or_create(
-            phone=normalized_phone,
-            defaults={'name': normalized_name},
-        )
-        if not created:
+        normalized_email = str(email or '').strip()
+        queryset = Client.objects.all()
+        client = None
+
+        if normalized_phone:
+            client = queryset.filter(phone=normalized_phone).first()
+        if not client and normalized_email:
+            client = queryset.filter(email__iexact=normalized_email).first()
+
+        if client:
             updated_fields = []
-            if not client.name and normalized_name:
+            if normalized_name and client.name != normalized_name:
                 client.name = normalized_name
                 updated_fields.append('name')
             if normalized_phone and client.phone != normalized_phone:
                 client.phone = normalized_phone
                 updated_fields.append('phone')
+            if normalized_email and client.email != normalized_email:
+                client.email = normalized_email
+                updated_fields.append('email')
             if updated_fields:
                 client.save(update_fields=updated_fields)
-        return client
+            return client
+
+        return Client.objects.create(
+            name=normalized_name,
+            phone=normalized_phone,
+            email=normalized_email,
+        )
 
     def _ensure_client_for_status(self, booking, validated_data):
         target_status = validated_data.get('status', booking.status)
@@ -147,9 +162,23 @@ class BookingSerializer(BookingValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = [
-            'id', 'client', 'client_id', 'requester_name', 'requester_phone', 'contact_name', 'contact_phone',
-            'is_pending_request', 'service', 'service_id', 'start_time', 'end_time', 'status',
-            'paid_amount', 'remaining_amount', 'notes', 'created_at',
+            'id',
+            'client',
+            'client_id',
+            'requester_name',
+            'requester_phone',
+            'contact_name',
+            'contact_phone',
+            'is_pending_request',
+            'service',
+            'service_id',
+            'start_time',
+            'end_time',
+            'status',
+            'paid_amount',
+            'remaining_amount',
+            'notes',
+            'created_at',
         ]
         read_only_fields = ['end_time', 'paid_amount', 'remaining_amount', 'created_at']
 
@@ -163,9 +192,9 @@ class BookingSerializer(BookingValidationMixin, serializers.ModelSerializer):
         return obj.client_id is None and obj.status == Booking.STATUS_PENDING
 
     def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        ret['remaining_amount'] = max(instance.service.price - instance.paid_amount, 0)
-        return ret
+        data = super().to_representation(instance)
+        data['remaining_amount'] = max(instance.service.price - instance.paid_amount, 0)
+        return data
 
     def create(self, validated_data):
         self._set_end_time(validated_data)
@@ -199,11 +228,12 @@ class BookingSerializer(BookingValidationMixin, serializers.ModelSerializer):
 class PublicBookingSerializer(BookingValidationMixin, serializers.ModelSerializer):
     client_name = serializers.CharField(source='requester_name', write_only=True)
     client_phone = serializers.CharField(source='requester_phone', write_only=True)
-    service_id = serializers.PrimaryKeyRelatedField(source='service', queryset=Service.objects.all(), write_only=True)
+    client_email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
+    service_id = serializers.PrimaryKeyRelatedField(source='service', queryset=Service.objects.filter(is_active=True), write_only=True)
 
     class Meta:
         model = Booking
-        fields = ['id', 'client_name', 'client_phone', 'service_id', 'start_time', 'end_time', 'status', 'notes', 'created_at']
+        fields = ['id', 'client_name', 'client_phone', 'client_email', 'service_id', 'start_time', 'end_time', 'status', 'notes', 'created_at']
         read_only_fields = ['end_time', 'status', 'created_at']
 
     def validate(self, attrs):
@@ -212,8 +242,18 @@ class PublicBookingSerializer(BookingValidationMixin, serializers.ModelSerialize
         return attrs
 
     def create(self, validated_data):
+        email = validated_data.pop('client_email', '').strip()
         self._set_end_time(validated_data)
         self._validate_slot_conflict(validated_data)
-        validated_data['client'] = None
         validated_data['status'] = Booking.STATUS_PENDING
+
+        if email:
+            validated_data['client'] = self._get_or_create_client(
+                validated_data.get('requester_name', ''),
+                validated_data.get('requester_phone', ''),
+                email,
+            )
+        else:
+            validated_data['client'] = None
+
         return super().create(validated_data)
