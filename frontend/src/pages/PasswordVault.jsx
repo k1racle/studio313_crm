@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Copy, Eye, EyeOff, Key, Link as LinkIcon, Pencil, Plus, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
 
 import api from '../api/axios'
-import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
@@ -19,12 +18,6 @@ const emptyForm = {
   url: '',
   notes: '',
   shared_user_ids: [],
-}
-
-const categoryBadgeVariant = {
-  it: 'blue',
-  social: 'pink',
-  email: 'yellow',
 }
 
 export default function PasswordVault() {
@@ -245,9 +238,7 @@ export default function PasswordVault() {
         {entries.map(entry => (
           <Card key={entry.id} bodyClassName="space-y-4">
             <div className="min-w-0">
-              <Badge variant={categoryBadgeVariant[entry.category] || 'gray'}>
-                {entry.category_label}
-              </Badge>
+              <div className="text-sm text-text-muted">{entry.category_label}</div>
               <div className="mt-2 text-base font-semibold text-text">{entry.title}</div>
               {entry.url ? (
                 <a href={entry.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline">
@@ -331,9 +322,7 @@ export default function PasswordVault() {
               {entries.map(entry => (
                 <tr key={entry.id} className="border-b border-border hover:bg-subtle/70">
                   <td className="py-3">
-                    <Badge variant={categoryBadgeVariant[entry.category] || 'gray'}>
-                      {entry.category_label}
-                    </Badge>
+                    <span className="text-text-muted">{entry.category_label}</span>
                   </td>
                   <td className="py-3">
                     <div className="font-medium text-text">{entry.title}</div>
@@ -383,11 +372,15 @@ export default function PasswordVault() {
                       </button>
                     </div>
                   </td>
-                  <td className="py-3">
+                  <td className="w-[280px] py-3">
                     {entry.shared_users?.length ? (
-                      <div className="flex flex-wrap gap-1">
+                      <div className="grid max-w-[280px] grid-cols-3 gap-1">
                         {entry.shared_users.map(user => (
-                          <span key={user.id} className="rounded-full bg-subtle px-2 py-0.5 text-xs text-text">
+                          <span
+                            key={user.id}
+                            title={user.short_name}
+                            className="min-w-0 truncate rounded-full bg-subtle px-2 py-0.5 text-center text-xs text-text"
+                          >
                             {user.short_name}
                           </span>
                         ))}
