@@ -30,6 +30,7 @@ services:
     volumes:
       - static_files:/app/static
       - media_files:/app/media
+      - "./Служебная записка.docx:/app/Служебная записка.docx:ro"
     environment:
       DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY}

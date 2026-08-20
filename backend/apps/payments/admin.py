@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Payment, PaymentSettings
+from .models import Payment, PaymentPlan, PaymentSettings, PlannedPayment
 
 
 @admin.register(Payment)
@@ -19,3 +19,17 @@ class PaymentSettingsAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(PaymentPlan)
+class PaymentPlanAdmin(admin.ModelAdmin):
+    list_display = ['title', 'counterparty', 'amount', 'start_date', 'frequency', 'reminder_days', 'is_active']
+    list_filter = ['frequency', 'is_active']
+    search_fields = ['title', 'counterparty', 'purpose']
+    filter_horizontal = ['responsible']
+
+
+@admin.register(PlannedPayment)
+class PlannedPaymentAdmin(admin.ModelAdmin):
+    list_display = ['plan', 'due_date', 'amount', 'status', 'paid_at', 'reminder_sent_at']
+    list_filter = ['status', 'due_date']

@@ -1,6 +1,8 @@
 import logging
 import uuid
+from datetime import date, timedelta
 from decimal import Decimal
+from urllib.parse import quote
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -18,11 +20,15 @@ from apps.notifications.services import create_in_app_notification
 from apps.users.models import User
 from apps.users.permissions import IsAdminOrDirector, IsManagerOrHigher
 
-from .models import Payment, PaymentSettings
+from .documents import build_payment_memo
+from .models import Payment, PaymentPlan, PaymentSettings, PlannedPayment
+from .planning import sync_plan_occurrences
 from .serializers import (
     PaymentCreateSerializer,
     PaymentSerializer,
     PaymentSettingsSerializer,
+    PaymentPlanSerializer,
+    PlannedPaymentSerializer,
     PublicPaymentCreateSerializer,
     calculate_booking_payment_options,
 )
@@ -30,6 +36,15 @@ from .tokens import build_payment_token, read_booking_token, read_payment_token
 from .yookassa import create_payment, get_payment
 
 logger = logging.getLogger(__name__)
+
+
+def parse_calendar_date(raw_value, default):
+    if not raw_value:
+        return default
+    try:
+        return date.fromisoformat(raw_value)
+    except ValueError as error:
+        raise ValidationError({'date': 'Дата должна быть в формате YYYY-MM-DD.'}) from error
 
 
 def notify_managers_about_payment(payment, status_label):
@@ -202,6 +217,127 @@ class PaymentListCreateView(generics.ListCreateAPIView):
             send_email=serializer.validated_data.get('send_email', False),
         )
         return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+
+
+class PaymentPlanListCreateView(generics.ListCreateAPIView):
+    serializer_class = PaymentPlanSerializer
+    permission_classes = [IsManagerOrHigher]
+    pagination_class = None
+
+    def get_queryset(self):
+        queryset = PaymentPlan.objects.select_related('created_by').prefetch_related('responsible').all()
+        is_active = self.request.query_params.get('is_active')
+        if is_active in ('true', 'false'):
+            queryset = queryset.filter(is_active=is_active == 'true')
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class PaymentPlanDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = PaymentPlan.objects.select_related('created_by').prefetch_related('responsible').all()
+    serializer_class = PaymentPlanSerializer
+    permission_classes = [IsManagerOrHigher]
+
+
+class PlannedPaymentListView(generics.ListAPIView):
+    serializer_class = PlannedPaymentSerializer
+    permission_classes = [IsManagerOrHigher]
+    pagination_class = None
+
+    def get_queryset(self):
+        today = timezone.localdate()
+        range_start = parse_calendar_date(self.request.query_params.get('from'), today.replace(day=1))
+        range_end = parse_calendar_date(self.request.query_params.get('to'), range_start + timedelta(days=45))
+        if range_end < range_start:
+            raise ValidationError({'to': 'Конец периода не может быть раньше начала.'})
+        if (range_end - range_start).days > 730:
+            raise ValidationError({'to': 'За один запрос можно получить максимум два года.'})
+
+        plans = PaymentPlan.objects.filter(is_active=True)
+        for plan in plans:
+            sync_plan_occurrences(plan, range_start, range_end)
+
+        queryset = PlannedPayment.objects.select_related('plan__created_by').prefetch_related('plan__responsible').filter(
+            due_date__gte=range_start,
+            due_date__lte=range_end,
+        )
+        plan_id = self.request.query_params.get('plan')
+        if plan_id:
+            queryset = queryset.filter(plan_id=plan_id)
+        return queryset
+
+
+class PlannedPaymentStatusView(APIView):
+    permission_classes = [IsManagerOrHigher]
+
+    def post(self, request, pk):
+        occurrence = get_object_or_404(
+            PlannedPayment.objects.select_related('plan__created_by').prefetch_related('plan__responsible'),
+            pk=pk,
+        )
+        next_status = request.data.get('status')
+        allowed_statuses = {choice[0] for choice in PlannedPayment.STATUS_CHOICES}
+        if next_status not in allowed_statuses:
+            raise ValidationError({'status': 'Неизвестный статус планового платежа.'})
+
+        occurrence.status = next_status
+        occurrence.paid_at = timezone.now() if next_status == PlannedPayment.STATUS_PAID else None
+        if next_status == PlannedPayment.STATUS_SCHEDULED:
+            occurrence.reminder_sent_at = None
+        occurrence.save(update_fields=['status', 'paid_at', 'reminder_sent_at'])
+        return Response(PlannedPaymentSerializer(occurrence).data)
+
+
+class PlannedPaymentMemoView(APIView):
+    permission_classes = [IsManagerOrHigher]
+
+    def get(self, request, pk):
+        occurrence = get_object_or_404(
+            PlannedPayment.objects.select_related('plan__created_by'),
+            pk=pk,
+        )
+        document = build_payment_memo(occurrence)
+        filename = f'Служебная записка — {occurrence.plan.title} — {occurrence.due_date:%d.%m.%Y}.docx'
+        response = HttpResponse(
+            document.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        )
+        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{quote(filename)}"
+        return response
+
+
+class PaymentCalendarSummaryView(APIView):
+    permission_classes = [IsManagerOrHigher]
+
+    def get(self, request):
+        today = timezone.localdate()
+        month_start = parse_calendar_date(self.request.query_params.get('month'), today.replace(day=1)).replace(day=1)
+        next_month = month_start.replace(day=28) + timedelta(days=4)
+        month_end = next_month.replace(day=1) - timedelta(days=1)
+
+        for plan in PaymentPlan.objects.filter(is_active=True):
+            sync_plan_occurrences(plan, min(today, month_start), max(month_end, today + timedelta(days=180)))
+
+        month_items = PlannedPayment.objects.filter(due_date__range=(month_start, month_end))
+        planned_amount = month_items.exclude(status=PlannedPayment.STATUS_SKIPPED).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        paid_amount = month_items.filter(status=PlannedPayment.STATUS_PAID).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        overdue = PlannedPayment.objects.filter(status=PlannedPayment.STATUS_SCHEDULED, due_date__lt=today, plan__is_active=True)
+        overdue_amount = overdue.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        upcoming = PlannedPayment.objects.select_related('plan__created_by').prefetch_related('plan__responsible').filter(
+            status=PlannedPayment.STATUS_SCHEDULED,
+            due_date__gte=today,
+            plan__is_active=True,
+        )[:6]
+
+        return Response({
+            'planned_amount': planned_amount,
+            'paid_amount': paid_amount,
+            'overdue_amount': overdue_amount,
+            'overdue_count': overdue.count(),
+            'upcoming': PlannedPaymentSerializer(upcoming, many=True).data,
+        })
 
 
 class PublicPaymentCreateView(APIView):

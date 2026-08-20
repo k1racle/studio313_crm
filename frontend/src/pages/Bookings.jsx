@@ -3,7 +3,7 @@ import { format, setHours, setMinutes } from 'date-fns'
 import { CalendarDays, Check, Copy, CreditCard, ExternalLink, List, Mail, Pencil, Plus, Trash2 } from 'lucide-react'
 
 import api from '../api/axios'
-import BookingCalendar from '../components/BookingCalendar'
+import BookingCalendar, { BookingFilters } from '../components/BookingCalendar'
 import Badge from '../components/ui/Badge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -45,6 +45,13 @@ const emptyForm = {
   status: 'pending',
 }
 
+const emptyFilters = {
+  clientQuery: '',
+  serviceId: '',
+  statuses: [],
+  paymentStatuses: [],
+}
+
 function formatError(error) {
   const data = error?.response?.data
   if (!data) return 'Не удалось выполнить операцию.'
@@ -71,8 +78,16 @@ function getPaymentChoices(booking) {
   }
 }
 
-async function loadAllBookings() {
-  const firstResponse = await api.get('/booking/')
+function getBookingPaymentStatus(booking) {
+  const price = Number(booking.service?.price || 0)
+  const paid = Number(booking.paid_amount || 0)
+  if (price > 0 && paid >= price) return 'paid'
+  if (paid > 0) return 'partial'
+  return 'unpaid'
+}
+
+async function loadAllPages(path) {
+  const firstResponse = await api.get(path)
   const firstPage = firstResponse.data
   if (!Array.isArray(firstPage?.results)) return firstPage
   if (!firstPage.count || firstPage.results.length >= firstPage.count || firstPage.results.length === 0) return firstPage.results
@@ -80,7 +95,7 @@ async function loadAllBookings() {
   const pageSize = firstPage.results.length
   const pageCount = Math.ceil(firstPage.count / pageSize)
   const remainingPages = await Promise.all(
-    Array.from({ length: pageCount - 1 }, (_, index) => api.get('/booking/', { params: { page: index + 2 } })),
+    Array.from({ length: pageCount - 1 }, (_, index) => api.get(path, { params: { page: index + 2 } })),
   )
   return [firstPage, ...remainingPages.map(response => response.data)].flatMap(page => page.results || [])
 }
@@ -90,6 +105,7 @@ export default function Bookings() {
   const [bookings, setBookings] = useState([])
   const [services, setServices] = useState([])
   const [clients, setClients] = useState([])
+  const [filters, setFilters] = useState(emptyFilters)
   const [view, setView] = useState('calendar')
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
   const [editingBooking, setEditingBooking] = useState(null)
@@ -104,18 +120,39 @@ export default function Bookings() {
 
   const load = async () => {
     const [bookingResponse, serviceResponse, clientResponse] = await Promise.all([
-      loadAllBookings(),
-      api.get('/booking/services/'),
-      api.get('/clients/'),
+      loadAllPages('/booking/'),
+      loadAllPages('/booking/services/'),
+      loadAllPages('/clients/'),
     ])
     setBookings(bookingResponse)
-    setServices(serviceResponse.data.results || serviceResponse.data)
-    setClients(clientResponse.data.results || clientResponse.data)
+    setServices(serviceResponse)
+    setClients(clientResponse)
   }
 
   useEffect(() => {
     load()
   }, [])
+
+  const filteredBookings = useMemo(() => {
+    const query = filters.clientQuery.trim().toLocaleLowerCase('ru-RU')
+
+    return bookings.filter(booking => {
+      if (query) {
+        const clientSearchValue = [
+          booking.contact_name,
+          booking.contact_phone,
+          booking.client?.name,
+          booking.client?.phone,
+          booking.client?.email,
+        ].filter(Boolean).join(' ').toLocaleLowerCase('ru-RU')
+        if (!clientSearchValue.includes(query)) return false
+      }
+      if (filters.serviceId && String(booking.service?.id) !== String(filters.serviceId)) return false
+      if (filters.statuses.length > 0 && !filters.statuses.includes(booking.status)) return false
+      if (filters.paymentStatuses.length > 0 && !filters.paymentStatuses.includes(getBookingPaymentStatus(booking))) return false
+      return true
+    })
+  }, [bookings, filters])
 
   const openCreate = () => {
     setEditingBooking(null)
@@ -258,8 +295,12 @@ export default function Bookings() {
     <div>
       {view === 'calendar' && (
         <BookingCalendar
-          bookings={bookings}
+          bookings={filteredBookings}
           services={services}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClearFilters={() => setFilters(emptyFilters)}
+          totalBookingsCount={bookings.length}
           onSlotClick={handleSlotClick}
           onBookingClick={openEdit}
           onBookingMove={handleBookingMove}
@@ -267,9 +308,18 @@ export default function Bookings() {
       )}
 
       {view === 'list' && (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto -mx-6 px-6">
-            <table className="w-full min-w-[1080px]">
+        <div className="grid items-start gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+          <BookingFilters
+            services={services}
+            filters={filters}
+            onChange={setFilters}
+            onClear={() => setFilters(emptyFilters)}
+            shownCount={filteredBookings.length}
+            totalCount={bookings.length}
+          />
+          <Card className="min-w-0 overflow-hidden">
+            <div className="-mx-6 overflow-x-auto px-6">
+              <table className="w-full min-w-[1080px]">
               <thead>
                 <tr className="border-b border-border text-left text-sm text-text-muted">
                   <th className="pb-3 font-medium">Клиент / заявка</th>
@@ -283,7 +333,17 @@ export default function Bookings() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {bookings.map((booking) => (
+                {filteredBookings.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="py-16 text-center">
+                      <div className="font-semibold text-text">По выбранным фильтрам записей нет</div>
+                      <button type="button" onClick={() => setFilters(emptyFilters)} className="mt-2 text-xs font-semibold text-primary hover:underline">
+                        Сбросить фильтры
+                      </button>
+                    </td>
+                  </tr>
+                )}
+                {filteredBookings.map((booking) => (
                   <tr key={booking.id} className="border-b border-border hover:bg-subtle">
                     <td className="py-3 text-text">
                       <div className="font-medium">{booking.contact_name || '—'}</div>
@@ -332,9 +392,10 @@ export default function Bookings() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-        </Card>
+              </table>
+            </div>
+          </Card>
+        </div>
       )}
 
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title={editingBooking ? 'Изменить запись' : 'Новая запись'}>

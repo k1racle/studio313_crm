@@ -205,6 +205,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.users.tasks.notify_upcoming_birthdays',
         'schedule': crontab(hour=8, minute=0),  # ежедневно в 8:00
     },
+    'send-planned-payment-reminders': {
+        'task': 'apps.payments.tasks.send_planned_payment_reminders',
+        'schedule': crontab(hour=9, minute=0),  # ежедневно в 9:00
+    },
 }
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')

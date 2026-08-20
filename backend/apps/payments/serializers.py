@@ -1,10 +1,13 @@
 from decimal import Decimal, ROUND_HALF_UP
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.booking.models import Booking
+from apps.users.models import User
 
-from .models import Payment, PaymentSettings
+from .models import Payment, PaymentPlan, PaymentSettings, PlannedPayment
+from .planning import sync_plan_occurrences
 from .tokens import build_payment_token
 
 
@@ -110,3 +113,109 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentSettings
         fields = ['test_mode', 'shop_id', 'secret_key', 'base_url']
+
+
+class PaymentPlanSerializer(serializers.ModelSerializer):
+    responsible_ids = serializers.PrimaryKeyRelatedField(
+        source='responsible',
+        queryset=User.objects.all(),
+        many=True,
+        required=False,
+        write_only=True,
+    )
+    responsible = serializers.SerializerMethodField(read_only=True)
+    created_by = serializers.SerializerMethodField(read_only=True)
+    frequency_display = serializers.CharField(source='get_frequency_display', read_only=True)
+
+    class Meta:
+        model = PaymentPlan
+        fields = [
+            'id',
+            'title',
+            'counterparty',
+            'purpose',
+            'amount',
+            'start_date',
+            'frequency',
+            'frequency_display',
+            'end_date',
+            'reminder_days',
+            'memo_recipient',
+            'responsible',
+            'responsible_ids',
+            'created_by',
+            'is_active',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['created_by', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        start_date = attrs.get('start_date') or getattr(self.instance, 'start_date', None)
+        end_date = attrs.get('end_date') if 'end_date' in attrs else getattr(self.instance, 'end_date', None)
+        reminder_days = attrs.get('reminder_days', getattr(self.instance, 'reminder_days', 3))
+        if end_date and start_date and end_date < start_date:
+            raise serializers.ValidationError({'end_date': 'Дата окончания не может быть раньше первого платежа.'})
+        if reminder_days > 90:
+            raise serializers.ValidationError({'reminder_days': 'Напоминание можно установить максимум за 90 дней.'})
+        return attrs
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Сумма должна быть больше нуля.')
+        return value
+
+    def get_responsible(self, obj):
+        return [
+            {'id': user.id, 'name': user.get_full_name(), 'position': user.position}
+            for user in obj.responsible.all()
+        ]
+
+    def get_created_by(self, obj):
+        if not obj.created_by:
+            return None
+        return {
+            'id': obj.created_by.id,
+            'name': obj.created_by.get_full_name(),
+            'short_name': obj.created_by.get_short_name(),
+            'position': obj.created_by.position,
+        }
+
+    def create(self, validated_data):
+        plan = super().create(validated_data)
+        if plan.is_active:
+            sync_plan_occurrences(plan)
+        return plan
+
+    def update(self, instance, validated_data):
+        plan = super().update(instance, validated_data)
+        plan.occurrences.filter(status=PlannedPayment.STATUS_SCHEDULED).delete()
+        if plan.is_active:
+            sync_plan_occurrences(plan)
+        return plan
+
+
+class PlannedPaymentSerializer(serializers.ModelSerializer):
+    plan = PaymentPlanSerializer(read_only=True)
+    effective_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PlannedPayment
+        fields = [
+            'id',
+            'plan',
+            'due_date',
+            'amount',
+            'status',
+            'effective_status',
+            'paid_at',
+            'reminder_sent_at',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+    def get_effective_status(self, obj):
+        if obj.status == PlannedPayment.STATUS_SCHEDULED and obj.due_date < timezone.localdate():
+            return 'overdue'
+        return obj.status

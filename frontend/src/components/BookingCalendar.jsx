@@ -14,7 +14,7 @@ import {
   startOfWeek,
 } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock3, RotateCcw, Search, SlidersHorizontal } from 'lucide-react'
 
 const START_HOUR = 8
 const END_HOUR = 22
@@ -36,6 +36,19 @@ const paymentStyles = {
   partial: 'bg-amber-500 text-amber-950 dark:bg-amber-400',
   unpaid: 'bg-rose-600 text-white dark:bg-rose-500 dark:text-white',
 }
+
+const statusFilterOptions = [
+  { value: 'pending', label: 'Согласование', dotClass: 'bg-amber-500' },
+  { value: 'confirmed', label: 'Подтверждена', dotClass: 'bg-blue-500' },
+  { value: 'completed', label: 'Выполнена', dotClass: 'bg-emerald-500' },
+  { value: 'canceled', label: 'Отменена', dotClass: 'bg-slate-400' },
+]
+
+const paymentFilterOptions = [
+  { value: 'paid', label: 'Оплачено полностью', dotClass: 'bg-emerald-500' },
+  { value: 'partial', label: 'Частичная оплата', dotClass: 'bg-amber-500' },
+  { value: 'unpaid', label: 'Не оплачено', dotClass: 'bg-rose-500' },
+]
 
 const moneyFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 })
 
@@ -144,6 +157,136 @@ function MiniCalendar({ bookings, month, selectedWeekStart, onMonthChange, onDat
   )
 }
 
+export function BookingFilters({ services, filters, onChange, onClear, shownCount, totalCount }) {
+  const toggleArrayValue = (key, value) => {
+    const current = filters[key]
+    onChange({
+      ...filters,
+      [key]: current.includes(value) ? current.filter(item => item !== value) : [...current, value],
+    })
+  }
+
+  const activeGroupsCount = [
+    Boolean(filters.clientQuery.trim()),
+    Boolean(filters.serviceId),
+    filters.statuses.length > 0,
+    filters.paymentStatuses.length > 0,
+  ].filter(Boolean).length
+  const hasFilters = activeGroupsCount > 0
+
+  return (
+    <aside className="w-full max-w-[340px] rounded-2xl border border-border bg-surface p-4 shadow-[0_14px_40px_rgba(15,23,40,0.05)] xl:max-w-none">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
+            <SlidersHorizontal size={15} />
+          </span>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted">Фильтры</div>
+            <div className="text-xs font-semibold text-text">Отбор записей</div>
+          </div>
+        </div>
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-text-muted hover:bg-subtle hover:text-primary"
+            title="Сбросить все фильтры"
+          >
+            <RotateCcw size={12} />
+            Сбросить
+          </button>
+        )}
+      </div>
+
+      <div className="mt-4 space-y-3.5">
+        <label className="block">
+          <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">Клиент</span>
+          <span className="relative block">
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="search"
+              value={filters.clientQuery}
+              onChange={event => onChange({ ...filters, clientQuery: event.target.value })}
+              placeholder="Имя, телефон или email"
+              className="h-10 w-full rounded-xl border border-border bg-subtle/40 pl-9 pr-3 text-xs text-text placeholder:text-text-muted/65 hover:border-primary/50 focus:border-primary focus:bg-surface focus:ring-2 focus:ring-primary/10"
+            />
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">Услуга</span>
+          <span className="relative block">
+            <select
+              value={filters.serviceId}
+              onChange={event => onChange({ ...filters, serviceId: event.target.value })}
+              className="h-10 w-full appearance-none rounded-xl border border-border bg-subtle/40 pl-3 pr-9 text-xs font-medium text-text hover:border-primary/50 focus:border-primary focus:bg-surface focus:ring-2 focus:ring-primary/10"
+            >
+              <option value="">Все услуги</option>
+              {services.map(service => <option key={service.id} value={service.id}>{service.name}</option>)}
+            </select>
+            <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-muted" />
+          </span>
+        </label>
+
+        <fieldset>
+          <legend className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">Статус записи</legend>
+          <div className="grid grid-cols-2 gap-1.5">
+            {statusFilterOptions.map(option => {
+              const selected = filters.statuses.includes(option.value)
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => toggleArrayValue('statuses', option.value)}
+                  className={`flex min-w-0 items-center gap-1.5 rounded-lg border px-2 py-2 text-left text-[9px] font-semibold ${
+                    selected ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-subtle/25 text-text-muted hover:border-primary/40 hover:text-text'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${option.dotClass}`} />
+                  <span className="truncate">{option.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">Оплата</legend>
+          <div className="space-y-1">
+            {paymentFilterOptions.map(option => {
+              const selected = filters.paymentStatuses.includes(option.value)
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => toggleArrayValue('paymentStatuses', option.value)}
+                  className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-[10px] font-semibold ${
+                    selected ? 'border-primary bg-primary/10 text-primary' : 'border-transparent bg-subtle/40 text-text-muted hover:border-primary/30 hover:text-text'
+                  }`}
+                >
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${option.dotClass}`} />
+                  <span>{option.label}</span>
+                  <span className={`ml-auto grid h-4 w-4 place-items-center rounded border ${selected ? 'border-primary bg-primary text-white' : 'border-border bg-surface'}`}>
+                    {selected && <span className="text-[9px] leading-none">✓</span>}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[10px]">
+        <span className="text-text-muted">Найдено записей</span>
+        <span className="rounded-full bg-primary/10 px-2 py-1 font-bold tabular-nums text-primary">{shownCount} из {totalCount}</span>
+      </div>
+    </aside>
+  )
+}
+
 function BookingCard({ booking, top, height, dragging, onClick, onDragStart, onDragEnd }) {
   const payment = getPaymentStatus(booking)
   const start = parseISO(booking.start_time)
@@ -182,7 +325,17 @@ function BookingCard({ booking, top, height, dragging, onClick, onDragStart, onD
   )
 }
 
-export default function BookingCalendar({ bookings, onSlotClick, onBookingClick, onBookingMove }) {
+export default function BookingCalendar({
+  bookings,
+  services,
+  filters,
+  onFiltersChange,
+  onClearFilters,
+  totalBookingsCount,
+  onSlotClick,
+  onBookingClick,
+  onBookingMove,
+}) {
   const todayWeekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [])
   const [selectedWeekStart, setSelectedWeekStart] = useState(todayWeekStart)
   const [month, setMonth] = useState(startOfMonth(todayWeekStart))
@@ -245,13 +398,23 @@ export default function BookingCalendar({ bookings, onSlotClick, onBookingClick,
 
   return (
     <div className="grid items-start gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
-      <MiniCalendar
-        bookings={bookings}
-        month={month}
-        selectedWeekStart={selectedWeekStart}
-        onMonthChange={setMonth}
-        onDateSelect={selectDate}
-      />
+      <div className="space-y-4">
+        <MiniCalendar
+          bookings={bookings}
+          month={month}
+          selectedWeekStart={selectedWeekStart}
+          onMonthChange={setMonth}
+          onDateSelect={selectDate}
+        />
+        <BookingFilters
+          services={services}
+          filters={filters}
+          onChange={onFiltersChange}
+          onClear={onClearFilters}
+          shownCount={bookings.length}
+          totalCount={totalBookingsCount}
+        />
+      </div>
 
       <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_16px_50px_rgba(15,23,40,0.06)]">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">

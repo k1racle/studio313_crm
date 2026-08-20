@@ -18,6 +18,7 @@ import Login from './pages/Login'
 import MediaPlan from './pages/MediaPlan'
 import PasswordVault from './pages/PasswordVault'
 import PaymentFail from './pages/PaymentFail'
+import PaymentCalendar from './pages/PaymentCalendar'
 import Payments from './pages/Payments'
 import PaymentSuccess from './pages/PaymentSuccess'
 import Production from './pages/Production'
@@ -53,6 +54,7 @@ function App() {
         <Route path="bookings" element={<Bookings />} />
         <Route path="services" element={<Services />} />
         <Route path="payments" element={<Payments />} />
+        <Route path="payment-calendar" element={<PaymentCalendar />} />
         <Route path="finance" element={<Finance />} />
         <Route path="tags" element={<Tags />} />
         <Route path="timesheets" element={<Timesheets />} />
