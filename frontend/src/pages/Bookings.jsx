@@ -71,6 +71,20 @@ function getPaymentChoices(booking) {
   }
 }
 
+async function loadAllBookings() {
+  const firstResponse = await api.get('/booking/')
+  const firstPage = firstResponse.data
+  if (!Array.isArray(firstPage?.results)) return firstPage
+  if (!firstPage.count || firstPage.results.length >= firstPage.count || firstPage.results.length === 0) return firstPage.results
+
+  const pageSize = firstPage.results.length
+  const pageCount = Math.ceil(firstPage.count / pageSize)
+  const remainingPages = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, index) => api.get('/booking/', { params: { page: index + 2 } })),
+  )
+  return [firstPage, ...remainingPages.map(response => response.data)].flatMap(page => page.results || [])
+}
+
 export default function Bookings() {
   const { user } = useAuth()
   const [bookings, setBookings] = useState([])
@@ -90,11 +104,11 @@ export default function Bookings() {
 
   const load = async () => {
     const [bookingResponse, serviceResponse, clientResponse] = await Promise.all([
-      api.get('/booking/'),
+      loadAllBookings(),
       api.get('/booking/services/'),
       api.get('/clients/'),
     ])
-    setBookings(bookingResponse.data.results || bookingResponse.data)
+    setBookings(bookingResponse)
     setServices(serviceResponse.data.results || serviceResponse.data)
     setClients(clientResponse.data.results || clientResponse.data)
   }
@@ -123,8 +137,8 @@ export default function Bookings() {
     setIsBookingModalOpen(true)
   }
 
-  const handleSlotClick = (day, hour) => {
-    const dateTime = setMinutes(setHours(day, hour), 0)
+  const handleSlotClick = (day, hour, minute = 0) => {
+    const dateTime = setMinutes(setHours(day, hour), minute)
     setEditingBooking(null)
     setForm({ ...emptyForm, start_time: format(dateTime, "yyyy-MM-dd'T'HH:mm") })
     setIsBookingModalOpen(true)
