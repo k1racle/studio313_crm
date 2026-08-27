@@ -14,6 +14,7 @@ import {
   CreditCard,
   Folder,
   FolderOpen,
+  FileCheck2,
   Globe,
   HeadphonesIcon,
   Key,
@@ -22,6 +23,7 @@ import {
   Menu,
   MessageSquare,
   Newspaper,
+  ShieldCheck,
   Users,
   X,
 } from 'lucide-react'
@@ -32,6 +34,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePageHeader } from '../contexts/PageHeaderContext'
 import { formatFullName } from '../utils/format'
 import FloatingChatButton from './FloatingChatButton'
+import GlobalSearch from './GlobalSearch'
 import NotificationBell from './NotificationBell'
 import ThemeToggle from './ThemeToggle'
 
@@ -39,39 +42,41 @@ const brandLogoSrc = '/logo-white.svg'
 
 const menuItems = [
   { path: '/', label: 'Главная', icon: LayoutDashboard },
-  { path: '/tasks', label: 'Задачи', icon: CheckSquare },
-  { path: '/production', label: 'Производство', icon: Clapperboard },
-  { path: '/media-plan', label: 'Медиа-план', icon: Newspaper },
-  { path: '/files', label: 'Файлы', icon: Folder },
-  { path: '/contacts', label: 'Контакты', icon: Contact },
-  { path: '/password-vault', label: 'Доступы', icon: Key },
-  { path: '/projects', label: 'Проекты', icon: FolderOpen },
-  { path: '/clients', label: 'Клиенты', icon: Users },
-  { path: '/bookings', label: 'Запись', icon: Calendar },
-  { path: '/services', label: 'Услуги', icon: Briefcase },
-  { path: '/payments', label: 'Платежи', icon: CreditCard },
-  { path: '/payment-calendar', label: 'Календарь платежей', icon: CalendarClock },
-  { path: '/finance', label: 'Финансы', icon: BarChart3 },
-  { path: '/timesheets', label: 'Таймшиты', icon: Clock },
-  { path: '/helpdesk', label: 'Хелпдеск', icon: HeadphonesIcon },
-  { path: '/knowledge', label: 'База знаний', icon: BookOpen },
+  { path: '/tasks', label: 'Задачи', icon: CheckSquare, permission: 'tasks.view' },
+  { path: '/production', label: 'Производство', icon: Clapperboard, permission: 'production.view' },
+  { path: '/media-plan', label: 'Медиа-план', icon: Newspaper, permission: 'media_plan.view' },
+  { path: '/approvals', label: 'Согласования', icon: FileCheck2, permission: 'approvals.view' },
+  { path: '/files', label: 'Файлы', icon: Folder, permission: 'files.view' },
+  { path: '/contacts', label: 'Контакты', icon: Contact, permission: 'clients.view' },
+  { path: '/password-vault', label: 'Доступы', icon: Key, permission: 'passwords.view' },
+  { path: '/projects', label: 'Проекты', icon: FolderOpen, permission: 'projects.view' },
+  { path: '/clients', label: 'Клиенты', icon: Users, permission: 'clients.view' },
+  { path: '/bookings', label: 'Запись', icon: Calendar, permission: 'bookings.view' },
+  { path: '/services', label: 'Услуги', icon: Briefcase, permission: 'bookings.view' },
+  { path: '/payments', label: 'Платежи', icon: CreditCard, permission: 'finance.view' },
+  { path: '/payment-calendar', label: 'Календарь платежей', icon: CalendarClock, permission: 'finance.view' },
+  { path: '/finance', label: 'Финансы', icon: BarChart3, permission: 'finance.view' },
+  { path: '/timesheets', label: 'Таймшиты', icon: Clock, permission: 'timesheets.view' },
+  { path: '/helpdesk', label: 'Хелпдеск', icon: HeadphonesIcon, permission: 'helpdesk.view' },
+  { path: '/knowledge', label: 'База знаний', icon: BookOpen, permission: 'knowledge.view' },
+  { path: '/roles', label: 'Роли и права', icon: ShieldCheck, permission: 'roles.manage' },
 ]
 
 const headerItems = [
   ...menuItems,
-  { path: '/chat', label: 'Чаты', icon: MessageSquare },
+  { path: '/chat', label: 'Чаты', icon: MessageSquare, permission: 'chat.view' },
 ]
 
 const mobileQuickNav = [
   { path: '/', label: 'Главная', icon: LayoutDashboard },
-  { path: '/tasks', label: 'Задачи', icon: CheckSquare },
-  { path: '/production', label: 'Производство', icon: Clapperboard },
-  { path: '/clients', label: 'Клиенты', icon: Users },
+  { path: '/tasks', label: 'Задачи', icon: CheckSquare, permission: 'tasks.view' },
+  { path: '/production', label: 'Производство', icon: Clapperboard, permission: 'production.view' },
+  { path: '/clients', label: 'Клиенты', icon: Users, permission: 'clients.view' },
 ]
 
 const mobilePrimaryPaths = ['/', '/tasks', '/production', '/media-plan', '/projects', '/files', '/clients', '/finance']
 
-const integrationsItem = { path: '/integrations', label: 'Интеграции', icon: Globe }
+const integrationsItem = { path: '/integrations', label: 'Интеграции', icon: Globe, permission: 'integrations.manage' }
 
 const birthdayKindLabels = {
   employee: 'Сотрудник',
@@ -114,6 +119,9 @@ export default function Layout() {
   const [birthdays, setBirthdays] = useState([])
   const [birthdayOpen, setBirthdayOpen] = useState(false)
   const hasHeaderActions = Boolean(headerContent)
+  const can = permission => !permission || !user?.capabilities || user.capabilities.includes(permission)
+  const allowedMenuItems = useMemo(() => menuItems.filter(item => can(item.permission)), [user?.capabilities])
+  const allowedQuickNav = useMemo(() => mobileQuickNav.filter(item => can(item.permission)), [user?.capabilities])
 
   const currentItem = useMemo(
     () => [...headerItems, integrationsItem].find(item => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)) || menuItems[0],
@@ -138,8 +146,8 @@ export default function Layout() {
   }, [birthdays, hasBirthdays])
 
   const mobilePrimaryItems = useMemo(
-    () => menuItems.filter(item => mobilePrimaryPaths.includes(item.path)),
-    []
+    () => allowedMenuItems.filter(item => mobilePrimaryPaths.includes(item.path)),
+    [allowedMenuItems]
   )
 
   const handleLogout = () => {
@@ -233,15 +241,15 @@ export default function Layout() {
 
 const desktopNavLinks = (
   <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 pb-4 pt-3">
-    {menuItems.map(renderMenuLink)}
-    {renderMenuLink(integrationsItem)}
+    {allowedMenuItems.map(renderMenuLink)}
+    {can(integrationsItem.permission) ? renderMenuLink(integrationsItem) : null}
   </nav>
 )
 
 const mobileNavLinks = (
   <nav className="space-y-1.5">
-    {menuItems.map(renderMenuLink)}
-    {renderMenuLink(integrationsItem)}
+    {allowedMenuItems.map(renderMenuLink)}
+    {can(integrationsItem.permission) ? renderMenuLink(integrationsItem) : null}
   </nav>
 )
 
@@ -327,13 +335,14 @@ const mobileNavLinks = (
             <div className="min-w-0 flex-1">
               <div className="brand-display truncate text-[1.75rem] leading-none text-text">{currentItem.label}</div>
             </div>
-            {hasHeaderActions ? (
-              <div className="mobile-header-actions min-w-0 max-w-[62%] overflow-x-auto pb-1">
-                <div className="flex w-max min-w-full justify-end">
-                  {headerContent}
+            <div className="flex min-w-0 items-center justify-end gap-2">
+              <GlobalSearch compact />
+              {hasHeaderActions ? (
+                <div className="mobile-header-actions min-w-0 max-w-[52vw] overflow-x-auto pb-1">
+                  <div className="flex w-max min-w-full justify-end">{headerContent}</div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -428,6 +437,7 @@ const mobileNavLinks = (
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-3">
+                  <GlobalSearch />
                   {headerContent}
                 </div>
               </div>
@@ -442,7 +452,7 @@ const mobileNavLinks = (
 
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-[rgba(255,255,255,0.92)] px-3 py-3 backdrop-blur-xl dark:bg-[rgba(8,12,20,0.92)] lg:hidden">
         <div className="grid grid-cols-5 gap-2">
-          {mobileQuickNav.map(item => {
+          {allowedQuickNav.map(item => {
             const Icon = item.icon
             const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
             return (
@@ -457,6 +467,7 @@ const mobileNavLinks = (
                 }`}
               >
                 <Icon size={18} />
+                <span className="max-w-full truncate">{item.label}</span>
               </Link>
             )
           })}
@@ -471,6 +482,7 @@ const mobileNavLinks = (
             }`}
           >
             <Menu size={18} />
+            <span>Ещё</span>
           </button>
         </div>
       </nav>

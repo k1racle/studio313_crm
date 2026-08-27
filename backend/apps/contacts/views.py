@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.http import HttpResponse
 from rest_framework import generics, filters
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from apps.users.permissions import RouteCapabilityPermission
 from django_filters.rest_framework import DjangoFilterBackend
 from openpyxl import Workbook
 import json
@@ -45,7 +45,7 @@ class ContactDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ContactExportView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get(self, request):
         qs = Contact.objects.all()

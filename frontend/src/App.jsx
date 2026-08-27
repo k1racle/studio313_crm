@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import { useAuth } from './contexts/AuthContext'
 import { PageHeaderProvider } from './contexts/PageHeaderContext'
 import Bookings from './pages/Bookings'
+import Approvals from './pages/Approvals'
 import Chat from './pages/Chat'
 import ClientPortal from './pages/ClientPortal'
 import Clients from './pages/Clients'
@@ -24,6 +25,7 @@ import PaymentSuccess from './pages/PaymentSuccess'
 import Production from './pages/Production'
 import Profile from './pages/Profile'
 import Projects from './pages/Projects'
+import RolesPermissions from './pages/RolesPermissions'
 import PublicBooking from './pages/PublicBooking'
 import PublicTicket from './pages/PublicTicket'
 import Services from './pages/Services'
@@ -35,6 +37,12 @@ function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
   if (loading) return <div>Загрузка...</div>
   return isAuthenticated ? children : <Navigate to="/login" />
+}
+
+function CapabilityRoute({ capability, children }) {
+  const { user, loading } = useAuth()
+  if (loading || !user?.capabilities) return null
+  return user.capabilities.includes(capability) ? children : <Navigate to="/" replace />
 }
 
 function App() {
@@ -67,6 +75,8 @@ function App() {
         <Route path="contacts" element={<Contacts />} />
         <Route path="password-vault" element={<PasswordVault />} />
         <Route path="chat" element={<Chat />} />
+        <Route path="approvals" element={<CapabilityRoute capability="approvals.view"><Approvals /></CapabilityRoute>} />
+        <Route path="roles" element={<CapabilityRoute capability="roles.manage"><RolesPermissions /></CapabilityRoute>} />
         <Route path="profile" element={<Profile />} />
       </Route>
     </Routes>

@@ -12,7 +12,7 @@ class TimeEntryListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_manager:
+        if user.has_capability('timesheets.manage'):
             return TimeEntry.objects.all()
         return TimeEntry.objects.filter(user=user)
 
@@ -25,7 +25,7 @@ class TimeEntryDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_manager:
+        if user.has_capability('timesheets.manage'):
             return TimeEntry.objects.all()
         return TimeEntry.objects.filter(user=user)
 

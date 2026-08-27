@@ -143,6 +143,7 @@ export default function Tasks() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('tasks.manage')
 
   useEffect(() => {
     const taskId = searchParams.get('task')
@@ -166,7 +167,7 @@ export default function Tasks() {
 
   useEffect(() => {
     loadTasks()
-    if (user?.is_manager) {
+    if (canManage) {
       api.get('/auth/users/').then(res => setUsers(res.data.results || res.data))
       api.get('/clients/').then(res => setClients(res.data.results || res.data))
     }
@@ -341,14 +342,14 @@ export default function Tasks() {
           <div className="mt-1 text-lg font-semibold text-danger">{overdueTasks}</div>
         </div>
       </div>
-      {user?.is_manager && (
+      {canManage && (
         <Button onClick={openCreate}>
           <Plus size={16} />
           Новая задача
         </Button>
       )}
     </div>
-  ), [activeTasks, overdueTasks, totalTasks, user?.is_manager])
+  ), [activeTasks, overdueTasks, totalTasks, canManage])
 
   usePageHeaderContent(headerActions)
 
@@ -543,7 +544,7 @@ export default function Tasks() {
                       <td className="py-4 text-text-muted">{task.due_date ? new Date(task.due_date).toLocaleDateString('ru-RU') : '—'}</td>
                       <td className="py-4">
                         <div className="flex items-center gap-1">
-                          {user?.is_manager && (
+                          {canManage && (
                             <>
                               <button
                                 onClick={() => openEdit(task)}
@@ -757,7 +758,7 @@ export default function Tasks() {
         title={`Задача #${detailTaskId}`}
         size="xl"
         headerActions={
-          detailTask && user?.is_manager ? (
+          detailTask && canManage ? (
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={handleEditDetail} title="Редактировать">
                 <Pencil size={16} />

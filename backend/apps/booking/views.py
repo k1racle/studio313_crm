@@ -1235,7 +1235,7 @@ class ServiceListCreateView(generics.ListCreateAPIView):
         return [permissions.AllowAny()]
 
     def get_queryset(self):
-        if self.request.user.is_authenticated and self.request.user.is_manager:
+        if self.request.user.is_authenticated and self.request.user.has_capability('bookings.manage'):
             return Service.objects.all()
         return Service.objects.filter(is_active=True)
 
@@ -1252,7 +1252,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
     filterset_fields = ['status', 'service', 'start_time']
 
     def get_queryset(self):
-        if self.request.user.is_manager:
+        if self.request.user.has_capability('bookings.manage'):
             return Booking.objects.select_related('client', 'service').all()
         return Booking.objects.none()
 

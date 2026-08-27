@@ -52,6 +52,7 @@ const taskStatusVariant = {
 
 export default function Clients() {
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('clients.manage')
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
   const [showArchived, setShowArchived] = useState(false)
@@ -210,7 +211,7 @@ export default function Clients() {
 
   usePageHeaderContent(
     <div className="flex flex-wrap items-center justify-end gap-2">
-      {user?.is_manager && (
+      {canManage && (
         <Button onClick={openCreate}>
           <Plus size={16} />
           Новый клиент
@@ -312,7 +313,7 @@ export default function Clients() {
                 </div>
               </div>
             </button>
-            {user?.is_manager && (
+            {canManage && (
               <div className="flex items-center gap-2">
                 <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={(e) => openEdit(c, e)}>
                   <Pencil size={14} />
@@ -363,7 +364,7 @@ export default function Clients() {
                   <td className="py-3 text-text-muted truncate">{c.telegram ? `@${c.telegram}` : '—'}</td>
                   <td className="py-3">{c.is_archived && <Badge variant="gray">Архив</Badge>}</td>
                   <td className="py-3">
-                    {user?.is_manager && (
+                    {canManage && (
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                         <button onClick={(e) => openEdit(c, e)} className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors" title="Изменить">
                           <Pencil size={16} />
@@ -510,7 +511,7 @@ export default function Clients() {
                 ) : <div className="text-text-muted text-sm">Нет активных задач</div>}
               </div>
 
-              {user?.is_manager && (
+              {canManage && (
                 <div className="space-y-3 pt-2 border-t border-border">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-text">Клиентский портал</span>

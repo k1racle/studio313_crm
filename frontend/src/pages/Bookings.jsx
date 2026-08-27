@@ -102,6 +102,7 @@ async function loadAllPages(path) {
 
 export default function Bookings() {
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('bookings.manage')
   const [bookings, setBookings] = useState([])
   const [services, setServices] = useState([])
   const [clients, setClients] = useState([])
@@ -278,14 +279,14 @@ export default function Bookings() {
           )
         })}
       </div>
-      {user?.is_manager && (
+      {canManage && (
         <Button onClick={openCreate}>
           <Plus size={16} />
           Новая запись
         </Button>
       )}
     </div>
-  ), [user?.is_manager, view])
+  ), [canManage, view])
 
   usePageHeaderContent(headerActions)
 
@@ -367,7 +368,7 @@ export default function Bookings() {
                             Ссылка на оплату
                           </Button>
                         )}
-                        {user?.is_manager && (
+                        {canManage && (
                           <>
                             <button
                               type="button"

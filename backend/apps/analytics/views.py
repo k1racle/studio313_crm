@@ -2,15 +2,23 @@ from datetime import datetime, timedelta
 from django.db.models import Sum, Count, F, Q, DecimalField
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from decimal import Decimal, InvalidOperation
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from apps.users.permissions import IsManagerOrHigher
+from apps.users.permissions import HasCapability
 from apps.tasks.models import Task
 from apps.booking.models import Booking
 from apps.production.models import Production
 from apps.media_plan.models import Publication
-from apps.payments.models import Payment
+from apps.payments.models import Payment, PlannedPayment
 from apps.clients.models import Client
+from apps.client_portal.models import MaterialApproval
+from apps.contacts.models import Contact
+from apps.files.models import ProjectFile
+from apps.chat.models import Message
+from apps.helpdesk.models import HelpdeskTicket
+from apps.projects.models import Project
 
 
 def build_status_counts(queryset, field_name, order, labels):
@@ -28,8 +36,178 @@ def build_status_counts(queryset, field_name, order, labels):
     ]
 
 
+class WorkdayView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        now = timezone.now()
+        today = timezone.localdate()
+        week_end = today + timedelta(days=7)
+
+        tasks = Task.objects.filter(
+            due_date__lt=now,
+            is_archived=False,
+        ).exclude(status__in=[Task.STATUS_DONE, Task.STATUS_CANCELED]).select_related('project', 'client')
+        if not user.has_capability('tasks.manage'):
+            tasks = tasks.filter(Q(assignees=user) | Q(members=user)).distinct()
+
+        approvals = MaterialApproval.objects.filter(status=MaterialApproval.STATUS_PENDING).select_related('client', 'project')
+        if not user.has_capability('approvals.manage'):
+            approvals = approvals.filter(submitted_by=user)
+
+        tickets = HelpdeskTicket.objects.exclude(status=HelpdeskTicket.STATUS_CLOSED).select_related('assignee')
+        if not user.has_capability('helpdesk.manage'):
+            tickets = tickets.filter(assignee=user)
+
+        bookings = Booking.objects.none()
+        if user.has_capability('bookings.view'):
+            bookings = Booking.objects.filter(
+                start_time__date__gte=today,
+                start_time__date__lte=week_end,
+            ).exclude(status=Booking.STATUS_CANCELED).select_related('client', 'service')
+
+        payments = PlannedPayment.objects.none()
+        if user.has_capability('finance.view'):
+            payments = PlannedPayment.objects.filter(
+                status=PlannedPayment.STATUS_SCHEDULED,
+                due_date__lte=week_end,
+            ).select_related('plan')
+            if not user.has_capability('finance.manage'):
+                payments = payments.filter(plan__responsible=user)
+
+        return Response({
+            'date': today.isoformat(),
+            'overdue_tasks': [{
+                'id': item.id,
+                'title': item.title,
+                'due_date': item.due_date,
+                'project': item.project.name if item.project else '',
+                'client': item.client.name if item.client else '',
+                'priority': item.priority,
+                'href': '/tasks',
+            } for item in tasks.order_by('due_date')[:12]],
+            'approvals': [{
+                'id': item.id,
+                'title': item.title,
+                'client': item.client.name,
+                'project': item.project.name if item.project else '',
+                'due_date': item.due_date,
+                'href': '/approvals',
+            } for item in approvals.order_by('due_date', 'created_at')[:12]],
+            'tickets': [{
+                'id': item.id,
+                'title': item.subject,
+                'requester': item.requester_name,
+                'priority': item.priority,
+                'status': item.status,
+                'href': '/helpdesk',
+            } for item in tickets.order_by('-priority', 'created_at')[:12]],
+            'bookings': [{
+                'id': item.id,
+                'title': item.service.name,
+                'client': item.contact_name,
+                'start_time': item.start_time,
+                'status': item.status,
+                'href': '/bookings',
+            } for item in bookings.order_by('start_time')[:12]],
+            'payments': [{
+                'id': item.id,
+                'title': item.plan.title,
+                'counterparty': item.plan.counterparty,
+                'amount': float(item.amount),
+                'due_date': item.due_date,
+                'is_overdue': item.due_date < today,
+                'href': '/payment-calendar',
+            } for item in payments.order_by('due_date')[:12]],
+        })
+
+
+class GlobalSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if len(query) < 2:
+            return Response({'query': query, 'groups': []})
+
+        user = request.user
+        groups = []
+
+        def add_group(key, label, items):
+            items = list(items)
+            if items:
+                groups.append({'key': key, 'label': label, 'items': items})
+
+        if user.has_capability('clients.view'):
+            phone_fragment = ''.join(char for char in query if char.isdigit())[-4:]
+            client_filter = (
+                Q(name__icontains=query) | Q(phone__icontains=query) |
+                Q(email__icontains=query) | Q(telegram__icontains=query)
+            )
+            contact_filter = (
+                Q(full_name__icontains=query) | Q(phone__icontains=query) |
+                Q(email__icontains=query) | Q(organization__icontains=query)
+            )
+            if len(phone_fragment) == 4:
+                client_filter |= Q(phone__icontains=phone_fragment)
+                contact_filter |= Q(phone__icontains=phone_fragment)
+            clients = Client.objects.filter(client_filter).filter(is_archived=False)[:6]
+            add_group('clients', 'Клиенты', ({'id': x.id, 'title': x.name, 'subtitle': x.phone or x.email, 'href': '/clients'} for x in clients))
+
+            contacts = Contact.objects.filter(contact_filter)[:6]
+            add_group('contacts', 'Контакты', ({'id': x.id, 'title': x.full_name, 'subtitle': x.organization or x.phone, 'href': '/contacts'} for x in contacts))
+
+        if user.has_capability('projects.view'):
+            projects = Project.objects.filter(Q(name__icontains=query) | Q(description__icontains=query), is_archived=False)
+            if not user.has_capability('projects.manage'):
+                projects = projects.filter(members=user)
+            add_group('projects', 'Проекты', ({'id': x.id, 'title': x.name, 'subtitle': x.description[:90], 'href': '/projects'} for x in projects[:6]))
+
+        if user.has_capability('tasks.view'):
+            tasks = Task.objects.filter(Q(title__icontains=query) | Q(description__icontains=query), is_archived=False).select_related('project')
+            if not user.has_capability('tasks.manage'):
+                tasks = tasks.filter(Q(assignees=user) | Q(members=user)).distinct()
+            add_group('tasks', 'Задачи', ({'id': x.id, 'title': x.title, 'subtitle': x.project.name if x.project else x.get_status_display(), 'href': '/tasks'} for x in tasks[:6]))
+
+        if user.has_capability('files.view'):
+            files = ProjectFile.objects.filter(Q(name__icontains=query) | Q(description__icontains=query)).select_related('project')
+            if not user.has_capability('files.manage'):
+                files = files.filter(project__members=user)
+            add_group('files', 'Файлы', ({'id': x.id, 'title': x.name, 'subtitle': x.project.name, 'href': x.file.url} for x in files[:6]))
+
+        if user.has_capability('finance.view'):
+            payment_filter = Q(bank_order_id__icontains=query) | Q(booking__client__name__icontains=query)
+            try:
+                payment_filter |= Q(amount=Decimal(query.replace(',', '.').replace(' ', '')))
+            except (InvalidOperation, ValueError):
+                pass
+            payments = Payment.objects.filter(payment_filter).select_related('booking__client', 'booking__service')[:6]
+            add_group('payments', 'Платежи', ({
+                'id': x.id,
+                'title': f'{x.amount:,.0f} ₽',
+                'subtitle': x.booking.contact_name,
+                'href': '/payments',
+            } for x in payments))
+
+        if user.has_capability('chat.view'):
+            messages = Message.objects.filter(
+                Q(text__icontains=query) | Q(transcription__icontains=query),
+                chat__members=user,
+            ).select_related('sender', 'chat').distinct().order_by('-created_at')[:6]
+            add_group('messages', 'Сообщения', ({
+                'id': x.id,
+                'title': x.text[:100] or x.transcription[:100],
+                'subtitle': x.sender.get_short_name(),
+                'href': '/chat',
+            } for x in messages))
+
+        return Response({'query': query, 'groups': groups})
+
+
 class DashboardStatsView(APIView):
-    permission_classes = [IsManagerOrHigher]
+    permission_classes = [HasCapability]
+    required_capability = 'finance.view'
 
     def get(self, request):
         now = timezone.now()
@@ -174,7 +352,8 @@ class DashboardStatsView(APIView):
 
 
 class FinanceReportView(APIView):
-    permission_classes = [IsManagerOrHigher]
+    permission_classes = [HasCapability]
+    required_capability = 'finance.view'
 
     def get(self, request):
         from_date = request.query_params.get('from')

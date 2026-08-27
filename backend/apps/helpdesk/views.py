@@ -44,7 +44,7 @@ class HelpdeskTicketListCreateView(generics.ListCreateAPIView):
     search_fields = ['subject', 'description', 'requester_name', 'requester_contact']
 
     def get_queryset(self):
-        if self.request.user.is_manager:
+        if self.request.user.has_capability('helpdesk.manage'):
             return HelpdeskTicket.objects.all()
         return HelpdeskTicket.objects.filter(assignee=self.request.user)
 

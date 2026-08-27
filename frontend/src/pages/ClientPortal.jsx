@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import api from '../api/axios'
 import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
-import { User, Phone, Mail, Send, Calendar, CreditCard, CheckSquare } from 'lucide-react'
+import { Phone, Mail, Send, Calendar, CreditCard, CheckSquare, ExternalLink, FileCheck2 } from 'lucide-react'
 
 const bookingStatusLabels = {
   pending: 'Ожидает',
@@ -55,12 +55,33 @@ export default function ClientPortal() {
   const { token } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+  const [comments, setComments] = useState({})
+  const [responding, setResponding] = useState(null)
+  const [actionError, setActionError] = useState('')
 
-  useEffect(() => {
+  const load = () => {
     api.get(`/client-portal/${token}/`)
       .then(res => setData(res.data))
       .catch(err => setError(err.response?.data?.detail || 'Не удалось загрузить данные'))
-  }, [token])
+  }
+
+  useEffect(load, [token])
+
+  const respondToApproval = async (approval, status) => {
+    setResponding(approval.id)
+    setActionError('')
+    try {
+      await api.post(`/client-portal/${token}/approvals/${approval.id}/respond/`, {
+        status,
+        comment: comments[approval.id] || '',
+      })
+      await load()
+    } catch (err) {
+      setActionError(err.response?.data?.comment?.[0] || err.response?.data?.detail || 'Не удалось сохранить решение')
+    } finally {
+      setResponding(null)
+    }
+  }
 
   if (error) {
     return (
@@ -78,7 +99,7 @@ export default function ClientPortal() {
     )
   }
 
-  const { client, bookings, payments, tasks } = data
+  const { client, bookings, payments, tasks, approvals = [] } = data
 
   return (
     <div className="min-h-screen bg-bg p-4 md:p-8">
@@ -100,6 +121,43 @@ export default function ClientPortal() {
             {client.telegram && <div className="flex items-center gap-2 text-text"><Send size={16} className="text-primary" /> @{client.telegram}</div>}
           </div>
           {client.notes && <div className="mt-4 text-sm text-text-muted bg-subtle p-3 rounded-lg">{client.notes}</div>}
+        </Card>
+
+        <Card title="Материалы на согласование" className="mb-6" action={<FileCheck2 size={18} className="text-primary" />}>
+          {actionError && <div className="mb-4 rounded-2xl bg-danger/10 px-4 py-3 text-sm text-danger">{actionError}</div>}
+          {approvals.length ? (
+            <div className="space-y-4">
+              {approvals.map(approval => (
+                <div key={approval.id} className="rounded-[20px] border border-border bg-subtle/60 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-text">{approval.title}</div>
+                      <div className="mt-1 text-xs text-text-muted">{approval.project_name || 'Без проекта'}{approval.due_date ? ` · Ответ до ${new Date(approval.due_date).toLocaleDateString('ru-RU')}` : ''}</div>
+                    </div>
+                    <Badge variant={approval.status === 'approved' ? 'green' : approval.status === 'changes_requested' ? 'red' : 'yellow'}>{approval.status_display}</Badge>
+                  </div>
+                  {approval.description && <p className="mt-3 text-sm leading-6 text-text-muted">{approval.description}</p>}
+                  {(approval.file || approval.external_url) && (
+                    <a href={approval.file || approval.external_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 text-sm font-semibold text-primary">
+                      <ExternalLink size={15} />Открыть материал
+                    </a>
+                  )}
+                  {approval.status === 'pending' ? (
+                    <div className="mt-4 border-t border-border pt-4">
+                      <label className="mb-2 block text-sm font-semibold text-text">Комментарий</label>
+                      <textarea value={comments[approval.id] || ''} onChange={event => setComments(current => ({ ...current, [approval.id]: event.target.value }))} rows={3} placeholder="Если нужны правки, опишите их здесь" className="w-full rounded-[18px] border border-border bg-surface px-4 py-3 text-base text-text outline-none focus:border-primary" />
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        <button type="button" disabled={responding === approval.id} onClick={() => respondToApproval(approval, 'changes_requested')} className="min-h-11 rounded-full border border-danger/30 px-4 text-sm font-semibold text-danger disabled:opacity-50">Нужны правки</button>
+                        <button type="button" disabled={responding === approval.id} onClick={() => respondToApproval(approval, 'approved')} className="min-h-11 rounded-full bg-success px-4 text-sm font-semibold text-white disabled:opacity-50">Согласовать</button>
+                      </div>
+                    </div>
+                  ) : approval.client_comment ? (
+                    <div className="mt-3 rounded-2xl bg-surface p-3 text-sm text-text">{approval.client_comment}</div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : <div className="text-text-muted text-sm">Нет материалов, ожидающих согласования</div>}
         </Card>
 
         <Card title="Записи" className="mb-6" action={<Calendar size={18} className="text-primary" />}>

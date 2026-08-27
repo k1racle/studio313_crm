@@ -1,7 +1,7 @@
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from apps.users.permissions import RouteCapabilityPermission
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from apps.projects.models import Project
@@ -15,7 +15,7 @@ from .serializers import (
 
 
 class FileTreeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get(self, request):
         project_id = request.query_params.get('project')
@@ -37,7 +37,7 @@ class FileTreeView(APIView):
 class FolderListCreateView(generics.ListCreateAPIView):
     queryset = FileFolder.objects.all()
     serializer_class = FolderCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -46,13 +46,13 @@ class FolderListCreateView(generics.ListCreateAPIView):
 class FolderDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = FileFolder.objects.all()
     serializer_class = FolderCreateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
 
 class ProjectFileListCreateView(generics.ListCreateAPIView):
     queryset = ProjectFile.objects.all()
     serializer_class = ProjectFileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
     parser_classes = [MultiPartParser, FormParser]
 
     def perform_create(self, serializer):
@@ -62,7 +62,7 @@ class ProjectFileListCreateView(generics.ListCreateAPIView):
 class ProjectFileDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProjectFile.objects.all()
     serializer_class = ProjectFileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def perform_update(self, serializer):
@@ -75,7 +75,7 @@ class ProjectFileDetailView(generics.RetrieveUpdateDestroyAPIView):
 class ProjectLinkListCreateView(generics.ListCreateAPIView):
     queryset = ProjectLink.objects.all()
     serializer_class = ProjectLinkSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -84,4 +84,4 @@ class ProjectLinkListCreateView(generics.ListCreateAPIView):
 class ProjectLinkDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProjectLink.objects.all()
     serializer_class = ProjectLinkSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]

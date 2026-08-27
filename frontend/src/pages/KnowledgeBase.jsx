@@ -47,6 +47,7 @@ const emptyForm = {
 
 export default function KnowledgeBase() {
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('knowledge.manage')
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
   const [filters, setFilters] = useState({ kind: '', category: '', search: '' })
@@ -206,7 +207,7 @@ export default function KnowledgeBase() {
     ...categories.map(c => ({ value: c.id, label: c.name })),
   ]
 
-  usePageHeaderContent(user?.is_manager ? (
+  usePageHeaderContent(canManage ? (
     <Button onClick={openCreate}>
       <Plus size={16} />
       Новый материал
@@ -257,7 +258,7 @@ export default function KnowledgeBase() {
                     )}
                   </div>
                 </div>
-                {user?.is_manager && (
+                {canManage && (
                   <div className="flex items-center justify-end gap-1 mt-4 pt-3 border-t border-border" onClick={e => e.stopPropagation()}>
                     <button onClick={(e) => openEdit(item, e)} className="p-1.5 text-text-muted hover:text-primary hover:bg-subtle rounded-lg transition-colors" title="Изменить">
                       <Pencil size={16} />

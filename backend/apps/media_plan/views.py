@@ -3,7 +3,7 @@ from openpyxl import Workbook
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from apps.users.permissions import RouteCapabilityPermission
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
@@ -18,14 +18,14 @@ from apps.tasks.models import Task
 class PlatformListView(generics.ListAPIView):
     queryset = Platform.objects.all()
     serializer_class = PlatformSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
     pagination_class = None
 
 
 class PublicationViewSet(viewsets.ModelViewSet):
     queryset = Publication.objects.all().select_related('responsible', 'created_by', 'linked_task', 'project').prefetch_related('attachments', 'platforms')
     serializer_class = PublicationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['platforms', 'status', 'priority', 'responsible', 'project']
     search_fields = ['title', 'description']
@@ -78,7 +78,7 @@ class PublicationViewSet(viewsets.ModelViewSet):
 
 
 class PublicationExportView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get(self, request):
         qs = filter_queryset_from_view(request, PublicationViewSet)
@@ -116,7 +116,7 @@ class PublicationExportView(APIView):
 
 
 class PublicationAttachmentDeleteView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def delete(self, request, pk):
         attachment = get_object_or_404(PublicationAttachment, pk=pk)

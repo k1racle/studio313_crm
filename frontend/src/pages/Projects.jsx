@@ -16,6 +16,7 @@ const emptyForm = { name: '', description: '', member_ids: [], is_archived: fals
 
 export default function Projects() {
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('projects.manage')
   const [projects, setProjects] = useState([])
   const [users, setUsers] = useState([])
   const [showArchived, setShowArchived] = useState(false)
@@ -30,7 +31,7 @@ export default function Projects() {
     if (showArchived) params.archived = '1'
     const [p, u] = await Promise.all([
       api.get('/projects/', { params }),
-      user?.is_manager ? api.get('/auth/users/') : Promise.resolve({ data: { results: [] } }),
+      canManage ? api.get('/auth/users/') : Promise.resolve({ data: { results: [] } }),
     ])
     setProjects(p.data.results || p.data)
     setUsers(u.data.results || u.data)
@@ -116,14 +117,14 @@ export default function Projects() {
         />
         Показать архив
       </label>
-      {user?.is_manager && (
+      {canManage && (
         <Button onClick={openCreate}>
           <Plus size={16} />
           Новый проект
         </Button>
       )}
     </div>
-  ), [showArchived, user?.is_manager])
+  ), [showArchived, canManage])
 
   usePageHeaderContent(headerActions)
 
@@ -192,7 +193,7 @@ export default function Projects() {
                 Перейти к задачам
                 <ArrowRight size={14} />
               </Link>
-              {user?.is_manager && (
+              {canManage && (
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEdit(p)}

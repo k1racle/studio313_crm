@@ -3,7 +3,7 @@ from openpyxl import Workbook
 from rest_framework import generics, filters
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from apps.users.permissions import RouteCapabilityPermission
 from django_filters.rest_framework import DjangoFilterBackend
 from config.export_utils import filter_queryset_from_view
 from .models import Production, ProductionComment, ProductionAttachment, ProductionSubTask
@@ -26,7 +26,7 @@ class ProductionListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         user = self.request.user
         qs = Production.objects.all().prefetch_related('assignees', 'subtasks')
-        if user.is_manager:
+        if user.has_capability('production.manage'):
             return qs
         return qs.filter(assignees=user)
 
@@ -40,13 +40,13 @@ class ProductionDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         qs = Production.objects.all().prefetch_related('assignees', 'subtasks')
-        if user.is_manager:
+        if user.has_capability('production.manage'):
             return qs
         return Production.objects.filter(assignees=user)
 
 
 class ProductionExportView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get(self, request):
         qs = filter_queryset_from_view(request, ProductionListCreateView)
@@ -81,11 +81,11 @@ class ProductionExportView(APIView):
 
 class ProductionSubTaskListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductionSubTaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get_queryset(self):
         user = self.request.user
-        accessible = Production.objects.all() if user.is_manager else Production.objects.filter(assignees=user)
+        accessible = Production.objects.all() if user.has_capability('production.manage') else Production.objects.filter(assignees=user)
         return ProductionSubTask.objects.filter(production_id=self.kwargs['production_pk'], production__in=accessible)
 
     def perform_create(self, serializer):
@@ -94,11 +94,11 @@ class ProductionSubTaskListCreateView(generics.ListCreateAPIView):
 
 class ProductionSubTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductionSubTaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get_queryset(self):
         user = self.request.user
-        accessible = Production.objects.all() if user.is_manager else Production.objects.filter(assignees=user)
+        accessible = Production.objects.all() if user.has_capability('production.manage') else Production.objects.filter(assignees=user)
         return ProductionSubTask.objects.filter(production__in=accessible)
 
 

@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from apps.booking.models import Booking
 from apps.notifications.services import create_in_app_notification
 from apps.users.models import User
-from apps.users.permissions import IsAdminOrDirector, IsManagerOrHigher
+from apps.users.permissions import IsAdminOrDirector, IsManagerOrHigher, RouteCapabilityPermission
 
 from .documents import build_payment_memo
 from .models import Payment, PaymentPlan, PaymentSettings, PlannedPayment
@@ -203,7 +203,7 @@ class PaymentListCreateView(generics.ListCreateAPIView):
         queryset = Payment.objects.select_related('booking__client', 'booking__service').all()
         if booking_id:
             queryset = queryset.filter(booking_id=booking_id)
-        if not self.request.user.is_manager:
+        if not self.request.user.has_capability('finance.manage'):
             queryset = queryset.filter(booking__client__telegram=self.request.user.telegram_id)
         return queryset
 
@@ -366,7 +366,7 @@ class PublicPaymentCreateView(APIView):
 class PaymentDetailView(generics.RetrieveAPIView):
     queryset = Payment.objects.select_related('booking__client', 'booking__service').all()
     serializer_class = PaymentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
 
 class PaymentCallbackView(APIView):
@@ -391,7 +391,7 @@ class PaymentCallbackView(APIView):
 
 
 class PaymentStatusView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get(self, request, pk):
         payment = get_object_or_404(Payment.objects.select_related('booking__client', 'booking__service'), pk=pk)

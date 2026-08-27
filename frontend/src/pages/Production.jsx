@@ -51,6 +51,7 @@ const emptyForm = {
 
 export default function Production() {
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('production.manage')
   const [items, setItems] = useState([])
   const [users, setUsers] = useState([])
   const [projects, setProjects] = useState([])
@@ -83,7 +84,7 @@ export default function Production() {
 
   useEffect(() => {
     loadItems()
-    if (user?.is_manager) {
+    if (canManage) {
       api.get('/auth/users/').then(res => setUsers(res.data.results || res.data))
       api.get('/clients/').then(res => setClients(res.data.results || res.data))
     }
@@ -205,13 +206,13 @@ export default function Production() {
   const statusOptions = [{ value: '', label: 'Все статусы' }, ...Object.entries(statusLabels).map(([k, v]) => ({ value: k, label: v }))]
   const activeFilterCount = [filters.project, filters.status, filters.assignees].filter(Boolean).length
   const headerActions = useMemo(() => (
-    user?.is_manager ? (
+    canManage ? (
       <Button onClick={openCreate}>
         <Plus size={16} />
         Новая заявка
       </Button>
     ) : null
-  ), [user?.is_manager])
+  ), [canManage])
 
   usePageHeaderContent(headerActions)
 
@@ -387,7 +388,7 @@ export default function Production() {
                     </td>
                     <td className="py-3 text-text-muted">{item.due_date ? new Date(item.due_date).toLocaleDateString('ru') : '—'}</td>
                     <td className="py-3">
-                      {user?.is_manager && (
+                      {canManage && (
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => openEdit(item)}
@@ -480,7 +481,7 @@ export default function Production() {
         title={`Производство #${detailItemId}`}
         size="xl"
         headerActions={
-          detailItem && user?.is_manager ? (
+          detailItem && canManage ? (
             <div className="flex items-center gap-1 sm:gap-2">
               <Button variant="secondary" size="sm" onClick={handleEditDetail} title="Редактировать">
                 <Pencil size={16} className="sm:mr-1.5" />

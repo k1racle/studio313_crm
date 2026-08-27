@@ -126,7 +126,7 @@ export default function MessageInput({ chatId, onSend, onFileUploaded, onVoiceUp
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t border-border bg-surface safe-bottom">
+    <form onSubmit={handleSubmit} className="safe-bottom shrink-0 border-t border-border bg-surface p-3 sm:p-4">
       <div className="flex items-center gap-1.5 sm:gap-2">
         <div className="relative flex-1 min-w-0">
           <textarea

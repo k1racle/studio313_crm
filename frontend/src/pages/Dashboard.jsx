@@ -24,6 +24,8 @@ import {
 
 import api from '../api/axios'
 import Card from '../components/ui/Card'
+import WorkdayOverview from '../components/WorkdayOverview'
+import { useAuth } from '../contexts/AuthContext'
 
 const taskStatusColors = {
   new: '#5B8DEF',
@@ -53,12 +55,12 @@ const publicationStatusColors = {
 }
 
 const quickLinks = [
-  { path: '/tasks', label: 'Задачи', desc: 'Kanban, календарь и список задач', icon: CheckSquare },
-  { path: '/bookings', label: 'Запись', desc: 'Календарь и клиентские слоты', icon: Calendar },
-  { path: '/projects', label: 'Проекты', desc: 'Управление студийными проектами', icon: Layers3 },
-  { path: '/production', label: 'Производство', desc: 'Съёмка, монтаж, отсмотр и правки', icon: Clapperboard },
-  { path: '/media-plan', label: 'Медиа-план', desc: 'Контент, площадки и публикации', icon: Newspaper },
-  { path: '/finance', label: 'Финансы', desc: 'Платежи, долги и отчёты', icon: CreditCard },
+  { path: '/tasks', label: 'Задачи', desc: 'Kanban, календарь и список задач', icon: CheckSquare, permission: 'tasks.view' },
+  { path: '/bookings', label: 'Запись', desc: 'Календарь и клиентские слоты', icon: Calendar, permission: 'bookings.view' },
+  { path: '/projects', label: 'Проекты', desc: 'Управление студийными проектами', icon: Layers3, permission: 'projects.view' },
+  { path: '/production', label: 'Производство', desc: 'Съёмка, монтаж, отсмотр и правки', icon: Clapperboard, permission: 'production.view' },
+  { path: '/media-plan', label: 'Медиа-план', desc: 'Контент, площадки и публикации', icon: Newspaper, permission: 'media_plan.view' },
+  { path: '/finance', label: 'Финансы', desc: 'Платежи, долги и отчёты', icon: CreditCard, permission: 'finance.view' },
 ]
 
 function StatusChartCard({ title, eyebrow, data, colors, icon: Icon }) {
@@ -104,11 +106,14 @@ function StatusChartCard({ title, eyebrow, data, colors, icon: Icon }) {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const [stats, setStats] = useState(null)
 
   useEffect(() => {
-    api.get('/analytics/dashboard/').then(res => setStats(res.data)).catch(console.error)
-  }, [])
+    if (user?.capabilities?.includes('finance.view')) {
+      api.get('/analytics/dashboard/').then(res => setStats(res.data)).catch(console.error)
+    }
+  }, [user?.capabilities])
 
   const statItems = useMemo(() => ([
     {
@@ -143,10 +148,11 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <WorkdayOverview />
       <section className="soft-panel overflow-hidden rounded-[34px]">
         <div className="rounded-[30px] bg-[linear-gradient(160deg,#0b1322,#112241_55%,#1e4cff)] p-6 text-white shadow-[0_24px_70px_rgba(15,23,40,0.26)]">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {quickLinks.map(item => {
+            {quickLinks.filter(item => user?.capabilities?.includes(item.permission)).map(item => {
               const Icon = item.icon
               return (
                 <Link

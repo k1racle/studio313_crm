@@ -68,6 +68,7 @@ export default function Helpdesk() {
   const [form, setForm] = useState(emptyForm)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('helpdesk.manage')
   const navigate = useNavigate()
 
   const loadTickets = async () => {
@@ -211,7 +212,7 @@ export default function Helpdesk() {
               <div>{new Date(ticket.created_at).toLocaleString('ru-RU')}</div>
             </div>
             <div className="flex items-center gap-2">
-              {user?.is_manager && ticket.status !== 'closed' && (
+              {canManage && ticket.status !== 'closed' && (
                 <Button size="sm" variant="secondary" className="flex-1" onClick={() => convertToTask(ticket.id)}>
                   <RefreshCw size={14} />
                   В задачу
@@ -265,7 +266,7 @@ export default function Helpdesk() {
                   <td className="py-3 text-text-muted">{new Date(ticket.created_at).toLocaleString('ru-RU')}</td>
                   <td className="py-3">
                     <div className="flex items-center gap-1">
-                      {user?.is_manager && ticket.status !== 'closed' && (
+                      {canManage && ticket.status !== 'closed' && (
                         <Button size="sm" variant="secondary" onClick={() => convertToTask(ticket.id)}>
                           <RefreshCw size={14} className="mr-1" />
                           В задачу

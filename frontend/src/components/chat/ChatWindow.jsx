@@ -13,10 +13,18 @@ function formatTime(iso) {
 
 export default function ChatWindow({ chat, messages, onSend, onFileUploaded, onVoiceUploaded, typing }) {
   const { user } = useAuth()
-  const bottomRef = useRef(null)
+  const messagesRef = useRef(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const messagesElement = messagesRef.current
+    if (!messagesElement) return
+
+    // Scroll only the message list. scrollIntoView() also scrolls the page on
+    // mobile, moving the whole chat underneath the fixed app header.
+    messagesElement.scrollTo({
+      top: messagesElement.scrollHeight,
+      behavior: messages.length > 0 ? 'smooth' : 'auto',
+    })
   }, [messages, typing])
 
   if (!chat) {
@@ -28,8 +36,8 @@ export default function ChatWindow({ chat, messages, onSend, onFileUploaded, onV
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-surface h-full min-w-0 overflow-hidden">
-      <div className="px-4 md:px-6 py-4 border-b border-border flex items-center justify-between">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-surface">
+      <div className="shrink-0 px-4 md:px-6 py-4 border-b border-border flex items-center justify-between">
         <div className="min-w-0">
           <h2 className="font-bold text-text truncate">{chat.display_name || chat.name}</h2>
           <div className="text-xs text-text-muted flex items-center gap-1">
@@ -39,7 +47,10 @@ export default function ChatWindow({ chat, messages, onSend, onFileUploaded, onV
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-4 min-w-0">
+      <div
+        ref={messagesRef}
+        className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden overscroll-contain p-4 md:p-6"
+      >
         {messages.map(msg => {
           const isMe = msg.sender?.id === user?.id
           return (
@@ -90,7 +101,6 @@ export default function ChatWindow({ chat, messages, onSend, onFileUploaded, onV
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       <MessageInput chatId={chat.id} onSend={onSend} onFileUploaded={onFileUploaded} onVoiceUploaded={onVoiceUploaded} />

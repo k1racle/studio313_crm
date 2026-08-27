@@ -133,6 +133,7 @@ const emptyForm = {
 
 export default function Contacts() {
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('clients.manage')
   const [contacts, setContacts] = useState([])
   const [search, setSearch] = useState('')
   const [orgFilter, setOrgFilter] = useState('')
@@ -274,7 +275,7 @@ export default function Contacts() {
 
   usePageHeaderContent(
     <div className="flex flex-wrap items-center justify-end gap-2">
-      {user?.is_manager && (
+      {canManage && (
         <Button onClick={openCreate}>
           <Plus size={16} />
           Новый контакт
@@ -379,7 +380,7 @@ export default function Contacts() {
               </div>
             ) : null}
 
-            {user?.is_manager && (
+            {canManage && (
               <div className="flex items-center gap-2">
                 <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={() => openEdit(contact)}>
                   <Pencil size={14} />
@@ -484,7 +485,7 @@ export default function Contacts() {
                     )}
                   </td>
                   <td className="py-3 whitespace-nowrap">
-                    {user?.is_manager && (
+                    {canManage && (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => openEdit(contact)}

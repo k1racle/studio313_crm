@@ -10,6 +10,7 @@ import { Clock, CreditCard, Plus, Pencil, Trash2, CheckCircle2, XCircle, Search,
 
 export default function Services() {
   const { user } = useAuth()
+  const canManage = user?.is_manager || user?.capabilities?.includes('bookings.manage')
   const [services, setServices] = useState([])
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState('all')
@@ -77,13 +78,13 @@ export default function Services() {
     load()
   }
   const headerActions = useMemo(() => (
-    user?.is_manager ? (
+    canManage ? (
       <Button onClick={openCreate}>
         <Plus size={16} />
         Новая услуга
       </Button>
     ) : null
-  ), [user?.is_manager])
+  ), [canManage])
 
   usePageHeaderContent(headerActions)
 
@@ -147,7 +148,7 @@ export default function Services() {
                 {service.price} ₽
               </div>
             </div>
-            {user?.is_manager && (
+            {canManage && (
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="secondary" onClick={() => openEdit(service)}>
                   <Pencil size={14} className="mr-1.5" />

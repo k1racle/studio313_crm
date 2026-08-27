@@ -24,7 +24,7 @@ class ProjectListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(is_archived=False)
         else:
             qs = qs.filter(is_archived=True, archived_at__gte=timezone.now() - timedelta(days=7))
-        if user.is_manager:
+        if user.has_capability('projects.manage'):
             return qs
         return qs.filter(members=user)
 
@@ -34,7 +34,7 @@ class ProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_manager:
+        if user.has_capability('projects.manage'):
             return Project.objects.all()
         return Project.objects.filter(members=user)
 

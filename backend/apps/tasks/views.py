@@ -6,7 +6,7 @@ from rest_framework import generics, permissions, filters, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from apps.users.permissions import RouteCapabilityPermission
 from django_filters.rest_framework import DjangoFilterBackend
 from config.export_utils import filter_queryset_from_view
 from .models import Task, TaskAttachment, TaskSubTask
@@ -38,7 +38,7 @@ class TaskListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(status__in=[Task.STATUS_IN_PROGRESS, Task.STATUS_SHOOTING, Task.STATUS_EDITING])
         elif status_param:
             qs = qs.filter(status=status_param)
-        if user.is_manager:
+        if user.has_capability('tasks.manage'):
             return qs
         return qs.filter(project__members=user)
 
@@ -61,7 +61,7 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         qs = Task.objects.all().prefetch_related('assignees', 'members', 'tags', 'subtasks')
-        if user.is_manager:
+        if user.has_capability('tasks.manage'):
             return qs
         return qs.filter(project__members=user)
 
@@ -78,7 +78,7 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class TaskExportView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get(self, request):
         qs = filter_queryset_from_view(request, TaskListCreateView)
@@ -119,11 +119,11 @@ class TaskExportView(APIView):
 
 class TaskSubTaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSubTaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get_queryset(self):
         user = self.request.user
-        accessible_tasks = Task.objects.all() if user.is_manager else Task.objects.filter(project__members=user)
+        accessible_tasks = Task.objects.all() if user.has_capability('tasks.manage') else Task.objects.filter(project__members=user)
         return TaskSubTask.objects.filter(task_id=self.kwargs['task_pk'], task__in=accessible_tasks)
 
     def perform_create(self, serializer):
@@ -132,11 +132,11 @@ class TaskSubTaskListCreateView(generics.ListCreateAPIView):
 
 class TaskSubTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TaskSubTaskSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RouteCapabilityPermission]
 
     def get_queryset(self):
         user = self.request.user
-        accessible_tasks = Task.objects.all() if user.is_manager else Task.objects.filter(project__members=user)
+        accessible_tasks = Task.objects.all() if user.has_capability('tasks.manage') else Task.objects.filter(project__members=user)
         return TaskSubTask.objects.filter(task__in=accessible_tasks)
 
 
