@@ -4,7 +4,7 @@ from datetime import timedelta
 from celery import shared_task
 from django.utils import timezone
 
-from apps.notifications.models import NotificationLog
+from apps.notifications.models import InAppNotification, NotificationLog
 from apps.notifications.services import create_in_app_notification
 from apps.notifications.tasks import notify_user_task
 from .models import Task
@@ -32,6 +32,7 @@ def archive_done_tasks_after_24h():
 @shared_task
 def send_task_deadline_reminders():
     now = timezone.now()
+    today = timezone.localdate()
     threshold = now + timedelta(hours=24)
     tasks = (
         Task.objects.filter(
@@ -64,21 +65,28 @@ def send_task_deadline_reminders():
         )
 
         for user in recipients.values():
+            notification_link = f'/tasks/{task.id}'
+            already_notified_today = InAppNotification.objects.filter(
+                user=user,
+                title='Близкий дедлайн',
+                link=notification_link,
+                created_at__date=today,
+            ).exists()
             already_sent = NotificationLog.objects.filter(
                 user=user,
-                subject=subject,
-                sent_at__date=now.date(),
+                body=body,
+                sent_at__date=today,
                 channel__in=[NotificationLog.CHANNEL_TELEGRAM, NotificationLog.CHANNEL_MAX],
                 is_success=True,
             ).exists()
-            if already_sent:
+            if already_notified_today or already_sent:
                 continue
 
             create_in_app_notification(
                 user=user,
                 title='Близкий дедлайн',
                 message=body,
-                link=f'/tasks/{task.id}',
+                link=notification_link,
             )
             notify_user_task.delay(user.id, subject, body, channels=['telegram', 'max'])
             sent += 1

@@ -195,7 +195,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send-task-deadline-reminders': {
         'task': 'apps.tasks.tasks.send_task_deadline_reminders',
-        'schedule': 3600.0,  # РєР°Р¶РґС‹Р№ С‡Р°СЃ
+        'schedule': crontab(hour=9, minute=0),  # ежедневно в 9:00
     },
     'send-media-plan-reminders': {
         'task': 'apps.media_plan.tasks.send_media_plan_reminders',

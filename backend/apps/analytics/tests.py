@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.utils import timezone
 from rest_framework.test import APITestCase
@@ -7,9 +8,11 @@ from apps.booking.models import Booking, Service
 from apps.client_portal.models import ClientAccessToken, MaterialApproval
 from apps.clients.models import Client
 from apps.helpdesk.models import HelpdeskTicket
+from apps.notifications.models import InAppNotification
 from apps.payments.models import PaymentPlan, PlannedPayment
 from apps.projects.models import Project
 from apps.tasks.models import Task
+from apps.tasks.tasks import send_task_deadline_reminders
 from apps.users.models import RoleProfile, User
 
 
@@ -120,3 +123,24 @@ class CrmWorkspaceApiTests(APITestCase):
         self.assertTrue(any(role['slug'] == 'producer' for role in roles_response.data))
         self.assertEqual(assign_response.status_code, 200)
         self.assertEqual(assign_response.data['custom_role'], self.role.id)
+
+    @patch('apps.tasks.tasks.notify_user_task.delay')
+    def test_deadline_reminder_is_created_only_once_per_day(self, notify_delay):
+        task = Task.objects.create(
+            title='Сдать монтаж',
+            project=self.project,
+            creator=self.user,
+            due_date=timezone.now() + timedelta(hours=12),
+        )
+        task.assignees.add(self.user)
+
+        send_task_deadline_reminders()
+        send_task_deadline_reminders()
+
+        notifications = InAppNotification.objects.filter(
+            user=self.user,
+            title='Близкий дедлайн',
+            link=f'/tasks/{task.id}',
+        )
+        self.assertEqual(notifications.count(), 1)
+        self.assertEqual(notify_delay.call_count, 1)
