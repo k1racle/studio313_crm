@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 export default function PublicBooking() {
-  const [height, setHeight] = useState(860)
+  const [height, setHeight] = useState(900)
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -17,10 +17,10 @@ export default function PublicBooking() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-[#ebece8]">
       <iframe
         src="/api/booking/widget/"
-        title="Виджет записи"
+        title="Онлайн-запись в Студию 313"
         loading="lazy"
         scrolling="no"
         className="mx-auto block w-full border-0"

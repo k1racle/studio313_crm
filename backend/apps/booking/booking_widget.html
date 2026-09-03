@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Онлайн-запись — Студия 313</title>
+  <style>
+    :root {
+      --canvas: #ebece8;
+      --surface: #fafaf8;
+      --surface-raised: #ffffff;
+      --surface-soft: #f1f2ee;
+      --ink: #242925;
+      --muted: #6d746f;
+      --quiet: #999f9a;
+      --line: #dfe2dc;
+      --accent: #526b5a;
+      --accent-strong: #3e5747;
+      --accent-soft: #e5ebe6;
+      --danger: #a13d35;
+      --danger-soft: #f8e8e5;
+      --success: #3f6750;
+      --shadow: 0 28px 80px rgba(31, 38, 33, .14), 0 3px 12px rgba(31, 38, 33, .06);
+      --radius-shell: 28px;
+      --radius-card: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 320px;
+      background: var(--canvas);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100dvh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(82, 107, 90, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(82, 107, 90, .035) 1px, transparent 1px),
+        var(--canvas);
+      background-size: 36px 36px;
+      font-family: Inter, Manrope, "Segoe UI", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, textarea { font: inherit; }
+    button { touch-action: manipulation; }
+    button, label { -webkit-tap-highlight-color: transparent; }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid rgba(82, 107, 90, .28);
+      outline-offset: 2px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .page {
+      width: 100%;
+      min-height: 100dvh;
+      padding: clamp(12px, 3vw, 36px);
+      display: grid;
+      place-items: start center;
+    }
+
+    .widget {
+      width: min(100%, 660px);
+      min-height: min(820px, calc(100dvh - 72px));
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(62, 87, 71, .12);
+      border-radius: var(--radius-shell);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(250, 250, 248, .94);
+    }
+
+    .brand-row {
+      min-height: 48px;
+      display: grid;
+      grid-template-columns: 48px 1fr 48px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 750;
+      letter-spacing: -.03em;
+    }
+
+    .brand-name {
+      overflow: hidden;
+      font-size: 15px;
+      font-weight: 680;
+      letter-spacing: -.02em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .icon-button {
+      width: 48px;
+      height: 48px;
+      display: inline-grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      transition: background-color 180ms ease, color 180ms ease, transform 100ms ease;
+    }
+
+    .icon-button:hover { color: var(--ink); background: var(--surface-soft); }
+    .icon-button:active { transform: scale(.94); }
+    .icon-button.is-hidden { visibility: hidden; pointer-events: none; }
+    .icon-button svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+    .progress {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 19px;
+    }
+
+    .progress::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      left: calc(16.667% + 6px);
+      right: calc(16.667% + 6px);
+      height: 1px;
+      background: var(--line);
+    }
+
+    .progress-item {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      gap: 7px;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .01em;
+    }
+
+    .progress-dot {
+      width: 13px;
+      height: 13px;
+      z-index: 1;
+      border: 3px solid var(--surface);
+      border-radius: 50%;
+      background: var(--line);
+      box-shadow: 0 0 0 1px var(--line);
+      transition: background-color 200ms ease, box-shadow 200ms ease;
+    }
+
+    .progress-item.active,
+    .progress-item.done { color: var(--ink); }
+
+    .progress-item.active .progress-dot,
+    .progress-item.done .progress-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .progress-item.active .progress-dot { box-shadow: 0 0 0 1px var(--accent), 0 0 0 5px var(--accent-soft); }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      padding: 32px;
+      animation: panel-in 260ms cubic-bezier(.22, 1, .36, 1) both;
+    }
+
+    .panel.active { display: flex; }
+
+    @keyframes panel-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 720;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, p { margin-top: 0; }
+
+    h1, h2 {
+      margin-bottom: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      font-weight: 500;
+      letter-spacing: -.035em;
+    }
+
+    h1 { font-size: clamp(31px, 6vw, 43px); line-height: 1.08; }
+    h2 { font-size: clamp(28px, 5vw, 37px); line-height: 1.1; }
+
+    .lede {
+      max-width: 500px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .search {
+      position: relative;
+      margin-top: 26px;
+    }
+
+    .search svg {
+      position: absolute;
+      top: 50%;
+      left: 17px;
+      width: 19px;
+      height: 19px;
+      transform: translateY(-50%);
+      fill: none;
+      stroke: var(--quiet);
+      stroke-width: 1.8;
+    }
+
+    .search input {
+      width: 100%;
+      height: 54px;
+      border: 1px solid transparent;
+      border-radius: 15px;
+      padding: 0 18px 0 48px;
+      color: var(--ink);
+      background: var(--surface-soft);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 180ms ease, background-color 180ms ease;
+    }
+
+    .search input::placeholder { color: var(--quiet); }
+    .search input:focus { border-color: rgba(82, 107, 90, .48); background: #fff; }
+
+    .service-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .service-card {
+      width: 100%;
+      min-height: 92px;
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      align-items: center;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 18px;
+      color: var(--ink);
+      background: var(--surface-raised);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 180ms ease, background-color 180ms ease, transform 100ms ease, box-shadow 180ms ease;
+    }
+
+    .service-card:hover { border-color: #bcc8bf; box-shadow: 0 8px 24px rgba(31, 38, 33, .06); }
+    .service-card:active { transform: scale(.99); }
+    .service-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+
+    .radio-mark {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border: 1.5px solid #bec4bf;
+      border-radius: 50%;
+    }
+
+    .radio-mark::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: transparent;
+    }
+
+    .selected .radio-mark { border-color: var(--accent); }
+    .selected .radio-mark::after { background: var(--accent); }
+    .service-name { display: block; font-weight: 680; letter-spacing: -.015em; }
+    .service-note { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .service-price { font-size: 15px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+    .empty {
+      padding: 28px 20px;
+      border: 1px dashed #cbd0ca;
+      border-radius: var(--radius-card);
+      color: var(--muted);
+      background: var(--surface-soft);
+      text-align: center;
+    }
+
+    .loading { display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .month-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .month-label { font-weight: 680; text-transform: capitalize; }
+    .week-nav { display: flex; gap: 6px; }
+    .week-nav .icon-button { width: 44px; height: 44px; border: 1px solid var(--line); background: #fff; }
+    .week-nav .icon-button:disabled { opacity: .32; cursor: default; }
+
+    .date-rail {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(58px, 1fr));
+      gap: 7px;
+      margin-top: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .date-rail::-webkit-scrollbar { display: none; }
+
+    .date-button {
+      min-width: 58px;
+      min-height: 72px;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 3px;
+      border: 1px solid transparent;
+      border-radius: 16px;
+      color: var(--muted);
+      background: var(--surface-soft);
+      cursor: pointer;
+      transition: background-color 180ms ease, color 180ms ease, transform 100ms ease;
+    }
+
+    .date-button:hover:not(:disabled) { color: var(--ink); background: var(--accent-soft); }
+    .date-button:active:not(:disabled) { transform: scale(.96); }
+    .date-button.selected { color: #fff; background: var(--accent); }
+    .date-button:disabled { opacity: .38; cursor: default; }
+    .date-day { font-size: 11px; font-weight: 720; letter-spacing: .05em; text-transform: uppercase; }
+    .date-number { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .times { margin-top: 29px; }
+    .period + .period { margin-top: 22px; }
+    .period-title { margin: 0 0 10px; color: var(--muted); font-size: 13px; font-weight: 650; }
+    .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+
+    .time-button {
+      min-height: 50px;
+      border: 1px solid transparent;
+      border-radius: 14px;
+      color: var(--ink);
+      background: var(--surface-soft);
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      transition: background-color 180ms ease, color 180ms ease, transform 100ms ease;
+    }
+
+    .time-button:hover { background: var(--accent-soft); }
+    .time-button:active { transform: scale(.96); }
+    .time-button.selected { color: #fff; background: var(--accent); }
+
+    .duration-note {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 20px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .duration-note svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 1.8; }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 30px;
+    }
+
+    .primary-button,
+    .secondary-button {
+      min-height: 54px;
+      border-radius: 16px;
+      padding: 0 22px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 180ms ease, color 180ms ease, transform 100ms ease, opacity 180ms ease;
+    }
+
+    .primary-button { border: 1px solid var(--accent); color: #fff; background: var(--accent); }
+    .primary-button:hover { border-color: var(--accent-strong); background: var(--accent-strong); }
+    .primary-button:active, .secondary-button:active { transform: scale(.98); }
+    .primary-button:disabled { opacity: .4; cursor: default; transform: none; }
+    .secondary-button { border: 1px solid var(--line); color: var(--ink); background: #fff; }
+    .secondary-button:hover { border-color: #bcc8bf; }
+    .actions .primary-button { min-width: 190px; }
+
+    .summary {
+      display: grid;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .summary-row {
+      display: grid;
+      grid-template-columns: 42px 1fr 44px;
+      align-items: center;
+      gap: 12px;
+      min-height: 76px;
+      padding: 13px 10px 13px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .summary-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .summary-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .summary-title { font-size: 14px; font-weight: 680; }
+    .summary-subtitle { margin-top: 2px; color: var(--muted); font-size: 13px; }
+    .edit-button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; color: var(--muted); background: transparent; cursor: pointer; }
+    .edit-button:hover { color: var(--accent); background: var(--surface-soft); }
+    .edit-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+    .form-section { margin-top: 28px; }
+    .form-section-title { margin: 0 0 14px; font-size: 16px; font-weight: 720; letter-spacing: -.015em; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field { display: grid; gap: 7px; }
+    .field-wide { grid-column: 1 / -1; }
+    .field label { color: var(--muted); font-size: 13px; font-weight: 650; }
+    .required { color: var(--danger); }
+
+    .field input,
+    .field textarea {
+      width: 100%;
+      min-height: 54px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 13px 15px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .field textarea { min-height: 92px; resize: vertical; }
+    .field input:focus, .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(82, 107, 90, .1); }
+    .field input[aria-invalid="true"] { border-color: var(--danger); }
+    .field-error { min-height: 18px; color: var(--danger); font-size: 12px; }
+
+    .payment-options { display: grid; gap: 9px; }
+    .payment-option { position: relative; display: grid; grid-template-columns: 24px 1fr; gap: 12px; align-items: start; padding: 15px; border: 1px solid var(--line); border-radius: 15px; background: #fff; cursor: pointer; transition: border-color 180ms ease, background-color 180ms ease; }
+    .payment-option:hover { border-color: #bcc8bf; }
+    .payment-option.active { border-color: var(--accent); background: var(--accent-soft); }
+    .payment-option input { position: absolute; opacity: 0; pointer-events: none; }
+    .payment-radio { width: 21px; height: 21px; display: grid; place-items: center; border: 1.5px solid #b8bfba; border-radius: 50%; margin-top: 1px; }
+    .payment-radio::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: transparent; }
+    .active .payment-radio { border-color: var(--accent); }
+    .active .payment-radio::after { background: var(--accent); }
+    .payment-title { display: block; font-size: 14px; font-weight: 690; }
+    .payment-note { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+
+    .message { display: none; margin-top: 16px; padding: 13px 15px; border-radius: 13px; font-size: 13px; }
+    .message.show { display: block; }
+    .message.error { color: var(--danger); background: var(--danger-soft); }
+
+    .legal { margin: 14px 0 0; color: var(--quiet); font-size: 11px; line-height: 1.45; }
+
+    .success-panel { align-items: center; justify-content: center; text-align: center; padding-block: 54px; }
+    .success-mark { width: 74px; height: 74px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--success); box-shadow: 0 0 0 10px #e6eee8; }
+    .success-mark svg { width: 33px; height: 33px; fill: none; stroke: currentColor; stroke-width: 2; }
+    .success-panel h2 { margin-top: 28px; }
+    .success-copy { max-width: 430px; margin: 12px 0 0; color: var(--muted); }
+    .success-details { width: min(100%, 410px); margin-top: 28px; padding: 4px 20px; border: 1px solid var(--line); border-radius: 18px; background: #fff; text-align: left; }
+    .success-detail { display: flex; justify-content: space-between; gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .success-detail:last-child { border-bottom: 0; }
+    .success-detail span:first-child { color: var(--muted); }
+    .success-detail span:last-child { font-weight: 680; text-align: right; }
+
+    @media (max-width: 680px) {
+      .page { padding: 0; display: block; }
+      .widget { min-height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+      .topbar { padding: max(12px, env(safe-area-inset-top)) 16px 15px; }
+      .brand-row { grid-template-columns: 44px 1fr 44px; }
+      .icon-button { width: 44px; height: 44px; }
+      .panel { padding: 25px 20px calc(24px + env(safe-area-inset-bottom)); }
+      .date-rail { grid-template-columns: repeat(7, 60px); margin-inline: -20px; padding-inline: 20px; }
+      .time-grid { grid-template-columns: repeat(3, 1fr); }
+      .form-grid { grid-template-columns: 1fr; }
+      .field-wide { grid-column: auto; }
+      .actions { position: sticky; bottom: 0; margin-inline: -20px; padding: 14px 20px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(250, 250, 248, .95); backdrop-filter: blur(12px); }
+      .actions .primary-button { flex: 1; min-width: 0; }
+      .success-panel { padding-inline: 24px; }
+    }
+
+    @media (max-width: 390px) {
+      .progress-item { font-size: 11px; }
+      .brand-name { display: none; }
+      .time-grid { grid-template-columns: repeat(2, 1fr); }
+      .secondary-button { padding-inline: 17px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="widget" aria-label="Онлайн-запись в Студию 313">
+      <header class="topbar">
+        <div class="brand-row">
+          <button class="icon-button is-hidden" id="backButton" type="button" aria-label="Вернуться назад">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div class="brand" aria-label="Студия 313">
+            <span class="brand-mark" aria-hidden="true">313</span>
+            <span class="brand-name">Студия 313</span>
+          </div>
+          <button class="icon-button" id="closeButton" type="button" aria-label="Закрыть запись">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <nav class="progress" aria-label="Этапы записи">
+          <div class="progress-item active" data-progress="1"><span class="progress-dot"></span><span>Что</span></div>
+          <div class="progress-item" data-progress="2"><span class="progress-dot"></span><span>Когда</span></div>
+          <div class="progress-item" data-progress="3"><span class="progress-dot"></span><span>Кем и оплата</span></div>
+        </nav>
+      </header>
+
+      <div class="content">
+        <section class="panel active" data-panel="1" aria-labelledby="servicesTitle">
+          <p class="eyebrow">Шаг 1 из 3</p>
+          <h1 id="servicesTitle">Выберите услугу</h1>
+          <p class="lede">Каждая запись длится ровно один час.</p>
+          <div class="search">
+            <label class="sr-only" for="serviceSearch">Найти услугу</label>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="serviceSearch" type="search" autocomplete="off" placeholder="Найти услугу">
+          </div>
+          <div class="service-list" id="servicesList" aria-live="polite"></div>
+        </section>
+
+        <section class="panel" data-panel="2" aria-labelledby="scheduleTitle">
+          <p class="eyebrow">Шаг 2 из 3</p>
+          <h2 id="scheduleTitle">Выберите дату и время</h2>
+          <p class="lede" id="selectedServiceLine"></p>
+
+          <div id="scheduleContent">
+            <div class="month-row">
+              <div class="month-label" id="monthLabel"></div>
+              <div class="week-nav">
+                <button class="icon-button" id="prevWeekButton" type="button" aria-label="Предыдущая неделя">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <button class="icon-button" id="nextWeekButton" type="button" aria-label="Следующая неделя">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="date-rail" id="dateRail" aria-label="Даты"></div>
+            <div class="times" id="timeList" aria-live="polite"></div>
+            <p class="duration-note">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Длительность записи — 1 час. Слотов на полчаса нет.
+            </p>
+          </div>
+          <div class="actions">
+            <button class="secondary-button" type="button" data-go="1">Назад</button>
+            <button class="primary-button" id="continueButton" type="button" disabled>Продолжить</button>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="3" aria-labelledby="detailsTitle">
+          <p class="eyebrow">Шаг 3 из 3</p>
+          <h2 id="detailsTitle">Кем бронируем</h2>
+          <p class="lede">Проверьте запись, оставьте контакты и выберите оплату.</p>
+
+          <div class="summary">
+            <div class="summary-row">
+              <span class="summary-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V8l6-4 6 4v12M9 12h6M9 16h6"/></svg></span>
+              <div><div class="summary-title" id="summaryService"></div><div class="summary-subtitle" id="summaryPrice"></div></div>
+              <button class="edit-button" type="button" data-go="1" aria-label="Изменить услугу"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.2-1 10.7-10.7a2 2 0 0 0-2.8-2.8L5.4 16.2 4 20Z"/></svg></button>
+            </div>
+            <div class="summary-row">
+              <span class="summary-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span>
+              <div><div class="summary-title" id="summaryDate"></div><div class="summary-subtitle" id="summaryTime"></div></div>
+              <button class="edit-button" type="button" data-go="2" aria-label="Изменить дату и время"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.2-1 10.7-10.7a2 2 0 0 0-2.8-2.8L5.4 16.2 4 20Z"/></svg></button>
+            </div>
+          </div>
+
+          <form id="bookingForm" novalidate>
+            <div class="form-section">
+              <h3 class="form-section-title">Ваши данные</h3>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="clientName">Имя <span class="required">*</span></label>
+                  <input id="clientName" name="client_name" autocomplete="name" placeholder="Как к вам обращаться" aria-describedby="nameError" required>
+                  <span class="field-error" id="nameError"></span>
+                </div>
+                <div class="field">
+                  <label for="clientPhone">Телефон <span class="required">*</span></label>
+                  <input id="clientPhone" name="client_phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 999 000 00 00" aria-describedby="phoneError" required>
+                  <span class="field-error" id="phoneError"></span>
+                </div>
+                <div class="field field-wide">
+                  <label for="clientEmail">Эл. почта</label>
+                  <input id="clientEmail" name="client_email" type="email" inputmode="email" autocomplete="email" placeholder="Для чека и уведомлений">
+                </div>
+                <div class="field field-wide">
+                  <label for="notes">Комментарий</label>
+                  <textarea id="notes" name="notes" placeholder="Пожелания к записи — необязательно"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title">Способ оплаты</h3>
+              <div class="payment-options" id="paymentOptions">
+                <label class="payment-option active" data-mode="partial">
+                  <input type="radio" name="paymentMode" value="partial" checked>
+                  <span class="payment-radio"></span>
+                  <span><span class="payment-title" id="partialTitle">Оплатить 50%</span><span class="payment-note">Зафиксировать время предоплатой</span></span>
+                </label>
+                <label class="payment-option" data-mode="full">
+                  <input type="radio" name="paymentMode" value="full">
+                  <span class="payment-radio"></span>
+                  <span><span class="payment-title" id="fullTitle">Оплатить полностью</span><span class="payment-note">Закрыть всю сумму сейчас</span></span>
+                </label>
+                <label class="payment-option" data-mode="request">
+                  <input type="radio" name="paymentMode" value="request">
+                  <span class="payment-radio"></span>
+                  <span><span class="payment-title">Без онлайн-оплаты</span><span class="payment-note">Менеджер свяжется для подтверждения</span></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="message" id="message" role="alert"></div>
+            <div class="actions">
+              <button class="secondary-button" type="button" data-go="2">Назад</button>
+              <button class="primary-button" id="submitButton" type="submit">Оформить запись</button>
+            </div>
+            <p class="legal">Нажимая «Оформить запись», вы соглашаетесь на обработку данных для организации бронирования.</p>
+          </form>
+        </section>
+
+        <section class="panel success-panel" data-panel="success" aria-labelledby="successTitle">
+          <div class="success-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-9"/></svg></div>
+          <h2 id="successTitle">Запись оформлена</h2>
+          <p class="success-copy" id="successCopy">Заявка отправлена. Менеджер свяжется с вами для подтверждения.</p>
+          <div class="success-details">
+            <div class="success-detail"><span>Услуга</span><span id="successService"></span></div>
+            <div class="success-detail"><span>Время</span><span id="successTime"></span></div>
+            <div class="success-detail"><span>Длительность</span><span>1 час</span></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const services = __SERVICES__;
+    const availabilityUrl = '__AVAILABILITY_URL__';
+    const createUrl = '__CREATE_URL__';
+    const paymentCreateUrl = '__PAYMENT_CREATE_URL__';
+    const widgetResizeMessageType = 'studio313:widget-resize';
+    const PUBLIC_DURATION_MINUTES = 60;
+    const ruMonths = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+    const ruWeekdays = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+
+    const state = {
+      step: 1,
+      selectedService: null,
+      selectedDate: null,
+      selectedSlot: null,
+      availability: null,
+      weekStart: null,
+    };
+
+    const servicesList = document.getElementById('servicesList');
+    const serviceSearch = document.getElementById('serviceSearch');
+    const backButton = document.getElementById('backButton');
+    const continueButton = document.getElementById('continueButton');
+    const dateRail = document.getElementById('dateRail');
+    const timeList = document.getElementById('timeList');
+    const monthLabel = document.getElementById('monthLabel');
+    const selectedServiceLine = document.getElementById('selectedServiceLine');
+    const clientNameInput = document.getElementById('clientName');
+    const clientPhoneInput = document.getElementById('clientPhone');
+    const clientEmailInput = document.getElementById('clientEmail');
+    const nameErrorNode = document.getElementById('nameError');
+    const phoneErrorNode = document.getElementById('phoneError');
+    const messageNode = document.getElementById('message');
+    const submitButton = document.getElementById('submitButton');
+
+    function formatMoney(value) {
+      return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(Number(value || 0));
+    }
+
+    function parseLocalDate(value) {
+      const [year, month, day] = value.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function capitalize(value) { return value.charAt(0).toUpperCase() + value.slice(1); }
+
+    function parseStudioDateTime(value) {
+      const parts = String(value).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+      if (!parts) return new Date(value);
+      return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), Number(parts[4]), Number(parts[5]));
+    }
+
+    function formatDateLong(value) {
+      return capitalize(new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(parseStudioDateTime(value)));
+    }
+
+    function formatTimeRange(value) {
+      const start = parseStudioDateTime(value);
+      const end = new Date(start.getTime() + PUBLIC_DURATION_MINUTES * 60000);
+      const format = (date) => date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      return `${format(start)}–${format(end)}`;
+    }
+
+    function getDocumentHeight() {
+      return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, document.documentElement.clientHeight);
+    }
+
+    let resizeFrame = null;
+    function queueWidgetResize() {
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null;
+        if (window.parent !== window) window.parent.postMessage({ type: widgetResizeMessageType, height: getDocumentHeight() }, '*');
+      });
+    }
+
+    new MutationObserver(queueWidgetResize).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+    window.addEventListener('resize', queueWidgetResize);
+    window.addEventListener('load', queueWidgetResize);
+
+    async function parseResponseBody(response) {
+      const text = await response.text();
+      if (!text) return null;
+      try { return JSON.parse(text); } catch (_error) { return { detail: `Некорректный ответ сервера (HTTP ${response.status}).` }; }
+    }
+
+    function formatResponseMessage(payload, fallback) {
+      if (!payload) return fallback;
+      if (typeof payload === 'string') return payload;
+      if (typeof payload.detail === 'string') return payload.detail;
+      return Object.values(payload).flat().join(' ') || fallback;
+    }
+
+    function setStep(nextStep) {
+      state.step = nextStep;
+      document.querySelectorAll('.panel').forEach((panel) => panel.classList.toggle('active', String(panel.dataset.panel) === String(nextStep)));
+      document.querySelectorAll('[data-progress]').forEach((item) => {
+        const itemStep = Number(item.dataset.progress);
+        item.classList.toggle('active', itemStep === nextStep);
+        item.classList.toggle('done', nextStep === 'success' || itemStep < Number(nextStep));
+        if (itemStep === nextStep) item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
+      });
+      backButton.classList.toggle('is-hidden', nextStep === 1 || nextStep === 'success');
+      if (nextStep === 'success') document.querySelector('.progress').setAttribute('aria-label', 'Все этапы заполнены');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const heading = document.querySelector('.panel.active h1, .panel.active h2');
+      if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
+      queueWidgetResize();
+    }
+
+    function renderServices(query = '') {
+      const normalized = query.trim().toLocaleLowerCase('ru-RU');
+      const filtered = services.filter((service) => service.name.toLocaleLowerCase('ru-RU').includes(normalized));
+      servicesList.replaceChildren();
+
+      if (!filtered.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = services.length ? 'По этому запросу услуг не найдено.' : 'Сейчас нет услуг для онлайн-записи.';
+        servicesList.appendChild(empty);
+        return;
+      }
+
+      filtered.forEach((service) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'service-card';
+        button.classList.toggle('selected', state.selectedService?.id === service.id);
+        button.setAttribute('aria-pressed', state.selectedService?.id === service.id ? 'true' : 'false');
+        button.innerHTML = '<span class="radio-mark" aria-hidden="true"></span><span><span class="service-name"></span><span class="service-note">1 час</span></span><span class="service-price"></span>';
+        button.querySelector('.service-name').textContent = service.name;
+        button.querySelector('.service-price').textContent = `${formatMoney(service.price)} ₽`;
+        button.addEventListener('click', async () => {
+          state.selectedService = service;
+          state.selectedSlot = null;
+          state.selectedDate = null;
+          renderServices(serviceSearch.value);
+          updateSummary();
+          setStep(2);
+          await loadAvailability();
+        });
+        servicesList.appendChild(button);
+      });
+    }
+
+    function setScheduleLoading() {
+      dateRail.replaceChildren();
+      timeList.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Ищем свободное время…</div>';
+      continueButton.disabled = true;
+    }
+
+    async function loadAvailability() {
+      if (!state.selectedService) return;
+      setScheduleLoading();
+      const query = new URLSearchParams({ service_id: String(state.selectedService.id) });
+      if (state.weekStart) query.set('week_start', state.weekStart);
+      try {
+        const response = await fetch(`${availabilityUrl}?${query}`);
+        const payload = await parseResponseBody(response);
+        if (!response.ok) throw new Error(formatResponseMessage(payload, 'Не удалось загрузить свободное время.'));
+        state.availability = payload;
+        state.weekStart = payload.week_start;
+        const selectableDates = payload.days.filter((day, dayIndex) => payload.rows.some((row) => row.cells[dayIndex]?.available));
+        if (!state.selectedDate || !payload.days.some((day) => day.date === state.selectedDate)) {
+          state.selectedDate = selectableDates[0]?.date || payload.days[0]?.date || null;
+        }
+        renderSchedule();
+      } catch (error) {
+        timeList.replaceChildren();
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = error.message || 'Не удалось загрузить свободное время.';
+        timeList.appendChild(empty);
+      }
+    }
+
+    function availableSlotsForDate(date) {
+      if (!state.availability || !date) return [];
+      const dayIndex = state.availability.days.findIndex((item) => item.date === date);
+      if (dayIndex < 0) return [];
+      return state.availability.rows
+        .map((row) => ({ time: row.time, ...row.cells[dayIndex] }))
+        .filter((cell) => cell.available);
+    }
+
+    function renderSchedule() {
+      const start = parseLocalDate(state.availability.week_start);
+      const last = new Date(start);
+      last.setDate(last.getDate() + 6);
+      monthLabel.textContent = start.getMonth() === last.getMonth()
+        ? `${ruMonths[start.getMonth()]} ${start.getFullYear()}`
+        : `${ruMonths[start.getMonth()]} — ${ruMonths[last.getMonth()]} ${last.getFullYear()}`;
+      selectedServiceLine.textContent = `${state.selectedService.name} · 1 час`;
+      dateRail.replaceChildren();
+
+      state.availability.days.forEach((day, dayIndex) => {
+        const date = parseLocalDate(day.date);
+        const hasSlots = state.availability.rows.some((row) => row.cells[dayIndex]?.available);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'date-button';
+        button.classList.toggle('selected', day.date === state.selectedDate);
+        button.disabled = !hasSlots;
+        button.setAttribute('aria-label', new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(date));
+        button.setAttribute('aria-pressed', day.date === state.selectedDate ? 'true' : 'false');
+        const dayName = document.createElement('span');
+        dayName.className = 'date-day';
+        dayName.textContent = ruWeekdays[date.getDay()];
+        const dayNumber = document.createElement('span');
+        dayNumber.className = 'date-number';
+        dayNumber.textContent = String(date.getDate());
+        button.append(dayName, dayNumber);
+        button.addEventListener('click', () => {
+          state.selectedDate = day.date;
+          if (state.selectedSlot && !state.selectedSlot.start_time.startsWith(day.date)) state.selectedSlot = null;
+          renderSchedule();
+        });
+        dateRail.appendChild(button);
+      });
+
+      renderTimes();
+      const todayMonday = new Date();
+      todayMonday.setHours(0, 0, 0, 0);
+      todayMonday.setDate(todayMonday.getDate() - ((todayMonday.getDay() + 6) % 7));
+      document.getElementById('prevWeekButton').disabled = start <= todayMonday;
+      continueButton.disabled = !state.selectedSlot;
+      queueWidgetResize();
+    }
+
+    function renderTimes() {
+      const slots = availableSlotsForDate(state.selectedDate);
+      timeList.replaceChildren();
+      if (!slots.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'В этот день свободного времени нет. Выберите другую дату.';
+        timeList.appendChild(empty);
+        return;
+      }
+
+      const groups = [
+        { title: 'Утро', slots: slots.filter((slot) => Number(slot.time.slice(0, 2)) < 12) },
+        { title: 'День', slots: slots.filter((slot) => { const hour = Number(slot.time.slice(0, 2)); return hour >= 12 && hour < 17; }) },
+        { title: 'Вечер', slots: slots.filter((slot) => Number(slot.time.slice(0, 2)) >= 17) },
+      ].filter((group) => group.slots.length);
+
+      groups.forEach((group) => {
+        const section = document.createElement('section');
+        section.className = 'period';
+        const title = document.createElement('h3');
+        title.className = 'period-title';
+        title.textContent = group.title;
+        const grid = document.createElement('div');
+        grid.className = 'time-grid';
+        group.slots.forEach((slot) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'time-button';
+          button.classList.toggle('selected', state.selectedSlot?.start_time === slot.start_time);
+          button.setAttribute('aria-pressed', state.selectedSlot?.start_time === slot.start_time ? 'true' : 'false');
+          button.textContent = slot.time;
+          button.addEventListener('click', () => {
+            state.selectedSlot = slot;
+            renderTimes();
+            continueButton.disabled = false;
+            updateSummary();
+          });
+          grid.appendChild(button);
+        });
+        section.append(title, grid);
+        timeList.appendChild(section);
+      });
+    }
+
+    function updateSummary() {
+      if (!state.selectedService) return;
+      document.getElementById('summaryService').textContent = state.selectedService.name;
+      document.getElementById('summaryPrice').textContent = `${formatMoney(state.selectedService.price)} ₽ · 1 час`;
+      document.getElementById('partialTitle').textContent = `Оплатить 50% — ${formatMoney(Number(state.selectedService.price) / 2)} ₽`;
+      document.getElementById('fullTitle').textContent = `Оплатить полностью — ${formatMoney(state.selectedService.price)} ₽`;
+      if (state.selectedSlot) {
+        document.getElementById('summaryDate').textContent = formatDateLong(state.selectedSlot.start_time);
+        document.getElementById('summaryTime').textContent = `${formatTimeRange(state.selectedSlot.start_time)}, 1 час`;
+      }
+    }
+
+    function normalizeName(value) { return value.trim().replace(/\s+/g, ' '); }
+    function normalizePhone(value) {
+      let digits = value.replace(/\D/g, '');
+      if (digits.startsWith('8')) digits = `7${digits.slice(1)}`;
+      if (digits.startsWith('9')) digits = `7${digits}`;
+      return digits ? `+${digits.slice(0, 11)}` : '';
+    }
+    function formatPhone(value) {
+      const digits = normalizePhone(value).replace(/\D/g, '');
+      if (!digits) return '';
+      let result = '+7';
+      const body = digits.slice(1);
+      if (body.length) result += ` ${body.slice(0, 3)}`;
+      if (body.length > 3) result += ` ${body.slice(3, 6)}`;
+      if (body.length > 6) result += ` ${body.slice(6, 8)}`;
+      if (body.length > 8) result += ` ${body.slice(8, 10)}`;
+      return result;
+    }
+    function validateName(value) {
+      const normalized = normalizeName(value);
+      if (normalized.length < 2) return 'Укажите имя не короче 2 символов.';
+      if (!/^[A-Za-zА-Яа-яЁё]+(?:[ '-][A-Za-zА-Яа-яЁё]+)*$/.test(normalized)) return 'Используйте только буквы, пробел или дефис.';
+      return '';
+    }
+    function validatePhone(value) { return normalizePhone(value).replace(/\D/g, '').length === 11 ? '' : 'Введите номер в формате +7 999 000 00 00.'; }
+
+    function setFieldError(input, node, error) {
+      node.textContent = error;
+      input.setAttribute('aria-invalid', error ? 'true' : 'false');
+    }
+
+    function showError(text) {
+      messageNode.textContent = text;
+      messageNode.className = 'message show error';
+      messageNode.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearMessage() { messageNode.textContent = ''; messageNode.className = 'message'; }
+    function getPaymentMode() { return document.querySelector('input[name="paymentMode"]:checked')?.value || 'request'; }
+
+    function redirectToPayment(url) {
+      try { if (window.top && window.top !== window) { window.top.location.href = url; return; } } catch (_error) { /* cross-origin parent */ }
+      window.location.href = url;
+    }
+
+    serviceSearch.addEventListener('input', () => renderServices(serviceSearch.value));
+    document.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => setStep(Number(button.dataset.go))));
+    continueButton.addEventListener('click', () => { if (state.selectedSlot) { updateSummary(); setStep(3); } });
+    backButton.addEventListener('click', () => { if (state.step === 3) setStep(2); else if (state.step === 2) setStep(1); });
+
+    document.getElementById('closeButton').addEventListener('click', () => {
+      if (window.parent !== window) window.parent.postMessage({ type: 'studio313:widget-close' }, '*');
+      else if (history.length > 1) history.back();
+    });
+
+    document.getElementById('prevWeekButton').addEventListener('click', async () => {
+      const date = parseLocalDate(state.weekStart);
+      date.setDate(date.getDate() - 7);
+      state.weekStart = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      state.selectedDate = null; state.selectedSlot = null;
+      await loadAvailability();
+    });
+
+    document.getElementById('nextWeekButton').addEventListener('click', async () => {
+      const date = parseLocalDate(state.weekStart);
+      date.setDate(date.getDate() + 7);
+      state.weekStart = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      state.selectedDate = null; state.selectedSlot = null;
+      await loadAvailability();
+    });
+
+    document.getElementById('paymentOptions').addEventListener('change', (event) => {
+      if (event.target.name !== 'paymentMode') return;
+      document.querySelectorAll('.payment-option').forEach((option) => option.classList.toggle('active', option.dataset.mode === event.target.value));
+    });
+
+    clientNameInput.addEventListener('blur', () => {
+      clientNameInput.value = normalizeName(clientNameInput.value);
+      setFieldError(clientNameInput, nameErrorNode, validateName(clientNameInput.value));
+    });
+    clientPhoneInput.addEventListener('input', () => { clientPhoneInput.value = formatPhone(clientPhoneInput.value); });
+    clientPhoneInput.addEventListener('blur', () => setFieldError(clientPhoneInput, phoneErrorNode, validatePhone(clientPhoneInput.value)));
+
+    document.getElementById('bookingForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearMessage();
+      const nameError = validateName(clientNameInput.value);
+      const phoneError = validatePhone(clientPhoneInput.value);
+      setFieldError(clientNameInput, nameErrorNode, nameError);
+      setFieldError(clientPhoneInput, phoneErrorNode, phoneError);
+      if (nameError || phoneError) { (nameError ? clientNameInput : clientPhoneInput).focus(); return; }
+      if (!state.selectedService || !state.selectedSlot) { showError('Выберите услугу, дату и время.'); return; }
+
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<span class="loading"><span class="spinner" aria-hidden="true"></span>Оформляем…</span>';
+      const paymentMode = getPaymentMode();
+      try {
+        const createResponse = await fetch(createUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: state.selectedService.id,
+            start_time: state.selectedSlot.start_time,
+            client_name: normalizeName(clientNameInput.value),
+            client_phone: normalizePhone(clientPhoneInput.value),
+            client_email: clientEmailInput.value.trim(),
+            notes: document.getElementById('notes').value.trim(),
+          }),
+        });
+        const createPayload = await parseResponseBody(createResponse);
+        if (!createResponse.ok) {
+          if (createPayload?.client_name) setFieldError(clientNameInput, nameErrorNode, [].concat(createPayload.client_name).join(' '));
+          if (createPayload?.client_phone) setFieldError(clientPhoneInput, phoneErrorNode, [].concat(createPayload.client_phone).join(' '));
+          if (createPayload?.start_time) await loadAvailability();
+          throw new Error(formatResponseMessage(createPayload, 'Не удалось оформить запись.'));
+        }
+
+        document.getElementById('successService').textContent = state.selectedService.name;
+        document.getElementById('successTime').textContent = `${formatDateLong(state.selectedSlot.start_time)}, ${formatTimeRange(state.selectedSlot.start_time)}`;
+        if (paymentMode === 'request') { setStep('success'); return; }
+
+        const paymentResponse = await fetch(paymentCreateUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking: createPayload.booking?.id || createPayload.id,
+            token: createPayload.booking_token || createPayload.token,
+            payment_type: paymentMode === 'partial' ? 'partial' : 'full',
+          }),
+        });
+        const paymentPayload = await parseResponseBody(paymentResponse);
+        if (!paymentResponse.ok) {
+          document.getElementById('successCopy').textContent = formatResponseMessage(paymentPayload, 'Запись создана, но платёж не запустился. Менеджер свяжется с вами.');
+          setStep('success');
+          return;
+        }
+        document.getElementById('successCopy').textContent = 'Запись создана. Сейчас откроется безопасная страница оплаты.';
+        setStep('success');
+        if (paymentPayload?.payment_url) setTimeout(() => redirectToPayment(paymentPayload.payment_url), 500);
+      } catch (error) {
+        showError(error.message || 'Не удалось оформить запись. Проверьте данные и попробуйте ещё раз.');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Оформить запись';
+      }
+    });
+
+    renderServices();
+    queueWidgetResize();
+  </script>
+</body>
+</html>

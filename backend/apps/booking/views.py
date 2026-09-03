@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime, time, timedelta
+from pathlib import Path
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q
@@ -28,7 +29,8 @@ logger = logging.getLogger(__name__)
 
 WORKDAY_START_HOUR = 8
 WORKDAY_END_HOUR = 22
-SLOT_MINUTES = 30
+PUBLIC_BOOKING_DURATION_MINUTES = 60
+SLOT_MINUTES = PUBLIC_BOOKING_DURATION_MINUTES
 
 
 def notify_managers_about_booking(booking):
@@ -77,7 +79,7 @@ def build_public_availability(service, week_start):
         ).only('start_time', 'end_time')
     )
 
-    latest_start_minutes = WORKDAY_END_HOUR * 60 - service.duration_minutes
+    latest_start_minutes = WORKDAY_END_HOUR * 60 - PUBLIC_BOOKING_DURATION_MINUTES
     slot_minutes = range(WORKDAY_START_HOUR * 60, latest_start_minutes + 1, SLOT_MINUTES)
     days = [week_start + timedelta(days=index) for index in range(7)]
 
@@ -91,7 +93,7 @@ def build_public_availability(service, week_start):
         }
         for day in days:
             slot_start = timezone.make_aware(datetime.combine(day, time(hour, minute)), current_timezone)
-            slot_end = slot_start + timedelta(minutes=service.duration_minutes)
+            slot_end = slot_start + timedelta(minutes=PUBLIC_BOOKING_DURATION_MINUTES)
             is_past = slot_start <= now
             is_busy = any(
                 booking.start_time < slot_end and booking.end_time > slot_start
@@ -109,7 +111,7 @@ def build_public_availability(service, week_start):
         'service': {
             'id': service.id,
             'name': service.name,
-            'duration_minutes': service.duration_minutes,
+            'duration_minutes': PUBLIC_BOOKING_DURATION_MINUTES,
             'price': float(service.price),
         },
         'week_start': week_start.isoformat(),
@@ -119,6 +121,8 @@ def build_public_availability(service, week_start):
 
 
 def render_booking_widget_html(services_json):
+    return Path(__file__).with_name('booking_widget.html').read_text(encoding='utf-8')
+
     return """<!DOCTYPE html>
 <html lang="ru">
 <head>

@@ -10,6 +10,7 @@ from .models import Booking, Service
 
 NAME_PATTERN = re.compile(r"^[A-Za-zА-Яа-яЁё]+(?:[ '-][A-Za-zА-Яа-яЁё]+)*$")
 BLOCKING_STATUSES = [Booking.STATUS_PENDING, Booking.STATUS_CONFIRMED, Booking.STATUS_COMPLETED]
+PUBLIC_BOOKING_DURATION_MINUTES = 60
 
 
 def normalize_client_name(value):
@@ -238,12 +239,17 @@ class PublicBookingSerializer(BookingValidationMixin, serializers.ModelSerialize
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        start_time = attrs.get('start_time')
+        if start_time and (start_time.minute != 0 or start_time.second != 0 or start_time.microsecond != 0):
+            raise serializers.ValidationError({
+                'start_time': 'Запись доступна только на полный час: 10:00, 11:00 и далее.',
+            })
         attrs['status'] = Booking.STATUS_PENDING
         return attrs
 
     def create(self, validated_data):
         email = validated_data.pop('client_email', '').strip()
-        self._set_end_time(validated_data)
+        validated_data['end_time'] = validated_data['start_time'] + timedelta(minutes=PUBLIC_BOOKING_DURATION_MINUTES)
         self._validate_slot_conflict(validated_data)
         validated_data['status'] = Booking.STATUS_PENDING
 

@@ -63,6 +63,21 @@ class PublicBookingCreateTests(APITestCase):
         self.assertIsNone(booking.client)
         self.assertEqual(booking.requester_phone, '+79991234567')
         self.assertEqual(booking.status, Booking.STATUS_PENDING)
+        self.assertEqual((booking.end_time - booking.start_time).total_seconds(), 3600)
+
+    def test_public_booking_rejects_half_hour_start(self):
+        payload = {
+            'client_name': 'Иван',
+            'client_phone': '+79990000000',
+            'service_id': self.service.id,
+            'start_time': '2030-08-13T12:30:00+03:00',
+            'notes': '',
+        }
+
+        response = self.client.post(reverse('public_booking_create'), payload, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('start_time', response.data)
 
     def test_public_booking_rejects_invalid_name_and_phone(self):
         payload = {
@@ -134,3 +149,29 @@ class PublicBookingCreateTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         ten_row = next(row for row in response.data['rows'] if row['time'] == '10:00')
         self.assertFalse(ten_row['cells'][0]['available'])
+        self.assertFalse(any(row['time'].endswith(':30') for row in response.data['rows']))
+
+    def test_public_booking_is_always_one_hour_for_legacy_service_duration(self):
+        self.service.duration_minutes = 240
+        self.service.save(update_fields=['duration_minutes'])
+        payload = {
+            'client_name': 'Иван',
+            'client_phone': '+79990000000',
+            'service_id': self.service.id,
+            'start_time': '2030-08-13T20:00:00+03:00',
+            'notes': '',
+        }
+
+        response = self.client.post(reverse('public_booking_create'), payload, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        booking = Booking.objects.get()
+        self.assertEqual((booking.end_time - booking.start_time).total_seconds(), 3600)
+
+        availability_response = self.client.get(
+            reverse('public_booking_availability'),
+            {'service_id': self.service.id, 'week_start': '2030-08-12'},
+        )
+        self.assertEqual(availability_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(availability_response.data['service']['duration_minutes'], 60)
+        self.assertIn('21:00', [row['time'] for row in availability_response.data['rows']])
