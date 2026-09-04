@@ -2,8 +2,9 @@ from django.urls import path
 from .views import (
     HelpdeskTicketListCreateView, HelpdeskTicketDetailView,
     TicketCommentListCreateView, PublicTicketCreateView,
-    ConvertTicketToTaskView, HelpdeskWidgetView
+    ConvertTicketToTaskView
 )
+from .widget import HelpdeskWidgetView
 
 urlpatterns = [
     path('', HelpdeskTicketListCreateView.as_view(), name='ticket_list_create'),

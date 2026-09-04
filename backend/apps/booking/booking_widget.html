@@ -519,8 +519,8 @@
     .payment-option input { position: absolute; opacity: 0; pointer-events: none; }
     .payment-radio { width: 21px; height: 21px; display: grid; place-items: center; border: 1.5px solid #b8bfba; border-radius: 50%; margin-top: 1px; }
     .payment-radio::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: transparent; }
-    .active .payment-radio { border-color: var(--accent); }
-    .active .payment-radio::after { background: var(--accent); }
+    .payment-option.active .payment-radio { border-color: var(--accent); }
+    .payment-option.active .payment-radio::after { background: var(--accent); }
     .payment-title { display: block; font-size: 14px; font-weight: 690; }
     .payment-note { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
 
@@ -626,7 +626,7 @@
         <nav class="progress" aria-label="Этапы записи">
           <div class="progress-item active" data-progress="1"><span class="progress-dot"></span><span>Что</span></div>
           <div class="progress-item" data-progress="2"><span class="progress-dot"></span><span>Когда</span></div>
-          <div class="progress-item" data-progress="3"><span class="progress-dot"></span><span>Кем и оплата</span></div>
+          <div class="progress-item" data-progress="3"><span class="progress-dot"></span><span>Данные и оплата</span></div>
         </nav>
       </header>
 

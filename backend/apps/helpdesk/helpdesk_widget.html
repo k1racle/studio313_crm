@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Новое обращение — Студия 313</title>
+  <style>
+    @font-face {
+      font-family: "Studio Inter";
+      src: url("/static/booking/fonts/Inter-Cyrillic.woff2") format("woff2");
+      font-display: swap;
+      font-style: normal;
+      font-weight: 400;
+    }
+
+    @font-face {
+      font-family: "TT Firs ExtraBold";
+      src: url("/static/booking/fonts/TTFirs-ExtraBold.woff") format("woff");
+      font-display: swap;
+      font-style: normal;
+      font-weight: 800;
+    }
+
+    :root {
+      --canvas: #f5faff;
+      --surface: #ffffff;
+      --surface-soft: #eaf4ff;
+      --ink: #07101f;
+      --copy: #1b2433;
+      --muted: rgba(7, 16, 31, .62);
+      --quiet: rgba(7, 16, 31, .42);
+      --line: rgba(7, 16, 31, .13);
+      --accent: #0069fe;
+      --accent-strong: #0051c6;
+      --accent-soft: rgba(0, 105, 254, .08);
+      --danger: #b42318;
+      --danger-soft: #fff1f0;
+      --shadow: 0 16px 48px rgba(7, 16, 31, .07);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-width: 320px;
+      background: var(--canvas);
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100dvh;
+      margin: 0;
+      color: var(--copy);
+      background: var(--canvas);
+      font: 400 16px/1.5 "Studio Inter", Inter, "Segoe UI", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, textarea { font: inherit; }
+    button, label { -webkit-tap-highlight-color: transparent; }
+    button { touch-action: manipulation; }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    .choice-input:focus-visible + .choice-card {
+      outline: 3px solid rgba(0, 105, 254, .28);
+      outline-offset: 2px;
+    }
+
+    .page {
+      width: 100%;
+      min-height: 100dvh;
+      display: grid;
+      place-items: start center;
+      padding: clamp(12px, 3vw, 36px);
+    }
+
+    .widget {
+      width: min(100%, 660px);
+      min-height: min(780px, calc(100dvh - 72px));
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .97);
+    }
+
+    .brand-row {
+      min-height: 48px;
+      display: grid;
+      grid-template-columns: 88px 1fr 88px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .utility-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .utility-label:last-child { text-align: right; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      display: block;
+      width: 132px;
+      height: auto;
+    }
+
+    .progress {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 19px;
+    }
+
+    .progress::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      right: calc(16.667% + 6px);
+      left: calc(16.667% + 6px);
+      height: 1px;
+      background: var(--line);
+    }
+
+    .progress-item {
+      position: relative;
+      display: grid;
+      justify-items: center;
+      gap: 7px;
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .progress-dot {
+      width: 13px;
+      height: 13px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: 0 0 0 4px var(--surface);
+    }
+
+    .progress-item.is-complete,
+    .progress-item.is-current { color: var(--ink); }
+
+    .progress-item.is-complete .progress-dot { background: var(--ink); border-color: var(--ink); }
+
+    .progress-item.is-current .progress-dot {
+      border-color: var(--accent);
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px rgba(0, 105, 254, .16);
+    }
+
+    .content {
+      flex: 1;
+      padding: clamp(28px, 6vw, 48px) clamp(24px, 6vw, 48px) 32px;
+    }
+
+    .screen[hidden] { display: none; }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 560px;
+      margin: 0;
+      color: var(--ink);
+      font-family: "TT Firs ExtraBold", "Arial Black", sans-serif;
+      font-size: clamp(36px, 8vw, 54px);
+      font-weight: 800;
+      letter-spacing: -.055em;
+      line-height: .98;
+      text-transform: uppercase;
+    }
+
+    .intro {
+      max-width: 560px;
+      margin: 14px 0 28px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .field { margin-top: 20px; }
+
+    .field-label,
+    .group-label {
+      display: block;
+      margin: 0 0 8px;
+      color: var(--copy);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .required { color: var(--accent); }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      min-height: 56px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      padding: 15px 16px;
+      color: var(--ink);
+      background: var(--surface);
+      outline: 0;
+      transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+    }
+
+    textarea {
+      min-height: 150px;
+      line-height: 1.55;
+      resize: vertical;
+    }
+
+    input[type="text"]::placeholder,
+    textarea::placeholder { color: var(--quiet); }
+
+    input[type="text"]:hover,
+    textarea:hover { border-color: rgba(7, 16, 31, .28); }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .field.has-error input,
+    .field.has-error textarea { border-color: var(--danger); background: var(--danger-soft); }
+
+    .field-error,
+    .group-error {
+      min-height: 18px;
+      margin: 6px 0 0;
+      color: var(--danger);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .choice { position: relative; }
+
+    .choice-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .choice-card {
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--line);
+      padding: 14px;
+      color: var(--copy);
+      background: var(--surface);
+      cursor: pointer;
+      transition: border-color 180ms ease, background-color 180ms ease, transform 100ms ease;
+    }
+
+    .choice-card:hover { border-color: rgba(0, 105, 254, .5); }
+    .choice-card:active { transform: scale(.985); }
+
+    .choice-mark {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(7, 16, 31, .36);
+      background: var(--surface);
+    }
+
+    .choice-mark::after {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      opacity: 0;
+      transform: scale(.5);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .choice-title {
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .choice-input:checked + .choice-card {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .choice-input:checked + .choice-card .choice-mark { border-color: var(--accent); }
+    .choice-input:checked + .choice-card .choice-mark::after { opacity: 1; transform: scale(1); }
+
+    .review-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .review-card {
+      display: grid;
+      grid-template-columns: 1fr 48px;
+      align-items: start;
+      gap: 16px;
+      border: 1px solid var(--line);
+      padding: 18px 16px 18px 20px;
+      background: var(--surface);
+    }
+
+    .review-kicker {
+      margin: 0 0 5px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .review-title {
+      margin: 0;
+      color: var(--ink);
+      font-size: 16px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .review-copy {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .edit-button {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      transition: color 180ms ease, background-color 180ms ease, transform 100ms ease;
+    }
+
+    .edit-button:hover { color: var(--ink); background: var(--surface-soft); }
+    .edit-button:active { transform: scale(.94); }
+    .edit-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .button {
+      min-height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      padding: 14px 22px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 100ms ease;
+    }
+
+    .button:active { transform: scale(.98); }
+
+    .button-secondary { color: var(--copy); background: var(--surface); }
+    .button-secondary:hover { border-color: var(--ink); }
+
+    .button-primary {
+      min-width: 210px;
+      border-color: var(--accent);
+      color: white;
+      background: var(--accent);
+    }
+
+    .button-primary:hover { border-color: var(--accent-strong); background: var(--accent-strong); }
+    .button:disabled { cursor: wait; opacity: .55; }
+
+    .privacy {
+      margin: 12px 0 0;
+      color: var(--quiet);
+      font-size: 11px;
+      line-height: 1.5;
+      text-align: right;
+    }
+
+    .submit-error {
+      display: none;
+      margin: 18px 0 0;
+      border: 1px solid rgba(180, 35, 24, .22);
+      padding: 12px 14px;
+      color: var(--danger);
+      background: var(--danger-soft);
+      font-size: 13px;
+    }
+
+    .submit-error.is-visible { display: block; }
+
+    .success-screen {
+      min-height: 520px;
+      display: grid;
+      align-content: center;
+      justify-items: start;
+    }
+
+    .success-mark {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 24px;
+      color: white;
+      background: var(--accent);
+    }
+
+    .success-mark svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 2; }
+    .success-screen .intro { margin-bottom: 24px; }
+
+    @media (max-width: 620px) {
+      .page { padding: 0; }
+      .widget { min-height: 100dvh; border: 0; box-shadow: none; }
+      .topbar { padding: 16px 16px 14px; }
+      .brand-row { grid-template-columns: 64px 1fr 64px; }
+      .utility-label { font-size: 9px; letter-spacing: .08em; }
+      .brand-logo { width: 116px; }
+      .progress { margin-top: 15px; }
+      .progress-item { font-size: 11px; }
+      .content { padding: 28px 20px 24px; }
+      h1 { font-size: clamp(34px, 12vw, 46px); }
+      .intro { margin-bottom: 24px; }
+      .choice-grid { grid-template-columns: 1fr; gap: 8px; }
+      .choice-card { min-height: 64px; }
+      .footer { align-items: stretch; }
+      .button { flex: 1; padding-inline: 14px; }
+      .button-primary { min-width: 0; }
+      .privacy { text-align: left; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="widget" aria-label="Форма нового обращения">
+      <header class="topbar">
+        <div class="brand-row">
+          <p class="utility-label">Заявка</p>
+          <div class="brand">
+            <img class="brand-logo" src="/static/booking/brand/logo-black.svg" alt="Студия 313">
+          </div>
+          <p class="utility-label">Helpdesk</p>
+        </div>
+
+        <nav class="progress" aria-label="Этапы обращения">
+          <div class="progress-item is-current" data-progress="1" aria-current="step">
+            <span class="progress-dot" aria-hidden="true"></span>
+            <span>Обращение</span>
+          </div>
+          <div class="progress-item" data-progress="2">
+            <span class="progress-dot" aria-hidden="true"></span>
+            <span>Контакты</span>
+          </div>
+          <div class="progress-item" data-progress="3">
+            <span class="progress-dot" aria-hidden="true"></span>
+            <span>Проверка</span>
+          </div>
+        </nav>
+      </header>
+
+      <form id="ticketForm" class="content" novalidate>
+        <section class="screen" data-screen="1" aria-labelledby="stepOneTitle">
+          <p class="eyebrow">Шаг 1 из 3</p>
+          <h1 id="stepOneTitle">Новое обращение</h1>
+          <p class="intro">Можно задать любой вопрос, сообщить о проблеме, предложить идею или оставить другую заявку.</p>
+
+          <fieldset style="margin:0;padding:0;border:0" aria-describedby="categoryError">
+            <legend class="group-label">Тип обращения <span class="required" aria-hidden="true">*</span></legend>
+            <div class="choice-grid">
+              <div class="choice">
+                <input class="choice-input" id="categoryOther" type="radio" name="category" value="other" required>
+                <label class="choice-card" for="categoryOther">
+                  <span class="choice-mark" aria-hidden="true"></span>
+                  <span class="choice-title">Общий вопрос</span>
+                </label>
+              </div>
+              <div class="choice">
+                <input class="choice-input" id="categoryTechnical" type="radio" name="category" value="technical">
+                <label class="choice-card" for="categoryTechnical">
+                  <span class="choice-mark" aria-hidden="true"></span>
+                  <span class="choice-title">Техническая проблема</span>
+                </label>
+              </div>
+              <div class="choice">
+                <input class="choice-input" id="categoryPayment" type="radio" name="category" value="payment">
+                <label class="choice-card" for="categoryPayment">
+                  <span class="choice-mark" aria-hidden="true"></span>
+                  <span class="choice-title">Оплата и документы</span>
+                </label>
+              </div>
+              <div class="choice">
+                <input class="choice-input" id="categoryManager" type="radio" name="category" value="manager_help">
+                <label class="choice-card" for="categoryManager">
+                  <span class="choice-mark" aria-hidden="true"></span>
+                  <span class="choice-title">Нужна помощь</span>
+                </label>
+              </div>
+            </div>
+            <p class="group-error" id="categoryError" role="alert"></p>
+          </fieldset>
+
+          <div class="field" data-field="subject">
+            <label class="field-label" for="subject">Тема <span class="required" aria-hidden="true">*</span></label>
+            <input id="subject" name="subject" type="text" maxlength="255" autocomplete="off" placeholder="Коротко: о чём ваше обращение" aria-describedby="subjectError" required>
+            <p class="field-error" id="subjectError" role="alert"></p>
+          </div>
+
+          <div class="field" data-field="description">
+            <label class="field-label" for="description">Описание <span class="required" aria-hidden="true">*</span></label>
+            <textarea id="description" name="description" placeholder="Опишите вопрос или ситуацию. Можно добавить сроки и другие важные детали." aria-describedby="descriptionError" required></textarea>
+            <p class="field-error" id="descriptionError" role="alert"></p>
+          </div>
+
+          <div class="footer">
+            <span aria-hidden="true"></span>
+            <button class="button button-primary" type="button" data-next>Продолжить</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="2" aria-labelledby="stepTwoTitle" hidden>
+          <p class="eyebrow">Шаг 2 из 3</p>
+          <h1 id="stepTwoTitle">Как ответить</h1>
+          <p class="intro">Оставьте имя и удобный способ связи. Аккаунт или регистрация не нужны.</p>
+
+          <div class="field" data-field="requester_name">
+            <label class="field-label" for="requesterName">Имя <span class="required" aria-hidden="true">*</span></label>
+            <input id="requesterName" name="requester_name" type="text" maxlength="255" autocomplete="name" placeholder="Как к вам обращаться" aria-describedby="requesterNameError" required>
+            <p class="field-error" id="requesterNameError" role="alert"></p>
+          </div>
+
+          <div class="field" data-field="requester_contact">
+            <label class="field-label" for="requesterContact">Телефон, email или мессенджер <span class="required" aria-hidden="true">*</span></label>
+            <input id="requesterContact" name="requester_contact" type="text" maxlength="255" autocomplete="email" placeholder="Например, +7 999 000-00-00 или @username" aria-describedby="requesterContactError" required>
+            <p class="field-error" id="requesterContactError" role="alert"></p>
+          </div>
+
+          <div class="footer">
+            <button class="button button-secondary" type="button" data-back>Назад</button>
+            <button class="button button-primary" type="button" data-next>Проверить</button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="3" aria-labelledby="stepThreeTitle" hidden>
+          <p class="eyebrow">Шаг 3 из 3</p>
+          <h1 id="stepThreeTitle">Проверьте обращение</h1>
+          <p class="intro">Если всё верно, отправьте заявку. Мы получим её вместе с указанными контактами.</p>
+
+          <div class="review-list">
+            <article class="review-card">
+              <div>
+                <p class="review-kicker" id="reviewCategory"></p>
+                <p class="review-title" id="reviewSubject"></p>
+                <p class="review-copy" id="reviewDescription"></p>
+              </div>
+              <button class="edit-button" type="button" data-edit="1" aria-label="Изменить обращение">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4Z"></path><path d="m13.5 6.5 4 4"></path></svg>
+              </button>
+            </article>
+
+            <article class="review-card">
+              <div>
+                <p class="review-kicker">Контакты</p>
+                <p class="review-title" id="reviewName"></p>
+                <p class="review-copy" id="reviewContact"></p>
+              </div>
+              <button class="edit-button" type="button" data-edit="2" aria-label="Изменить контакты">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4Z"></path><path d="m13.5 6.5 4 4"></path></svg>
+              </button>
+            </article>
+          </div>
+
+          <div id="submitError" class="submit-error" role="alert"></div>
+
+          <div class="footer">
+            <button class="button button-secondary" type="button" data-back>Назад</button>
+            <button class="button button-primary" id="submitButton" type="submit">Отправить обращение</button>
+          </div>
+          <p class="privacy">Нажимая кнопку, вы соглашаетесь на обработку указанных данных для ответа на обращение.</p>
+        </section>
+
+        <section class="screen success-screen" data-screen="success" aria-labelledby="successTitle" hidden>
+          <div class="success-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></svg>
+          </div>
+          <p class="eyebrow">Заявка <span id="ticketNumber"></span> принята</p>
+          <h1 id="successTitle" tabindex="-1">Обращение отправлено</h1>
+          <p class="intro">Ответ придёт по указанному контакту. Можно закрыть страницу или отправить ещё одно обращение.</p>
+          <button class="button button-secondary" id="newTicketButton" type="button">Создать ещё одно</button>
+        </section>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('ticketForm');
+    const screens = [...document.querySelectorAll('[data-screen]')];
+    const progressItems = [...document.querySelectorAll('[data-progress]')];
+    const submitButton = document.getElementById('submitButton');
+    const submitError = document.getElementById('submitError');
+    const categoryLabels = {
+      other: 'Общий вопрос',
+      technical: 'Техническая проблема',
+      payment: 'Оплата и документы',
+      manager_help: 'Нужна помощь',
+    };
+    const widgetResizeMessageType = 'studio313:widget-resize';
+    let currentStep = 1;
+
+    function getValue(name) {
+      const field = form.elements[name];
+      if (!field) return '';
+      if (field instanceof RadioNodeList) return field.value.trim();
+      return field.value.trim();
+    }
+
+    function setFieldError(name, message) {
+      const field = form.querySelector(`[name="${name}"]`);
+      const wrapper = field?.closest('.field');
+      const errorNode = wrapper?.querySelector('.field-error');
+      if (wrapper) wrapper.classList.toggle('has-error', Boolean(message));
+      if (field) field.setAttribute('aria-invalid', message ? 'true' : 'false');
+      if (errorNode) errorNode.textContent = message;
+    }
+
+    function validateStep(step) {
+      let firstInvalid = null;
+
+      if (step === 1) {
+        const category = getValue('category');
+        const categoryError = document.getElementById('categoryError');
+        categoryError.textContent = category ? '' : 'Выберите подходящий тип обращения.';
+        if (!category) firstInvalid = form.querySelector('[name="category"]');
+
+        ['subject', 'description'].forEach((name) => {
+          const value = getValue(name);
+          const message = value ? '' : name === 'subject' ? 'Укажите тему обращения.' : 'Опишите вопрос или ситуацию.';
+          setFieldError(name, message);
+          if (message && !firstInvalid) firstInvalid = form.elements[name];
+        });
+      }
+
+      if (step === 2) {
+        ['requester_name', 'requester_contact'].forEach((name) => {
+          const value = getValue(name);
+          const message = value ? '' : name === 'requester_name' ? 'Укажите, как к вам обращаться.' : 'Оставьте контакт для ответа.';
+          setFieldError(name, message);
+          if (message && !firstInvalid) firstInvalid = form.elements[name];
+        });
+      }
+
+      if (firstInvalid) {
+        firstInvalid.focus();
+        queueWidgetResize();
+        return false;
+      }
+      return true;
+    }
+
+    function renderReview() {
+      const category = getValue('category');
+      document.getElementById('reviewCategory').textContent = categoryLabels[category] || 'Обращение';
+      document.getElementById('reviewSubject').textContent = getValue('subject');
+      document.getElementById('reviewDescription').textContent = getValue('description');
+      document.getElementById('reviewName').textContent = getValue('requester_name');
+      document.getElementById('reviewContact').textContent = getValue('requester_contact');
+    }
+
+    function showStep(step, focusHeading = true) {
+      currentStep = step;
+      screens.forEach((screen) => {
+        screen.hidden = String(screen.dataset.screen) !== String(step);
+      });
+      progressItems.forEach((item) => {
+        const itemStep = Number(item.dataset.progress);
+        item.classList.toggle('is-complete', itemStep < step);
+        item.classList.toggle('is-current', itemStep === step);
+        if (itemStep === step) item.setAttribute('aria-current', 'step');
+        else item.removeAttribute('aria-current');
+      });
+      if (step === 3) renderReview();
+      submitError.classList.remove('is-visible');
+      submitError.textContent = '';
+      if (focusHeading) {
+        const heading = form.querySelector(`[data-screen="${step}"] h1`);
+        heading?.setAttribute('tabindex', '-1');
+        heading?.focus({ preventScroll: true });
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      queueWidgetResize();
+    }
+
+    document.querySelectorAll('[data-next]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (validateStep(currentStep)) showStep(currentStep + 1);
+      });
+    });
+
+    document.querySelectorAll('[data-back]').forEach((button) => {
+      button.addEventListener('click', () => showStep(Math.max(1, currentStep - 1)));
+    });
+
+    document.querySelectorAll('[data-edit]').forEach((button) => {
+      button.addEventListener('click', () => showStep(Number(button.dataset.edit)));
+    });
+
+    form.querySelectorAll('input, textarea').forEach((field) => {
+      field.addEventListener('input', () => {
+        if (field.name === 'category') document.getElementById('categoryError').textContent = '';
+        else setFieldError(field.name, '');
+      });
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!validateStep(1) || !validateStep(2)) return;
+
+      const body = {
+        category: getValue('category'),
+        subject: getValue('subject'),
+        description: getValue('description'),
+        requester_name: getValue('requester_name'),
+        requester_contact: getValue('requester_contact'),
+      };
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'Отправляем…';
+      submitError.classList.remove('is-visible');
+
+      try {
+        const response = await fetch('/api/helpdesk/public/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          const details = Object.values(data).flat().join(' ');
+          throw new Error(details || 'Не удалось отправить обращение. Проверьте данные и попробуйте ещё раз.');
+        }
+
+        document.getElementById('ticketNumber').textContent = data.id ? `№${data.id}` : '';
+        screens.forEach((screen) => { screen.hidden = screen.dataset.screen !== 'success'; });
+        progressItems.forEach((item) => {
+          item.classList.remove('is-current');
+          item.classList.add('is-complete');
+          item.removeAttribute('aria-current');
+        });
+        form.querySelector('[data-screen="success"] h1')?.focus({ preventScroll: true });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (error) {
+        submitError.textContent = error.message || 'Не удалось отправить обращение. Попробуйте ещё раз.';
+        submitError.classList.add('is-visible');
+        submitError.focus?.();
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Отправить обращение';
+        queueWidgetResize();
+      }
+    });
+
+    document.getElementById('newTicketButton').addEventListener('click', () => {
+      form.reset();
+      form.querySelectorAll('.field-error, .group-error').forEach((node) => { node.textContent = ''; });
+      form.querySelectorAll('.has-error').forEach((node) => node.classList.remove('has-error'));
+      showStep(1);
+    });
+
+    function getDocumentHeight() {
+      return Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.offsetHeight,
+        document.documentElement.clientHeight,
+      );
+    }
+
+    function postWidgetSize() {
+      if (window.parent === window) return;
+      window.parent.postMessage({ type: widgetResizeMessageType, height: getDocumentHeight() }, '*');
+    }
+
+    let resizeFrame = null;
+    function queueWidgetResize() {
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null;
+        postWidgetSize();
+      });
+    }
+
+    if ('ResizeObserver' in window) {
+      const resizeObserver = new ResizeObserver(queueWidgetResize);
+      resizeObserver.observe(document.documentElement);
+      resizeObserver.observe(document.body);
+    }
+
+    window.addEventListener('resize', queueWidgetResize);
+    window.addEventListener('load', queueWidgetResize);
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'studio313:widget-parent-ready') queueWidgetResize();
+    });
+
+    showStep(1, false);
+  </script>
+</body>
+</html>

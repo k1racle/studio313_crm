@@ -48,6 +48,7 @@ export default function Integrations() {
       key: 'booking',
       label: 'Запись',
       src: `${window.location.origin}/api/booking/widget/`,
+      pageUrl: `${window.location.origin}/booking`,
       fallbackHeight: 760,
       iframeCode: buildResponsiveIframeCode(
         `${window.location.origin}/api/booking/widget/`,
@@ -60,6 +61,7 @@ export default function Integrations() {
       key: 'helpdesk',
       label: 'Helpdesk',
       src: `${window.location.origin}/api/helpdesk/widget/`,
+      pageUrl: `${window.location.origin}/support`,
       fallbackHeight: 620,
       iframeCode: buildResponsiveIframeCode(
         `${window.location.origin}/api/helpdesk/widget/`,
@@ -98,6 +100,14 @@ export default function Integrations() {
     }
   }
 
+  const copyPageLink = async () => {
+    try {
+      await navigator.clipboard.writeText(currentWidget.pageUrl)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card title="Виджеты для сайта" eyebrow="Интеграции">
@@ -121,14 +131,18 @@ export default function Integrations() {
               <Copy size={14} />
               Скопировать iframe
             </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={copyPageLink}>
+              <Copy size={14} />
+              Скопировать ссылку
+            </Button>
             <a
-              href={currentWidget.src}
+              href={currentWidget.pageUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-surface/88 px-4 py-2 text-sm font-semibold text-text-muted transition-all hover:bg-surface-strong hover:text-text"
             >
               <ExternalLink size={14} />
-              Открыть отдельно
+              Открыть страницу
             </a>
           </div>
 

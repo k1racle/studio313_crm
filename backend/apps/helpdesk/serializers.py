@@ -31,3 +31,13 @@ class HelpdeskTicketSerializer(serializers.ModelSerializer):
             'comments', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+
+class PublicHelpdeskTicketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HelpdeskTicket
+        fields = [
+            'id', 'category', 'subject', 'description',
+            'requester_name', 'requester_contact',
+        ]
+        read_only_fields = ['id']
