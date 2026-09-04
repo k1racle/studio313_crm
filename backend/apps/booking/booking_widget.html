@@ -411,17 +411,6 @@
     .time-button:active { transform: scale(.96); }
     .time-button.selected { color: #fff; background: var(--accent); }
 
-    .duration-note {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      margin: 20px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .duration-note svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 1.8; }
-
     .actions {
       display: flex;
       align-items: center;
@@ -633,7 +622,6 @@
         <section class="panel active" data-panel="1" aria-labelledby="servicesTitle">
           <p class="eyebrow">Шаг 1 из 3</p>
           <h1 id="servicesTitle">Выберите услугу</h1>
-          <p class="lede">Каждая запись длится ровно один час.</p>
           <div class="search">
             <label class="sr-only" for="serviceSearch">Найти услугу</label>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -661,10 +649,6 @@
             </div>
             <div class="date-rail" id="dateRail" aria-label="Даты"></div>
             <div class="times" id="timeList" aria-live="polite"></div>
-            <p class="duration-note">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-              Длительность записи — 1 час. Слотов на полчаса нет.
-            </p>
           </div>
           <div class="actions">
             <button class="secondary-button" type="button" data-go="1">Назад</button>
