@@ -1319,7 +1319,7 @@ class BookingWidgetView(APIView):
 
     def get(self, request):
         services = json.dumps(
-            list(Service.objects.filter(is_active=True).values('id', 'name', 'duration_minutes', 'price')),
+            list(Service.objects.filter(is_active=True).values('id', 'name', 'description', 'duration_minutes', 'price')),
             ensure_ascii=False,
             cls=DjangoJSONEncoder,
         )

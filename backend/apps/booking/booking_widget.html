@@ -330,6 +330,17 @@
     .service-name { display: block; font-weight: 680; letter-spacing: -.015em; }
     .service-note { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
     .service-price { font-size: 15px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .service-description {
+      grid-column: 2 / -1;
+      margin-top: 3px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--copy);
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
 
     .empty {
       padding: 28px 20px;
@@ -437,6 +448,7 @@
     .secondary-button { border: 1px solid var(--line); color: var(--ink); background: #fff; }
     .secondary-button:hover { border-color: #bcc8bf; }
     .actions .primary-button { min-width: 190px; }
+    [data-panel="1"] .actions { justify-content: flex-end; }
 
     .summary {
       display: grid;
@@ -628,6 +640,9 @@
             <input id="serviceSearch" type="search" autocomplete="off" placeholder="Найти услугу">
           </div>
           <div class="service-list" id="servicesList" aria-live="polite"></div>
+          <div class="actions">
+            <button class="primary-button" id="continueToScheduleButton" type="button" disabled>Продолжить</button>
+          </div>
         </section>
 
         <section class="panel" data-panel="2" aria-labelledby="scheduleTitle">
@@ -764,6 +779,7 @@
 
     const servicesList = document.getElementById('servicesList');
     const serviceSearch = document.getElementById('serviceSearch');
+    const continueToScheduleButton = document.getElementById('continueToScheduleButton');
     const backButton = document.getElementById('backButton');
     const continueButton = document.getElementById('continueButton');
     const dateRail = document.getElementById('dateRail');
@@ -870,19 +886,29 @@
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'service-card';
-        button.classList.toggle('selected', state.selectedService?.id === service.id);
-        button.setAttribute('aria-pressed', state.selectedService?.id === service.id ? 'true' : 'false');
+        const isSelected = state.selectedService?.id === service.id;
+        const hasDescription = Boolean(String(service.description || '').trim());
+        button.classList.toggle('selected', isSelected);
+        button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        button.setAttribute('aria-expanded', isSelected && hasDescription ? 'true' : 'false');
         button.innerHTML = '<span class="radio-mark" aria-hidden="true"></span><span><span class="service-name"></span><span class="service-note">1 час</span></span><span class="service-price"></span>';
         button.querySelector('.service-name').textContent = service.name;
         button.querySelector('.service-price').textContent = `${formatMoney(service.price)} ₽`;
-        button.addEventListener('click', async () => {
+        if (isSelected && hasDescription) {
+          const description = document.createElement('span');
+          description.className = 'service-description';
+          description.textContent = String(service.description).replace(/\r\n?/g, '\n').trim();
+          button.appendChild(description);
+        }
+        button.addEventListener('click', () => {
           state.selectedService = service;
           state.selectedSlot = null;
           state.selectedDate = null;
+          state.availability = null;
           renderServices(serviceSearch.value);
           updateSummary();
-          setStep(2);
-          await loadAvailability();
+          continueToScheduleButton.disabled = false;
+          queueWidgetResize();
         });
         servicesList.appendChild(button);
       });
@@ -1075,6 +1101,11 @@
     }
 
     serviceSearch.addEventListener('input', () => renderServices(serviceSearch.value));
+    continueToScheduleButton.addEventListener('click', async () => {
+      if (!state.selectedService) return;
+      setStep(2);
+      await loadAvailability();
+    });
     document.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => setStep(Number(button.dataset.go))));
     continueButton.addEventListener('click', () => { if (state.selectedSlot) { updateSummary(); setStep(3); } });
     backButton.addEventListener('click', () => { if (state.step === 3) setStep(2); else if (state.step === 2) setStep(1); });
