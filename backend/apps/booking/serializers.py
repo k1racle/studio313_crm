@@ -1,6 +1,8 @@
 import re
 from datetime import timedelta
 
+from django.db import transaction
+from django.db.models import Max
 from rest_framework import serializers
 
 from apps.clients.models import Client
@@ -145,7 +147,14 @@ class BookingValidationMixin:
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
-        fields = ['id', 'name', 'description', 'duration_minutes', 'price', 'is_active']
+        fields = ['id', 'name', 'description', 'duration_minutes', 'price', 'price_type', 'is_active', 'position']
+        read_only_fields = ['position']
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            last_position = Service.objects.aggregate(value=Max('position'))['value']
+            validated_data['position'] = (last_position if last_position is not None else -1) + 1
+            return super().create(validated_data)
 
 
 class BookingSerializer(BookingValidationMixin, serializers.ModelSerializer):

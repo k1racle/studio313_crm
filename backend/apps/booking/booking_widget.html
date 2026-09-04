@@ -891,8 +891,9 @@
         button.classList.toggle('selected', isSelected);
         button.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
         button.setAttribute('aria-expanded', isSelected && hasDescription ? 'true' : 'false');
-        button.innerHTML = '<span class="radio-mark" aria-hidden="true"></span><span><span class="service-name"></span><span class="service-note">1 час</span></span><span class="service-price"></span>';
+        button.innerHTML = '<span class="radio-mark" aria-hidden="true"></span><span><span class="service-name"></span><span class="service-note"></span></span><span class="service-price"></span>';
         button.querySelector('.service-name').textContent = service.name;
+        button.querySelector('.service-note').textContent = service.price_type === 'fixed' ? 'За услугу' : 'За час';
         button.querySelector('.service-price').textContent = `${formatMoney(service.price)} ₽`;
         if (isSelected && hasDescription) {
           const description = document.createElement('span');
@@ -1046,7 +1047,8 @@
     function updateSummary() {
       if (!state.selectedService) return;
       document.getElementById('summaryService').textContent = state.selectedService.name;
-      document.getElementById('summaryPrice').textContent = `${formatMoney(state.selectedService.price)} ₽ · 1 час`;
+      const priceTypeLabel = state.selectedService.price_type === 'fixed' ? 'за услугу' : 'за час';
+      document.getElementById('summaryPrice').textContent = `${formatMoney(state.selectedService.price)} ₽ ${priceTypeLabel}`;
       document.getElementById('partialTitle').textContent = `Оплатить 50% — ${formatMoney(Number(state.selectedService.price) / 2)} ₽`;
       document.getElementById('fullTitle').textContent = `Оплатить полностью — ${formatMoney(state.selectedService.price)} ₽`;
       if (state.selectedSlot) {

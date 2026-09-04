@@ -175,3 +175,65 @@ class PublicBookingCreateTests(APITestCase):
         self.assertEqual(availability_response.status_code, status.HTTP_200_OK)
         self.assertEqual(availability_response.data['service']['duration_minutes'], 60)
         self.assertIn('21:00', [row['time'] for row in availability_response.data['rows']])
+
+
+class ServiceOrderingTests(APITestCase):
+    def setUp(self):
+        self.manager = User.objects.create_user(
+            username='service-manager',
+            password='secret',
+            role=User.ROLE_MANAGER,
+        )
+        self.first = Service.objects.create(name='Аренда', position=0, price='5000.00')
+        self.second = Service.objects.create(name='Подкаст', position=1, price='5000.00')
+        self.third = Service.objects.create(name='Монтаж', position=2, price='5000.00')
+        self.client.force_authenticate(self.manager)
+
+    def test_manager_can_reorder_services(self):
+        requested_order = [self.third.id, self.first.id, self.second.id]
+
+        response = self.client.post(
+            reverse('service_reorder'),
+            {'service_ids': requested_order},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual([service['id'] for service in response.data], requested_order)
+        self.assertEqual(
+            list(Service.objects.order_by('position', 'id').values_list('id', flat=True)),
+            requested_order,
+        )
+
+        widget_response = self.client.get(reverse('booking_widget'))
+        widget_html = widget_response.content.decode('utf-8')
+        self.assertLess(widget_html.index('Монтаж'), widget_html.index('Аренда'))
+        self.assertLess(widget_html.index('Аренда'), widget_html.index('Подкаст'))
+
+    def test_reorder_requires_complete_unique_list(self):
+        response = self.client.post(
+            reverse('service_reorder'),
+            {'service_ids': [self.first.id, self.first.id]},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('service_ids', response.data)
+
+    def test_new_service_is_appended_to_order(self):
+        response = self.client.post(
+            reverse('service_list_create'),
+            {
+                'name': 'Фотосессия',
+                'description': '',
+                'duration_minutes': 60,
+                'price': '5000.00',
+                'price_type': Service.PRICE_TYPE_FIXED,
+                'is_active': True,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['position'], 3)
+        self.assertEqual(response.data['price_type'], Service.PRICE_TYPE_FIXED)

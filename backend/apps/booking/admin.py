@@ -4,7 +4,8 @@ from .models import Service, Booking
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    list_display = ['name', 'duration_minutes', 'price', 'is_active']
+    list_display = ['position', 'name', 'duration_minutes', 'price', 'price_type', 'is_active']
+    ordering = ['position', 'id']
 
 
 @admin.register(Booking)

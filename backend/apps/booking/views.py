@@ -4,6 +4,7 @@ from datetime import datetime, time, timedelta
 from pathlib import Path
 
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -113,6 +114,7 @@ def build_public_availability(service, week_start):
             'name': service.name,
             'duration_minutes': PUBLIC_BOOKING_DURATION_MINUTES,
             'price': float(service.price),
+            'price_type': service.price_type,
         },
         'week_start': week_start.isoformat(),
         'days': [{'date': day.isoformat()} for day in days],
@@ -1250,6 +1252,39 @@ class ServiceDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsManagerOrHigher]
 
 
+class ServiceReorderView(APIView):
+    permission_classes = [IsManagerOrHigher]
+
+    def post(self, request):
+        raw_ids = request.data.get('service_ids')
+        if not isinstance(raw_ids, list):
+            return Response({'service_ids': 'Передайте список идентификаторов услуг.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            service_ids = [int(service_id) for service_id in raw_ids]
+        except (TypeError, ValueError):
+            return Response({'service_ids': 'Все идентификаторы должны быть числами.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        existing_ids = list(Service.objects.values_list('id', flat=True))
+        if len(service_ids) != len(set(service_ids)) or set(service_ids) != set(existing_ids):
+            return Response(
+                {'service_ids': 'Список должен содержать каждую услугу ровно один раз.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        services_by_id = Service.objects.in_bulk(service_ids)
+        ordered_services = []
+        for position, service_id in enumerate(service_ids):
+            service = services_by_id[service_id]
+            service.position = position
+            ordered_services.append(service)
+
+        with transaction.atomic():
+            Service.objects.bulk_update(ordered_services, ['position'])
+
+        return Response(ServiceSerializer(ordered_services, many=True).data)
+
+
 class BookingListCreateView(generics.ListCreateAPIView):
     serializer_class = BookingSerializer
     filter_backends = [DjangoFilterBackend]
@@ -1319,7 +1354,11 @@ class BookingWidgetView(APIView):
 
     def get(self, request):
         services = json.dumps(
-            list(Service.objects.filter(is_active=True).values('id', 'name', 'description', 'duration_minutes', 'price')),
+            list(
+                Service.objects.filter(is_active=True)
+                .order_by('position', 'id')
+                .values('id', 'name', 'description', 'duration_minutes', 'price', 'price_type')
+            ),
             ensure_ascii=False,
             cls=DjangoJSONEncoder,
         )

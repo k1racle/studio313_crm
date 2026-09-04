@@ -4,16 +4,30 @@ from apps.clients.models import Client
 
 
 class Service(models.Model):
+    PRICE_TYPE_HOURLY = 'hourly'
+    PRICE_TYPE_FIXED = 'fixed'
+    PRICE_TYPE_CHOICES = [
+        (PRICE_TYPE_HOURLY, 'За час'),
+        (PRICE_TYPE_FIXED, 'За услугу'),
+    ]
+
     name = models.CharField(max_length=255, verbose_name='Название')
     description = models.TextField(blank=True, verbose_name='Описание')
     duration_minutes = models.PositiveIntegerField(default=60, verbose_name='Длительность (мин)')
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Цена')
+    price_type = models.CharField(
+        max_length=16,
+        choices=PRICE_TYPE_CHOICES,
+        default=PRICE_TYPE_HOURLY,
+        verbose_name='Тип цены',
+    )
     is_active = models.BooleanField(default=True, verbose_name='Активна')
+    position = models.PositiveIntegerField(default=0, db_index=True, verbose_name='Позиция')
 
     class Meta:
         verbose_name = 'Услуга'
         verbose_name_plural = 'Услуги'
-        ordering = ['name']
+        ordering = ['position', 'id']
 
     def __str__(self):
         return self.name

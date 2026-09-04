@@ -1,12 +1,13 @@
 from django.urls import path
 from .views import (
-    ServiceListCreateView, ServiceDetailView,
+    ServiceListCreateView, ServiceDetailView, ServiceReorderView,
     BookingListCreateView, BookingDetailView,
     PublicBookingCreateView, PublicBookingAvailabilityView, BookingWidgetView
 )
 
 urlpatterns = [
     path('services/', ServiceListCreateView.as_view(), name='service_list_create'),
+    path('services/reorder/', ServiceReorderView.as_view(), name='service_reorder'),
     path('services/<int:pk>/', ServiceDetailView.as_view(), name='service_detail'),
     path('', BookingListCreateView.as_view(), name='booking_list_create'),
     path('<int:pk>/', BookingDetailView.as_view(), name='booking_detail'),

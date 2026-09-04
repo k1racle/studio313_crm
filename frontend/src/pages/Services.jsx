@@ -6,7 +6,8 @@ import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
-import { Clock, CreditCard, Plus, Pencil, Trash2, CheckCircle2, XCircle, Search, Filter } from 'lucide-react'
+import Select from '../components/ui/Select'
+import { Clock, CreditCard, Plus, Pencil, Trash2, CheckCircle2, XCircle, Search, GripVertical, Loader2 } from 'lucide-react'
 
 export default function Services() {
   const { user } = useAuth()
@@ -16,17 +17,37 @@ export default function Services() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [draggedServiceId, setDraggedServiceId] = useState(null)
+  const [dragOverServiceId, setDragOverServiceId] = useState(null)
+  const [isSavingOrder, setIsSavingOrder] = useState(false)
+  const [orderError, setOrderError] = useState('')
   const [form, setForm] = useState({
     name: '',
     description: '',
     duration_minutes: 60,
     price: '',
+    price_type: 'hourly',
     is_active: true,
   })
 
   const load = async () => {
-    const res = await api.get('/booking/services/')
-    setServices(res.data.results || res.data)
+    const firstResponse = await api.get('/booking/services/')
+    const firstPage = firstResponse.data
+    if (!Array.isArray(firstPage?.results)) {
+      setServices(firstPage)
+      return
+    }
+
+    if (!firstPage.count || firstPage.results.length >= firstPage.count || firstPage.results.length === 0) {
+      setServices(firstPage.results)
+      return
+    }
+
+    const pageCount = Math.ceil(firstPage.count / firstPage.results.length)
+    const remainingPages = await Promise.all(
+      Array.from({ length: pageCount - 1 }, (_, index) => api.get('/booking/services/', { params: { page: index + 2 } })),
+    )
+    setServices([firstPage, ...remainingPages.map(response => response.data)].flatMap(page => page.results || []))
   }
 
   useEffect(() => {
@@ -34,7 +55,7 @@ export default function Services() {
   }, [])
 
   const resetForm = () => {
-    setForm({ name: '', description: '', duration_minutes: 60, price: '', is_active: true })
+    setForm({ name: '', description: '', duration_minutes: 60, price: '', price_type: 'hourly', is_active: true })
     setEditingId(null)
   }
 
@@ -50,6 +71,7 @@ export default function Services() {
       description: service.description || '',
       duration_minutes: service.duration_minutes,
       price: service.price,
+      price_type: service.price_type || 'hourly',
       is_active: service.is_active,
     })
     setIsModalOpen(true)
@@ -76,6 +98,71 @@ export default function Services() {
     if (!confirm('Удалить услугу? Это может повлиять на существующие записи.')) return
     await api.delete(`/booking/services/${id}/`)
     load()
+  }
+
+  const visibleServices = useMemo(() => services.filter(service => {
+    const matchesSearch = `${service.name} ${service.description || ''}`.toLowerCase().includes(search.toLowerCase())
+    const matchesActive = activeFilter === 'all' || (activeFilter === 'active' ? service.is_active : !service.is_active)
+    return matchesSearch && matchesActive
+  }), [services, search, activeFilter])
+
+  const isFullListVisible = search.trim() === '' && activeFilter === 'all'
+  const canReorder = canManage && isFullListVisible && services.length > 1 && !isSavingOrder
+
+  const persistOrder = async (nextServices, previousServices) => {
+    setServices(nextServices)
+    setIsSavingOrder(true)
+    setOrderError('')
+    try {
+      const response = await api.post('/booking/services/reorder/', {
+        service_ids: nextServices.map(service => service.id),
+      })
+      setServices(response.data)
+    } catch (error) {
+      setServices(previousServices)
+      setOrderError(error?.response?.data?.service_ids || 'Не удалось сохранить порядок. Попробуйте ещё раз.')
+    } finally {
+      setIsSavingOrder(false)
+    }
+  }
+
+  const moveService = (sourceId, targetId) => {
+    if (!canReorder || sourceId === targetId) return
+    const sourceIndex = services.findIndex(service => service.id === sourceId)
+    const targetIndex = services.findIndex(service => service.id === targetId)
+    if (sourceIndex < 0 || targetIndex < 0) return
+
+    const previousServices = services
+    const nextServices = [...services]
+    const [movedService] = nextServices.splice(sourceIndex, 1)
+    nextServices.splice(targetIndex, 0, movedService)
+    persistOrder(nextServices, previousServices)
+  }
+
+  const moveServiceByOffset = (serviceId, offset) => {
+    if (!canReorder) return
+    const sourceIndex = services.findIndex(service => service.id === serviceId)
+    const targetIndex = sourceIndex + offset
+    if (sourceIndex < 0 || targetIndex < 0 || targetIndex >= services.length) return
+    moveService(serviceId, services[targetIndex].id)
+  }
+
+  const handleDragStart = (event, serviceId) => {
+    if (!canReorder) return
+    setDraggedServiceId(serviceId)
+    setDragOverServiceId(null)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(serviceId))
+    const card = event.currentTarget.closest('section')
+    if (card) event.dataTransfer.setDragImage(card, 32, 24)
+  }
+
+  const handleDrop = (event, targetId) => {
+    event.preventDefault()
+    const sourceId = Number(event.dataTransfer.getData('text/plain') || draggedServiceId)
+    setDraggedServiceId(null)
+    setDragOverServiceId(null)
+    if (sourceId) moveService(sourceId, targetId)
   }
   const headerActions = useMemo(() => (
     canManage ? (
@@ -116,20 +203,71 @@ export default function Services() {
             ))}
           </div>
         </div>
+        {canManage && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-4 text-sm text-text-muted">
+            {isSavingOrder ? <Loader2 size={17} className="animate-spin text-primary" /> : <GripVertical size={17} className="text-primary" />}
+            <span>
+              {isSavingOrder
+                ? 'Сохраняем порядок…'
+                : isFullListVisible
+                  ? 'Перетащите услуги за ручку. Порядок сразу появится в виджете.'
+                  : 'Чтобы изменить порядок, очистите поиск и выберите фильтр «Все».'}
+            </span>
+          </div>
+        )}
+        {orderError && <div className="mt-3 text-sm font-medium text-danger" role="alert">{orderError}</div>}
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {services
-          .filter(s => {
-            const matchesSearch = (s.name + ' ' + (s.description || '')).toLowerCase().includes(search.toLowerCase())
-            const matchesActive = activeFilter === 'all' || (activeFilter === 'active' ? s.is_active : !s.is_active)
-            return matchesSearch && matchesActive
-          })
-          .map(service => (
-          <Card key={service.id} className="hover:shadow-md transition-shadow">
+        {visibleServices.map((service, serviceIndex) => (
+          <Card
+            key={service.id}
+            onDragOver={(event) => {
+              if (!canReorder || draggedServiceId === service.id) return
+              event.preventDefault()
+              event.dataTransfer.dropEffect = 'move'
+              setDragOverServiceId(service.id)
+            }}
+            onDrop={(event) => handleDrop(event, service.id)}
+            className={`transition-all hover:shadow-md ${
+              draggedServiceId === service.id ? 'scale-[0.98] opacity-45' : ''
+            } ${dragOverServiceId === service.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-bg' : ''}`}
+          >
             <div className="flex items-start justify-between gap-3 mb-3">
-              <h3 className="text-lg font-bold text-text">{service.name}</h3>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex min-w-0 items-start gap-2">
+                {canManage && (
+                  <button
+                    type="button"
+                    draggable={canReorder}
+                    disabled={!canReorder}
+                    onDragStart={(event) => handleDragStart(event, service.id)}
+                    onDragEnd={() => {
+                      setDraggedServiceId(null)
+                      setDragOverServiceId(null)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+                        event.preventDefault()
+                        moveServiceByOffset(service.id, -1)
+                      }
+                      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+                        event.preventDefault()
+                        moveServiceByOffset(service.id, 1)
+                      }
+                    }}
+                    className="-ml-2 inline-flex min-h-10 min-w-10 shrink-0 cursor-grab items-center justify-center rounded-xl text-text-muted hover:bg-subtle hover:text-primary active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-35"
+                    aria-label={`Изменить позицию услуги «${service.name}». Используйте стрелки для перемещения`}
+                    title="Перетащите для изменения порядка"
+                  >
+                    <GripVertical size={19} />
+                  </button>
+                )}
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold text-text">{service.name}</h3>
+                  {isFullListVisible && <div className="mt-1 text-xs text-text-muted">Позиция {serviceIndex + 1}</div>}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
                 {service.is_active ? (
                   <span className="text-success" title="Активна"><CheckCircle2 size={18} /></span>
                 ) : (
@@ -145,7 +283,7 @@ export default function Services() {
               </div>
               <div className="flex items-center gap-1.5 text-text-muted">
                 <CreditCard size={16} className="text-primary" />
-                {service.price} ₽
+                {service.price} ₽ / {service.price_type === 'fixed' ? 'услуга' : 'час'}
               </div>
             </div>
             {canManage && (
@@ -181,6 +319,15 @@ export default function Services() {
               rows="3"
             />
           </div>
+          <Select
+            label="Расчёт стоимости"
+            value={form.price_type}
+            onChange={e => setForm({ ...form, price_type: e.target.value })}
+            options={[
+              { value: 'hourly', label: 'За час' },
+              { value: 'fixed', label: 'За услугу' },
+            ]}
+          />
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Длительность, мин"
