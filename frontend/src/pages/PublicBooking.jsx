@@ -17,7 +17,7 @@ export default function PublicBooking() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#ebece8]">
+    <div className="min-h-screen bg-[#f5faff]">
       <iframe
         src="/api/booking/widget/"
         title="Онлайн-запись в Студию 313"
