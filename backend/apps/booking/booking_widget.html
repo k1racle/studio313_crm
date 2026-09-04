@@ -673,8 +673,8 @@
 
         <section class="panel" data-panel="3" aria-labelledby="detailsTitle">
           <p class="eyebrow">Шаг 3 из 3</p>
-          <h2 id="detailsTitle">Кем бронируем</h2>
-          <p class="lede">Проверьте запись, оставьте контакты и выберите оплату.</p>
+          <h2 id="detailsTitle">Проверьте запись</h2>
+          <p class="lede">Оставьте контакты и выберите способ оплаты.</p>
 
           <div class="summary">
             <div class="summary-row">
@@ -726,11 +726,6 @@
                   <input type="radio" name="paymentMode" value="full">
                   <span class="payment-radio"></span>
                   <span><span class="payment-title" id="fullTitle">Оплатить полностью</span><span class="payment-note">Закрыть всю сумму сейчас</span></span>
-                </label>
-                <label class="payment-option" data-mode="request">
-                  <input type="radio" name="paymentMode" value="request">
-                  <span class="payment-radio"></span>
-                  <span><span class="payment-title">Без онлайн-оплаты</span><span class="payment-note">Менеджер свяжется для подтверждения</span></span>
                 </label>
               </div>
             </div>
@@ -1095,7 +1090,7 @@
     }
 
     function clearMessage() { messageNode.textContent = ''; messageNode.className = 'message'; }
-    function getPaymentMode() { return document.querySelector('input[name="paymentMode"]:checked')?.value || 'request'; }
+    function getPaymentMode() { return document.querySelector('input[name="paymentMode"]:checked')?.value || 'partial'; }
 
     function redirectToPayment(url) {
       try { if (window.top && window.top !== window) { window.top.location.href = url; return; } } catch (_error) { /* cross-origin parent */ }
@@ -1181,8 +1176,6 @@
 
         document.getElementById('successService').textContent = state.selectedService.name;
         document.getElementById('successTime').textContent = `${formatDateLong(state.selectedSlot.start_time)}, ${formatTimeRange(state.selectedSlot.start_time)}`;
-        if (paymentMode === 'request') { setStep('success'); return; }
-
         const paymentResponse = await fetch(paymentCreateUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
